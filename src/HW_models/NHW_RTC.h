@@ -47,6 +47,19 @@ void nhw_rtc2_TASKS_CLEAR(void);
 void nhw_rtc2_TASKS_TRIGOVRFLW(void);
 #endif /* NHW_HAS_PPI */
 
+/** Return the time when the provided RTC started.
+ *
+ * This function can be used to compare RTC-based timestamps
+ * from different bsim instances.
+ *
+ * @param rtc RTC index
+ * 
+ * @returns The timestamp where the RTC started.
+ *          The value is negative if the counter started
+ *          before the device time was 0.
+ */
+int64_t nhw_rtc_start_time_get(uint rtc);
+
 #ifdef __cplusplus
 }
 #endif
