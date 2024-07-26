@@ -39,6 +39,19 @@ void nhw_GRTC_regw_sideeffects_CC_CCH(uint inst, uint cc);
 uint32_t nhw_GRTC_regr_sideeffects_SYSCOUNTERL(uint inst, uint n);
 uint32_t nhw_GRTC_regr_sideeffects_SYSCOUNTERH(uint inst, uint n);
 
+
+/** Return the time for a given GRTC counter value.
+ *
+ * This function can be used to compare GRTC-based timestamps
+ * from different bsim instances.
+ *
+ * @param inst GRTC instance
+ * @param value The GRTC value
+ * 
+ * @returns The timestamp corresponding to a given GRTC value.
+ */
+bs_time_t nhw_GRTC_counter_to_time(uint inst, uint64_t value);
+
 #ifdef __cplusplus
 }
 #endif
