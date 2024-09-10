@@ -1050,7 +1050,7 @@ NHW_UARTE_SIGNAL_EVENT_ns(NCTS)
 NHW_UARTE_SIGNAL_EVENT(RXDRDY)
 NHW_UARTE_SIGNAL_EVENT_ns(ENDRX) /* DMA Rx done */
 NHW_UARTE_SIGNAL_EVENT(TXDRDY)
-NHW_UARTE_SIGNAL_EVENT(ENDTX) /* DMA Tx done */
+NHW_UARTE_SIGNAL_EVENT_ns(ENDTX) /* DMA Tx done */
 NHW_UARTE_SIGNAL_EVENT(ERROR)
 NHW_UARTE_SIGNAL_EVENT(RXTO) /* Receiver done closing */
 NHW_UARTE_SIGNAL_EVENT(RXSTARTED)
@@ -1079,6 +1079,13 @@ static void nhw_UARTE_signal_EVENTS_ENDRX(unsigned int inst) {
     NHW_SHORT(UARTE, inst, NRF_UARTE_regs[inst]., ENDRX, STOPRX)
   }
   nhw_UARTE_signal_EVENTS_ENDRX_noshort(inst);
+}
+
+static void nhw_UARTE_signal_EVENTS_ENDTX(unsigned int inst) {
+  if (uarte_enabled(inst)) { //Only in UART-E mode
+    NHW_SHORT(UARTE, inst, NRF_UARTE_regs[inst]., ENDTX, STOPTX)
+  }
+  nhw_UARTE_signal_EVENTS_ENDTX_noshort(inst);
 }
 
 NHW_SIDEEFFECTS_INTSET(UARTE, NRF_UARTE_regs[inst]., NRF_UARTE_regs[inst].INTEN)
