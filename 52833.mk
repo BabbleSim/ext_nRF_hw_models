@@ -33,14 +33,7 @@ LIB_NAME=libnRF_hw_models.${VARIANT}.32${NRF_HW_MODELS_LIB_SUFFIX}
 A_LIBS:=
 A_LIBS32:=
 SO_LIBS:=
-DEBUG:=-g
-OPT:=
-ARCH:=-m32
-WARNINGS:=-Wall -Wpedantic
-COVERAGE:=
-CFLAGS=${ARCH} ${DEBUG} ${OPT} ${WARNINGS} -MMD -MP -std=gnu11 \
-        ${INCLUDES} -fdata-sections -ffunction-sections \
-        -D${VARIANT} -D_XOPEN_SOURCE=500 -D${HAL_VARIANT}
+CFLAGS=${COMMON_CC_FLAGS} ${INCLUDES} -D${VARIANT} -D${HAL_VARIANT}
 LDFLAGS:=${ARCH} ${COVERAGE}
 CPPFLAGS:=
 

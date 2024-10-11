@@ -15,3 +15,12 @@ include ${BSIM_BASE_PATH}/common/pre.make.inc
 2G4_libPhyComv1_COMP_PATH?=$(abspath ${BSIM_COMPONENTS_PATH}/ext_2G4_libPhyComv1)
 
 CC:=ccache gcc
+
+DEBUG:=-g
+OPT:=
+ARCH:=-m32
+WARNINGS:=-Wall -Wpedantic
+COVERAGE:=
+COMMON_CC_FLAGS:=\
+  ${ARCH} ${DEBUG} ${OPT} ${WARNINGS} -MMD -MP -std=gnu11 \
+  -fdata-sections -ffunction-sections -D_XOPEN_SOURCE=500
