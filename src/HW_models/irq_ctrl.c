@@ -235,6 +235,18 @@ int hw_irq_ctrl_is_irq_enabled(unsigned int inst, unsigned int irq)
 }
 
 /*
+ * Check if an interrupt is pending (it may be masked or not)
+ * return 1 if it is pending, 0 otherwise
+ *
+ * This is an API between the MCU model/IRQ handling side and the IRQ controller
+ * model (NVIC)
+ */
+int hw_irq_ctrl_is_irq_pending(unsigned int inst, unsigned int irq)
+{
+  return (nhw_intctrl_st[inst].irq_premask[irq/64] & ((uint64_t)1 << (irq%64)))?1:0;
+}
+
+/*
  * Un-pend an interrupt from the interrupt controller.
  * Note: For level interrupts, the interrupt may be repended soon after.
  *
