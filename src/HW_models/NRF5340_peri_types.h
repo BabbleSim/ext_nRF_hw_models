@@ -113,6 +113,90 @@ typedef struct {
 
 
 /**
+  * @brief SPU_EXTDOMAIN [EXTDOMAIN] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  PERM;                         /*!< (@ 0x00000000) Description cluster: Access for bus access generated
+                                                                    from the external domain n List capabilities
+                                                                    of the external domain n                                   */
+} SPU_EXTDOMAIN_Type;                           /*!< Size = 4 (0x4)                                                            */
+
+
+/**
+  * @brief SPU_DPPI [DPPI] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  PERM;                         /*!< (@ 0x00000000) Description cluster: Select between secure and
+                                                                    non-secure attribute for the DPPI channels                 */
+  __IOM uint32_t  LOCK;                         /*!< (@ 0x00000004) Description cluster: Prevent further modification
+                                                                    of the corresponding PERM register                         */
+} SPU_DPPI_Type;                                /*!< Size = 8 (0x8)                                                            */
+
+
+/**
+  * @brief SPU_GPIOPORT [GPIOPORT] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  PERM;                         /*!< (@ 0x00000000) Description cluster: Select between secure and
+                                                                    non-secure attribute for pins 0 to 31 of
+                                                                    port n                                                     */
+  __IOM uint32_t  LOCK;                         /*!< (@ 0x00000004) Description cluster: Prevent further modification
+                                                                    of the corresponding PERM register                         */
+} SPU_GPIOPORT_Type;                            /*!< Size = 8 (0x8)                                                            */
+
+
+/**
+  * @brief SPU_FLASHNSC [FLASHNSC] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  REGION;                       /*!< (@ 0x00000000) Description cluster: Define which flash region
+                                                                    can contain the non-secure callable (NSC)
+                                                                    region n                                                   */
+  __IOM uint32_t  SIZE;                         /*!< (@ 0x00000004) Description cluster: Define the size of the non-secure
+                                                                    callable (NSC) region n                                    */
+} SPU_FLASHNSC_Type;                            /*!< Size = 8 (0x8)                                                            */
+
+
+/**
+  * @brief SPU_RAMNSC [RAMNSC] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  REGION;                       /*!< (@ 0x00000000) Description cluster: Define which RAM region
+                                                                    can contain the non-secure callable (NSC)
+                                                                    region n                                                   */
+  __IOM uint32_t  SIZE;                         /*!< (@ 0x00000004) Description cluster: Define the size of the non-secure
+                                                                    callable (NSC) region n                                    */
+} SPU_RAMNSC_Type;                              /*!< Size = 8 (0x8)                                                            */
+
+
+/**
+  * @brief SPU_FLASHREGION [FLASHREGION] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  PERM;                         /*!< (@ 0x00000000) Description cluster: Access permissions for flash
+                                                                    region n                                                   */
+} SPU_FLASHREGION_Type;                         /*!< Size = 4 (0x4)                                                            */
+
+
+/**
+  * @brief SPU_RAMREGION [RAMREGION] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  PERM;                         /*!< (@ 0x00000000) Description cluster: Access permissions for RAM
+                                                                    region n                                                   */
+} SPU_RAMREGION_Type;                           /*!< Size = 4 (0x4)                                                            */
+
+
+/**
+  * @brief SPU_PERIPHID [PERIPHID] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  PERM;                         /*!< (@ 0x00000000) Description cluster: List capabilities and access
+                                                                    permissions for the peripheral with ID n                   */
+} SPU_PERIPHID_Type;                            /*!< Size = 4 (0x4)                                                            */
+
+
+/**
   * @brief DPPIC_TASKS_CHG [TASKS_CHG] (Channel group tasks)
   */
 typedef struct {
@@ -5110,6 +5194,51 @@ typedef struct {                                /*!< (@ 0x41011000) RTC0_NS Stru
 /* Bits 23..0 : Compare value */
 #define RTC_CC_COMPARE_Pos (0UL) /*!< Position of COMPARE field. */
 #define RTC_CC_COMPARE_Msk (0xFFFFFFUL << RTC_CC_COMPARE_Pos) /*!< Bit mask of COMPARE field. */
+
+
+/* =========================================================================================================================== */
+/* ================                                           SPU_S                                           ================ */
+/* =========================================================================================================================== */
+
+
+/**
+  * @brief System protection unit (SPU_S)
+  */
+
+typedef struct {                                /*!< (@ 0x50003000) SPU_S Structure                                            */
+  __IM  uint32_t  RESERVED[64];
+  __IOM uint32_t  EVENTS_RAMACCERR;             /*!< (@ 0x00000100) A security violation has been detected for the
+                                                                    RAM memory space                                           */
+  __IOM uint32_t  EVENTS_FLASHACCERR;           /*!< (@ 0x00000104) A security violation has been detected for the
+                                                                    flash memory space                                         */
+  __IOM uint32_t  EVENTS_PERIPHACCERR;          /*!< (@ 0x00000108) A security violation has been detected on one
+                                                                    or several peripherals                                     */
+  __IM  uint32_t  RESERVED1[29];
+  __IOM uint32_t  PUBLISH_RAMACCERR;            /*!< (@ 0x00000180) Publish configuration for event RAMACCERR                  */
+  __IOM uint32_t  PUBLISH_FLASHACCERR;          /*!< (@ 0x00000184) Publish configuration for event FLASHACCERR                */
+  __IOM uint32_t  PUBLISH_PERIPHACCERR;         /*!< (@ 0x00000188) Publish configuration for event PERIPHACCERR               */
+  __IM  uint32_t  RESERVED2[93];
+  __IOM uint32_t  INTEN;                        /*!< (@ 0x00000300) Enable or disable interrupt                                */
+  __IOM uint32_t  INTENSET;                     /*!< (@ 0x00000304) Enable interrupt                                           */
+  __IOM uint32_t  INTENCLR;                     /*!< (@ 0x00000308) Disable interrupt                                          */
+  __IM  uint32_t  RESERVED3[61];
+  __IM  uint32_t  CAP;                          /*!< (@ 0x00000400) Show implemented features for the current device           */
+  __IOM uint32_t  CPULOCK;                      /*!< (@ 0x00000404) Configure bits to lock down CPU features at runtime        */
+  __IM  uint32_t  RESERVED4[14];
+  __IOM SPU_EXTDOMAIN_Type EXTDOMAIN[1];        /*!< (@ 0x00000440) Unspecified                                                */
+  __IM  uint32_t  RESERVED5[15];
+  __IOM SPU_DPPI_Type DPPI[1];                  /*!< (@ 0x00000480) Unspecified                                                */
+  __IM  uint32_t  RESERVED6[14];
+  __IOM SPU_GPIOPORT_Type GPIOPORT[2];          /*!< (@ 0x000004C0) Unspecified                                                */
+  __IM  uint32_t  RESERVED7[12];
+  __IOM SPU_FLASHNSC_Type FLASHNSC[2];          /*!< (@ 0x00000500) Unspecified                                                */
+  __IM  uint32_t  RESERVED8[12];
+  __IOM SPU_RAMNSC_Type RAMNSC[2];              /*!< (@ 0x00000540) Unspecified                                                */
+  __IM  uint32_t  RESERVED9[44];
+  __IOM SPU_FLASHREGION_Type FLASHREGION[64];   /*!< (@ 0x00000600) Unspecified                                                */
+  __IOM SPU_RAMREGION_Type RAMREGION[64];       /*!< (@ 0x00000700) Unspecified                                                */
+  __IOM SPU_PERIPHID_Type PERIPHID[256];        /*!< (@ 0x00000800) Unspecified                                                */
+} NRF_SPU_Type;                                 /*!< Size = 3072 (0xc00)                                                       */
 
 
 /* =========================================================================================================================== */

@@ -408,6 +408,9 @@
 #define NHW_RTC_HAS_SHORT_COMP_CLEAR 1
 #define NHW_RTC_N_CC {4, 4, 4, 4}
 
+#define NHW_SPU_TOTAL_INST 1
+#define NHW_SPU_APP0 0
+
 #define NHW_SWI_TOTAL_INST 4
 #define NHW_SWI_NET0 0
 #define NHW_SWI_NET1 1
@@ -738,6 +741,12 @@
 #define NHW_RTC_HAS_CAPTURE 1
 #define NHW_RTC_HAS_SHORT_COMP_CLEAR 1
 #define NHW_RTC_N_CC {4, 4}
+
+#define NHW_SPU_TOTAL_INST 4
+#define NHW_SPU_00 0
+#define NHW_SPU_10 1
+#define NHW_SPU_20 2
+#define NHW_SPU_30 3
 
 #define NHW_SWI_TOTAL_INST 4
 

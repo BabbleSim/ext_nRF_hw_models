@@ -251,8 +251,9 @@ extern NRF_UICR_Type *NRF_UICR_regs_p[];
 #define NRF_FPU_S_BASE              NULL
 #undef NRF_CACHE_S_BASE
 #define NRF_CACHE_S_BASE            NULL
+extern NRF_SPU_Type NRF_SPU_regs[];
 #undef NRF_SPU_S_BASE
-#define NRF_SPU_S_BASE              NULL
+#define NRF_SPU_S_BASE              (&NRF_SPU_regs[NHW_SPU_APP0])
 #undef NRF_OSCILLATORS_NS_BASE
 #define NRF_OSCILLATORS_NS_BASE     NULL
 #undef NRF_REGULATORS_NS_BASE
@@ -539,8 +540,9 @@ extern NRF_UICR_Type *NRF_UICR_regs_p[];
 #define NRF_SICR_S_BASE NULL
 #undef NRF_CRACENCORE_S_BASE
 #define NRF_CRACENCORE_S_BASE NULL
+extern NRF_SPU_Type NRF_SPU_regs[];
 #undef NRF_SPU00_S_BASE
-#define NRF_SPU00_S_BASE NULL
+#define NRF_SPU00_S_BASE (&NRF_SPU_regs[NHW_SPU_00])
 #undef NRF_MPC00_S_BASE
 #define NRF_MPC00_S_BASE NULL
 extern NRF_DPPIC_Type NRF_DPPIC_regs[];
@@ -617,7 +619,7 @@ extern NRF_TIMER_Type NRF_TIMER_regs[];
 #undef NRF_TIMER00_S_BASE
 #define NRF_TIMER00_S_BASE (&NRF_TIMER_regs[NHW_TIMER_00])
 #undef NRF_SPU10_S_BASE
-#define NRF_SPU10_S_BASE NULL
+#define NRF_SPU10_S_BASE  (&NRF_SPU_regs[NHW_SPU_10])
 #undef NRF_DPPIC10_NS_BASE
 #define NRF_DPPIC10_NS_BASE (&NRF_DPPIC_regs[NHW_DPPI_10])
 #undef NRF_DPPIC10_S_BASE
@@ -650,7 +652,7 @@ extern NRF_RADIO_Type NRF_RADIO_regs;
 #undef NRF_RADIO_S_BASE
 #define NRF_RADIO_S_BASE (&NRF_RADIO_regs)
 #undef NRF_SPU20_S_BASE
-#define NRF_SPU20_S_BASE NULL
+#define NRF_SPU20_S_BASE (&NRF_SPU_regs[NHW_SPU_20])
 #undef NRF_DPPIC20_NS_BASE
 #define NRF_DPPIC20_NS_BASE (&NRF_DPPIC_regs[NHW_DPPI_20])
 #undef NRF_DPPIC20_S_BASE
@@ -816,7 +818,7 @@ extern NRF_GRTC_Type NRF_GRTC_regs;
 #undef NRF_GRTC_S_BASE
 #define NRF_GRTC_S_BASE (&NRF_GRTC_regs)
 #undef NRF_SPU30_S_BASE
-#define NRF_SPU30_S_BASE NULL
+#define NRF_SPU30_S_BASE (&NRF_SPU_regs[NHW_SPU_30])
 #undef NRF_DPPIC30_NS_BASE
 #define NRF_DPPIC30_NS_BASE (&NRF_DPPIC_regs[NHW_DPPI_30])
 #undef NRF_DPPIC30_S_BASE
