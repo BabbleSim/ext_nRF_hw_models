@@ -15,6 +15,7 @@ src/HW_models/NHW_EGU.c
 src/HW_models/NHW_EVDMA.c
 src/HW_models/NHW_54L_FICR.c
 src/HW_models/NHW_GRTC.c
+src/HW_models/NHW_NFCT.c
 src/HW_models/NHW_NVM_backend.c
 src/HW_models/NHW_PPIB.c
 src/HW_models/NHW_RADIO.c

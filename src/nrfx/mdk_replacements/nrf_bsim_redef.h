@@ -83,6 +83,9 @@ extern NRF_GPIOTE_Type NRF_GPIOTE_regs;
 extern NRF_MWU_Type NRF_MWU_regs;
 #undef NRF_MWU_BASE
 #define NRF_MWU_BASE                      (&NRF_MWU_regs)
+extern NRF_NFCT_Type NRF_NFCT_regs;
+#undef NRF_NFCT_BASE
+#define NRF_NFCT_BASE                     (&NRF_NFCT_regs)
 extern NRF_NVMC_Type *NRF_NVMC_regs_p[];
 #undef NRF_NVMC_BASE
 #define NRF_NVMC_BASE                     (NRF_NVMC_regs_p[0])
@@ -469,10 +472,11 @@ extern NRF_IPC_Type NRF_IPC_regs[NHW_IPC_TOTAL_INST];
 #define NRF_QSPI_NS_BASE            NULL
 #undef NRF_QSPI_S_BASE
 #define NRF_QSPI_S_BASE             NULL
+extern NRF_NFCT_Type NRF_NFCT_regs;
 #undef NRF_NFCT_NS_BASE
-#define NRF_NFCT_NS_BASE            NULL
+#define NRF_NFCT_NS_BASE            (&NRF_NFCT_regs)
 #undef NRF_NFCT_S_BASE
-#define NRF_NFCT_S_BASE             NULL
+#define NRF_NFCT_S_BASE             (&NRF_NFCT_regs)
 #undef NRF_GPIOTE1_NS_BASE
 #define NRF_GPIOTE1_NS_BASE         NULL
 extern NRF_MUTEX_Type NRF_MUTEX_regs;
@@ -775,10 +779,11 @@ extern NRF_RADIO_Type NRF_RADIO_regs;
 #define NRF_SAADC_NS_BASE NULL
 #undef NRF_SAADC_S_BASE
 #define NRF_SAADC_S_BASE NULL
+extern NRF_NFCT_Type NRF_NFCT_regs;
 #undef NRF_NFCT_NS_BASE
-#define NRF_NFCT_NS_BASE NULL
+#define NRF_NFCT_NS_BASE (&NRF_NFCT_regs)
 #undef NRF_NFCT_S_BASE
-#define NRF_NFCT_S_BASE NULL
+#define NRF_NFCT_S_BASE (&NRF_NFCT_regs)
 #undef NRF_TEMP_NS_BASE
 #define NRF_TEMP_NS_BASE NULL
 #undef NRF_TEMP_S_BASE

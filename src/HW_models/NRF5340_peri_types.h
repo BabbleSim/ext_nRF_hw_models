@@ -111,6 +111,7 @@ typedef struct {
   __IM  uint32_t  AMOUNT;                       /*!< (@ 0x00000008) Number of samples transferred in the last transaction      */
 } RADIO_DFEPACKET_Type;                         /*!< Size = 12 (0xc)                                                           */
 
+
 /**
   * @brief DPPIC_TASKS_CHG [TASKS_CHG] (Channel group tasks)
   */
@@ -201,6 +202,32 @@ typedef struct {
   __IM  uint32_t  RESERVED;
   __IM  uint32_t  VREQHREADY;                   /*!< (@ 0x00000008) High voltage on RADIO is ready                             */
 } VREQCTRL_VREGRADIO_Type;                      /*!< Size = 12 (0xc)                                                           */
+
+/**
+  * @brief NFCT_FRAMESTATUS [FRAMESTATUS] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  RX;                           /*!< (@ 0x00000000) Result of last incoming frame                              */
+} NFCT_FRAMESTATUS_Type;                        /*!< Size = 4 (0x4)                                                            */
+
+
+/**
+  * @brief NFCT_TXD [TXD] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  FRAMECONFIG;                  /*!< (@ 0x00000000) Configuration of outgoing frames                           */
+  __IOM uint32_t  AMOUNT;                       /*!< (@ 0x00000004) Size of outgoing frame                                     */
+} NFCT_TXD_Type;                                /*!< Size = 8 (0x8)                                                            */
+
+
+/**
+  * @brief NFCT_RXD [RXD] (Unspecified)
+  */
+typedef struct {
+  __IOM uint32_t  FRAMECONFIG;                  /*!< (@ 0x00000000) Configuration of incoming frames                           */
+  __IM  uint32_t  AMOUNT;                       /*!< (@ 0x00000004) Size of last incoming frame                                */
+} NFCT_RXD_Type;                                /*!< Size = 8 (0x8)                                                            */
+
 
 /* =========================================================================================================================== */
 /* ================                                          AAR                                              ================ */
@@ -2053,6 +2080,129 @@ typedef struct {                                /*!< (@ 0x41012000) IPC_NS Struc
   __IM  uint32_t  RESERVED6[16];
   __IOM uint32_t  GPMEM[2];                     /*!< (@ 0x00000610) Description collection: General purpose memory             */
 } NRF_IPC_Type;                                 /*!< Size = 1560 (0x618)                                                       */
+
+
+/* =========================================================================================================================== */
+/* ================                                          NFCT_NS                                          ================ */
+/* =========================================================================================================================== */
+
+
+/**
+  * @brief NFC-A compatible radio 0 (NFCT_NS)
+  */
+
+typedef struct {                                /*!< (@ 0x4002D000) NFCT_NS Structure                                          */
+  __OM  uint32_t  TASKS_ACTIVATE;               /*!< (@ 0x00000000) Activate NFCT peripheral for incoming and outgoing
+                                                                    frames, change state to activated                          */
+  __OM  uint32_t  TASKS_DISABLE;                /*!< (@ 0x00000004) Disable NFCT peripheral                                    */
+  __OM  uint32_t  TASKS_SENSE;                  /*!< (@ 0x00000008) Enable NFC sense field mode, change state to
+                                                                    sense mode                                                 */
+  __OM  uint32_t  TASKS_STARTTX;                /*!< (@ 0x0000000C) Start transmission of an outgoing frame, change
+                                                                    state to transmit                                          */
+  __IM  uint32_t  RESERVED[3];
+  __OM  uint32_t  TASKS_ENABLERXDATA;           /*!< (@ 0x0000001C) Initializes the EasyDMA for receive.                       */
+  __IM  uint32_t  RESERVED1;
+  __OM  uint32_t  TASKS_GOIDLE;                 /*!< (@ 0x00000024) Force state machine to IDLE state                          */
+  __OM  uint32_t  TASKS_GOSLEEP;                /*!< (@ 0x00000028) Force state machine to SLEEP_A state                       */
+  __IM  uint32_t  RESERVED2[21];
+  __IOM uint32_t  SUBSCRIBE_ACTIVATE;           /*!< (@ 0x00000080) Subscribe configuration for task ACTIVATE                  */
+  __IOM uint32_t  SUBSCRIBE_DISABLE;            /*!< (@ 0x00000084) Subscribe configuration for task DISABLE                   */
+  __IOM uint32_t  SUBSCRIBE_SENSE;              /*!< (@ 0x00000088) Subscribe configuration for task SENSE                     */
+  __IOM uint32_t  SUBSCRIBE_STARTTX;            /*!< (@ 0x0000008C) Subscribe configuration for task STARTTX                   */
+  __IM  uint32_t  RESERVED3[3];
+  __IOM uint32_t  SUBSCRIBE_ENABLERXDATA;       /*!< (@ 0x0000009C) Subscribe configuration for task ENABLERXDATA              */
+  __IM  uint32_t  RESERVED4;
+  __IOM uint32_t  SUBSCRIBE_GOIDLE;             /*!< (@ 0x000000A4) Subscribe configuration for task GOIDLE                    */
+  __IOM uint32_t  SUBSCRIBE_GOSLEEP;            /*!< (@ 0x000000A8) Subscribe configuration for task GOSLEEP                   */
+  __IM  uint32_t  RESERVED5[21];
+  __IOM uint32_t  EVENTS_READY;                 /*!< (@ 0x00000100) The NFCT peripheral is ready to receive and send
+                                                                    frames                                                     */
+  __IOM uint32_t  EVENTS_FIELDDETECTED;         /*!< (@ 0x00000104) Remote NFC field detected                                  */
+  __IOM uint32_t  EVENTS_FIELDLOST;             /*!< (@ 0x00000108) Remote NFC field lost                                      */
+  __IOM uint32_t  EVENTS_TXFRAMESTART;          /*!< (@ 0x0000010C) Marks the start of the first symbol of a transmitted
+                                                                    frame                                                      */
+  __IOM uint32_t  EVENTS_TXFRAMEEND;            /*!< (@ 0x00000110) Marks the end of the last transmitted on-air
+                                                                    symbol of a frame                                          */
+  __IOM uint32_t  EVENTS_RXFRAMESTART;          /*!< (@ 0x00000114) Marks the end of the first symbol of a received
+                                                                    frame                                                      */
+  __IOM uint32_t  EVENTS_RXFRAMEEND;            /*!< (@ 0x00000118) Received data has been checked (CRC, parity)
+                                                                    and transferred to RAM, and EasyDMA has
+                                                                    ended accessing the RX buffer                              */
+  __IOM uint32_t  EVENTS_ERROR;                 /*!< (@ 0x0000011C) NFC error reported. The ERRORSTATUS register
+                                                                    contains details on the source of the error.               */
+  __IM  uint32_t  RESERVED6[2];
+  __IOM uint32_t  EVENTS_RXERROR;               /*!< (@ 0x00000128) NFC RX frame error reported. The FRAMESTATUS.RX
+                                                                    register contains details on the source
+                                                                    of the error.                                              */
+  __IOM uint32_t  EVENTS_ENDRX;                 /*!< (@ 0x0000012C) RX buffer (as defined by PACKETPTR and MAXLEN)
+                                                                    in Data RAM full.                                          */
+  __IOM uint32_t  EVENTS_ENDTX;                 /*!< (@ 0x00000130) Transmission of data in RAM has ended, and EasyDMA
+                                                                    has ended accessing the TX buffer                          */
+  __IM  uint32_t  RESERVED7;
+  __IOM uint32_t  EVENTS_AUTOCOLRESSTARTED;     /*!< (@ 0x00000138) Auto collision resolution process has started              */
+  __IM  uint32_t  RESERVED8[3];
+  __IOM uint32_t  EVENTS_COLLISION;             /*!< (@ 0x00000148) NFC auto collision resolution error reported.              */
+  __IOM uint32_t  EVENTS_SELECTED;              /*!< (@ 0x0000014C) NFC auto collision resolution successfully completed       */
+  __IOM uint32_t  EVENTS_STARTED;               /*!< (@ 0x00000150) EasyDMA is ready to receive or send frames.                */
+  __IM  uint32_t  RESERVED9[11];
+  __IOM uint32_t  PUBLISH_READY;                /*!< (@ 0x00000180) Publish configuration for event READY                      */
+  __IOM uint32_t  PUBLISH_FIELDDETECTED;        /*!< (@ 0x00000184) Publish configuration for event FIELDDETECTED              */
+  __IOM uint32_t  PUBLISH_FIELDLOST;            /*!< (@ 0x00000188) Publish configuration for event FIELDLOST                  */
+  __IOM uint32_t  PUBLISH_TXFRAMESTART;         /*!< (@ 0x0000018C) Publish configuration for event TXFRAMESTART               */
+  __IOM uint32_t  PUBLISH_TXFRAMEEND;           /*!< (@ 0x00000190) Publish configuration for event TXFRAMEEND                 */
+  __IOM uint32_t  PUBLISH_RXFRAMESTART;         /*!< (@ 0x00000194) Publish configuration for event RXFRAMESTART               */
+  __IOM uint32_t  PUBLISH_RXFRAMEEND;           /*!< (@ 0x00000198) Publish configuration for event RXFRAMEEND                 */
+  __IOM uint32_t  PUBLISH_ERROR;                /*!< (@ 0x0000019C) Publish configuration for event ERROR                      */
+  __IM  uint32_t  RESERVED10[2];
+  __IOM uint32_t  PUBLISH_RXERROR;              /*!< (@ 0x000001A8) Publish configuration for event RXERROR                    */
+  __IOM uint32_t  PUBLISH_ENDRX;                /*!< (@ 0x000001AC) Publish configuration for event ENDRX                      */
+  __IOM uint32_t  PUBLISH_ENDTX;                /*!< (@ 0x000001B0) Publish configuration for event ENDTX                      */
+  __IM  uint32_t  RESERVED11;
+  __IOM uint32_t  PUBLISH_AUTOCOLRESSTARTED;    /*!< (@ 0x000001B8) Publish configuration for event AUTOCOLRESSTARTED          */
+  __IM  uint32_t  RESERVED12[3];
+  __IOM uint32_t  PUBLISH_COLLISION;            /*!< (@ 0x000001C8) Publish configuration for event COLLISION                  */
+  __IOM uint32_t  PUBLISH_SELECTED;             /*!< (@ 0x000001CC) Publish configuration for event SELECTED                   */
+  __IOM uint32_t  PUBLISH_STARTED;              /*!< (@ 0x000001D0) Publish configuration for event STARTED                    */
+  __IM  uint32_t  RESERVED13[11];
+  __IOM uint32_t  SHORTS;                       /*!< (@ 0x00000200) Shortcuts between local events and tasks                   */
+  __IM  uint32_t  RESERVED14[63];
+  __IOM uint32_t  INTEN;                        /*!< (@ 0x00000300) Enable or disable interrupt                                */
+  __IOM uint32_t  INTENSET;                     /*!< (@ 0x00000304) Enable interrupt                                           */
+  __IOM uint32_t  INTENCLR;                     /*!< (@ 0x00000308) Disable interrupt                                          */
+  __IM  uint32_t  RESERVED15[62];
+  __IOM uint32_t  ERRORSTATUS;                  /*!< (@ 0x00000404) NFC Error Status register                                  */
+  __IM  uint32_t  RESERVED16;
+  __IOM NFCT_FRAMESTATUS_Type FRAMESTATUS;      /*!< (@ 0x0000040C) Unspecified                                                */
+  __IM  uint32_t  NFCTAGSTATE;                  /*!< (@ 0x00000410) Current operating state of NFC tag                         */
+  __IM  uint32_t  RESERVED17[3];
+  __IM  uint32_t  SLEEPSTATE;                   /*!< (@ 0x00000420) Sleep state during automatic collision resolution          */
+  __IM  uint32_t  RESERVED18[6];
+  __IM  uint32_t  FIELDPRESENT;                 /*!< (@ 0x0000043C) Indicates the presence or not of a valid field             */
+  __IM  uint32_t  RESERVED19[49];
+  __IOM uint32_t  FRAMEDELAYMIN;                /*!< (@ 0x00000504) Minimum frame delay                                        */
+  __IOM uint32_t  FRAMEDELAYMAX;                /*!< (@ 0x00000508) Maximum frame delay                                        */
+  __IOM uint32_t  FRAMEDELAYMODE;               /*!< (@ 0x0000050C) Configuration register for the Frame Delay Timer           */
+  __IOM uint32_t  PACKETPTR;                    /*!< (@ 0x00000510) Packet pointer for TXD and RXD data storage in
+                                                                    Data RAM                                                   */
+  __IOM uint32_t  MAXLEN;                       /*!< (@ 0x00000514) Size of the RAM buffer allocated to TXD and RXD
+                                                                    data storage each                                          */
+  __IOM NFCT_TXD_Type TXD;                      /*!< (@ 0x00000518) Unspecified                                                */
+  __IOM NFCT_RXD_Type RXD;                      /*!< (@ 0x00000520) Unspecified                                                */
+  __IM  uint32_t  RESERVED20;
+  __IOM uint32_t  MODULATIONCTRL;               /*!< (@ 0x0000052C) Enables the modulation output to a GPIO pin which
+                                                                    can be connected to a second external antenna.             */
+  __IM  uint32_t  RESERVED21[2];
+  __IOM uint32_t  MODULATIONPSEL;               /*!< (@ 0x00000538) Pin select for Modulation control                          */
+  __IM  uint32_t  RESERVED22[21];
+  __IOM uint32_t  NFCID1_LAST;                  /*!< (@ 0x00000590) Last NFCID1 part (4, 7 or 10 bytes ID)                     */
+  __IOM uint32_t  NFCID1_2ND_LAST;              /*!< (@ 0x00000594) Second last NFCID1 part (7 or 10 bytes ID)                 */
+  __IOM uint32_t  NFCID1_3RD_LAST;              /*!< (@ 0x00000598) Third last NFCID1 part (10 bytes ID)                       */
+  __IOM uint32_t  AUTOCOLRESCONFIG;             /*!< (@ 0x0000059C) Controls the auto collision resolution function.
+                                                                    This setting must be done before the NFCT
+                                                                    peripheral is activated.                                   */
+  __IOM uint32_t  SENSRES;                      /*!< (@ 0x000005A0) NFC-A SENS_RES auto-response settings                      */
+  __IOM uint32_t  SELRES;                       /*!< (@ 0x000005A4) NFC-A SEL_RES auto-response settings                       */
+} NRF_NFCT_Type;                                /*!< Size = 1448 (0x5a8)                                                       */
 
 
 /* =========================================================================================================================== */
