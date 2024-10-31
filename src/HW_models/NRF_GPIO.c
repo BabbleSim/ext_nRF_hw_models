@@ -89,22 +89,22 @@ static nrf_gpio_input_callback_t test_outtoggle_callback;
  * Initialize the GPIOs model
  */
 static void nrf_gpio_init(void) {
-	memset(NRF_GPIO_regs, 0, sizeof(NRF_GPIO_regs));
+  memset(NRF_GPIO_regs, 0, sizeof(NRF_GPIO_regs));
 
-	for (int p = 0; p < NRF_GPIOS; p ++) {
-		for (int n = 0; n < GPIO_n_ports_pins[p]; n++) {
-			NRF_GPIO_regs[p].PIN_CNF[n] = 0x2; /* Disconnected out of reset */
-		}
-		INPUT_mask[p] = UINT32_MAX; /* All disconnected out of reset */
-	}
+  for (int p = 0; p < NRF_GPIOS; p ++) {
+    for (int n = 0; n < GPIO_n_ports_pins[p]; n++) {
+      NRF_GPIO_regs[p].PIN_CNF[n] = 0x2; /* Disconnected out of reset */
+    }
+    INPUT_mask[p] = UINT32_MAX; /* All disconnected out of reset */
+  }
 
-	nrf_gpio_backend_init();
+  nrf_gpio_backend_init();
 }
 
 NSI_TASK(nrf_gpio_init, HW_INIT, 100);
 
 unsigned int nrf_gpio_get_number_pins_in_port(int port) {
-	return GPIO_n_ports_pins[port];
+  return GPIO_n_ports_pins[port];
 }
 
 static void nrf_gpio_eval_outputs(unsigned int port);
@@ -115,14 +115,14 @@ void nrf_gpio_eval_input(unsigned int port, unsigned int n, bool value);
  * Register a test callback to be called whenever a pin IN register changes
  */
 void nrf_gpio_test_register_in_callback(nrf_gpio_input_callback_t fptr) {
-	test_intoggle_callback = fptr;
+  test_intoggle_callback = fptr;
 }
 
 /*
  * Register a test callback to be called whenever an *output* pin changes
  */
 void nrf_gpio_test_register_out_callback(nrf_gpio_input_callback_t fptr) {
-	test_outtoggle_callback = fptr;
+  test_outtoggle_callback = fptr;
 }
 
 /*
@@ -136,7 +136,7 @@ void nrf_gpio_test_register_out_callback(nrf_gpio_input_callback_t fptr) {
  *  * value: true: high, false: low
  */
 void nrf_gpio_test_change_pin_level(unsigned int port, unsigned int n, bool value) {
-	nrf_gpio_eval_input(port, n, value);
+  nrf_gpio_eval_input(port, n, value);
 }
 
 /*
@@ -148,24 +148,24 @@ void nrf_gpio_test_change_pin_level(unsigned int port, unsigned int n, bool valu
  * Return: true (high), false (low)
  */
 bool nrf_gpio_get_pin_level(unsigned int port, unsigned int n) {
-	return (IO_level[port] >> n) & 0x1;
+  return (IO_level[port] >> n) & 0x1;
 }
 
 #define CHECK_PIN_EXISTS(port, n, dir) \
-	if (port >= NRF_GPIOS || n >= GPIO_n_ports_pins[port]) { \
-		bs_trace_error_time_line("%s: Error, attempted to toggle "dir" for nonexistent " \
+		if (port >= NRF_GPIOS || n >= GPIO_n_ports_pins[port]) { \
+			bs_trace_error_time_line("%s: Error, attempted to toggle "dir" for nonexistent " \
 					"GPIO port %i, pin %i\n", \
 					__func__, port, n); \
-	}
+		}
 
 static inline uint32_t get_enabled_inputs(unsigned int port){
-	return (~input_override[port] & ~INPUT_mask[port])
-		| (input_override[port] & input_override_connected[port]);
+  return (~input_override[port] & ~INPUT_mask[port])
+      | (input_override[port] & input_override_connected[port]);
 }
 
 static inline uint32_t get_dir(unsigned int port){
-	return (~dir_override[port] & NRF_GPIO_regs[port].DIR)
-		| (dir_override[port] & dir_override_set[port]);
+  return (~dir_override[port] & NRF_GPIO_regs[port].DIR)
+      | (dir_override[port] & dir_override_set[port]);
 }
 
 /*
@@ -197,53 +197,53 @@ static inline uint32_t get_dir(unsigned int port){
  *              *  1: high
  */
 void nrf_gpio_peri_pin_control(unsigned int port, unsigned int n,
-			      int override_output, int override_input, int override_dir,
-			      nrf_gpio_input_callback_t fptr, int new_level) {
+    int override_output, int override_input, int override_dir,
+    nrf_gpio_input_callback_t fptr, int new_level) {
 
-	if (port >= NRF_GPIOS || n >= GPIO_n_ports_pins[port]) { /* LCOV_EXCL_BR_LINE */
-		bs_trace_error_time_line("Programming error\n"); /* LCOV_EXCL_LINE */
-	}
+  if (port >= NRF_GPIOS || n >= GPIO_n_ports_pins[port]) { /* LCOV_EXCL_BR_LINE */
+    bs_trace_error_time_line("Programming error\n"); /* LCOV_EXCL_LINE */
+  }
 
-	uint32_t mask = 1<<n;
-	bool need_output_eval = false;
-	bool need_input_eval = false;
+  uint32_t mask = 1<<n;
+  bool need_output_eval = false;
+  bool need_input_eval = false;
 
-	if (override_output >= 0) {
-		out_override[port] &= ~mask;
-		out_override[port] |= (uint32_t)(override_output?1:0) << n;
-		need_output_eval = true;
-	}
-	if (override_input >= 0) {
-		input_override[port] &= ~mask;
-		input_override[port] |= (uint32_t)(override_input?1:0) << n;
+  if (override_output >= 0) {
+    out_override[port] &= ~mask;
+    out_override[port] |= (uint32_t)(override_output?1:0) << n;
+    need_output_eval = true;
+  }
+  if (override_input >= 0) {
+    input_override[port] &= ~mask;
+    input_override[port] |= (uint32_t)(override_input?1:0) << n;
 
-		input_override_connected[port] &= ~mask;
-		input_override_connected[port] |= (uint32_t)(override_input==3?1:0) << n;
+    input_override_connected[port] &= ~mask;
+    input_override_connected[port] |= (uint32_t)(override_input==3?1:0) << n;
 
-		need_input_eval = true;
-	}
-	if (override_dir >= 0) {
-		dir_override[port] &= ~mask;
-		dir_override[port] |= (uint32_t)(override_dir?1:0) << n;
+    need_input_eval = true;
+  }
+  if (override_dir >= 0) {
+    dir_override[port] &= ~mask;
+    dir_override[port] |= (uint32_t)(override_dir?1:0) << n;
 
-		dir_override_set[port] &= ~mask;
-		dir_override_set[port] |= (uint32_t)(override_dir==3?1:0) << n;
+    dir_override_set[port] &= ~mask;
+    dir_override_set[port] |= (uint32_t)(override_dir==3?1:0) << n;
 
-		need_output_eval = true;
-	}
-	per_intoggle_callbacks[port][n] = fptr;
-	if (new_level >= 0) {
-		external_OUT[port] &= ~((uint32_t)1 << n);
-		external_OUT[port] |= (uint32_t)(new_level?1:0) << n;
-		need_output_eval = true;
-	}
+    need_output_eval = true;
+  }
+  per_intoggle_callbacks[port][n] = fptr;
+  if (new_level >= 0) {
+    external_OUT[port] &= ~((uint32_t)1 << n);
+    external_OUT[port] |= (uint32_t)(new_level?1:0) << n;
+    need_output_eval = true;
+  }
 
-	if (need_output_eval) {
-		nrf_gpio_eval_outputs(port);
-	}
-	if (need_input_eval) {
-		nrf_gpio_eval_inputs(port);
-	}
+  if (need_output_eval) {
+    nrf_gpio_eval_outputs(port);
+  }
+  if (need_input_eval) {
+    nrf_gpio_eval_inputs(port);
+  }
 }
 
 /*
@@ -257,50 +257,50 @@ void nrf_gpio_peri_pin_control(unsigned int port, unsigned int n,
  */
 void nrf_gpio_peri_change_output(unsigned int port, unsigned int n, bool value)
 {
-	CHECK_PIN_EXISTS(port, n, "output"); /* LCOV_EXCL_BR_LINE */
+  CHECK_PIN_EXISTS(port, n, "output"); /* LCOV_EXCL_BR_LINE */
 
-	if (((out_override[port] >> n) & 0x1) != 1) { /* LCOV_EXCL_START */
-		bs_trace_error_time_line("%s: Programming error, a peripheral is trying to toggle "
-					"a GPIO output it does not own, GPIO port %i, pin %i\n",
-					__func__, port, n);
-	}
+  if (((out_override[port] >> n) & 0x1) != 1) { /* LCOV_EXCL_START */
+    bs_trace_error_time_line("%s: Programming error, a peripheral is trying to toggle "
+        "a GPIO output it does not own, GPIO port %i, pin %i\n",
+        __func__, port, n);
+  }
 
-	if (((get_dir(port) >> n) & 0x1) != 1) {
-		bs_trace_warning_time_line("%s: A peripheral is trying to toggle "
-					   "a GPIO output but the output is disabled, "
-					   "GPIO port %i, pin %i\n",
-					   __func__, port, n);
-	} /* LCOV_EXCL_STOP */
+  if (((get_dir(port) >> n) & 0x1) != 1) {
+    bs_trace_warning_time_line("%s: A peripheral is trying to toggle "
+        "a GPIO output but the output is disabled, "
+        "GPIO port %i, pin %i\n",
+        __func__, port, n);
+  } /* LCOV_EXCL_STOP */
 
-	external_OUT[port] &= ~((uint32_t)1 << n);
-	external_OUT[port] |= (uint32_t)value << n;
-	nrf_gpio_eval_outputs(port);
+  external_OUT[port] &= ~((uint32_t)1 << n);
+  external_OUT[port] |= (uint32_t)value << n;
+  nrf_gpio_eval_outputs(port);
 }
 
 static void nrf_gpio_update_detect_signal(unsigned int port) {
-	if (NRF_GPIO_regs[port].DETECTMODE == 0){ //gpio.detect signal from not latched detect
-		DETECT_signal[port] = (DETECT[port] != 0);
-	} else {//gpio.detect signal from latched detect
-		DETECT_signal[port] = (LDETECT[port] != 0);
-	}
+  if (NRF_GPIO_regs[port].DETECTMODE == 0){ //gpio.detect signal from not latched detect
+    DETECT_signal[port] = (DETECT[port] != 0);
+  } else {//gpio.detect signal from latched detect
+    DETECT_signal[port] = (LDETECT[port] != 0);
+  }
 }
 
 /*
  * Evaluate sense output (after a change of input or configuration)
  */
 static void nrf_gpio_eval_sense(unsigned int port){
-	/* Note SENSE_dir inverts the output */
-	DETECT[port] = (NRF_GPIO_regs[port].IN ^ SENSE_inv[port]) & SENSE_mask[port];
-	LDETECT[port] |= DETECT[port];
-	NRF_GPIO_regs[port].LATCH = LDETECT[port];
+  /* Note SENSE_dir inverts the output */
+  DETECT[port] = (NRF_GPIO_regs[port].IN ^ SENSE_inv[port]) & SENSE_mask[port];
+  LDETECT[port] |= DETECT[port];
+  NRF_GPIO_regs[port].LATCH = LDETECT[port];
 
-	bool old_DETECT_signal = DETECT_signal[port];
+  bool old_DETECT_signal = DETECT_signal[port];
 
-	nrf_gpio_update_detect_signal(port);
+  nrf_gpio_update_detect_signal(port);
 
-	if ((DETECT_signal[port] == true) && (old_DETECT_signal==false)) {
-		nrf_gpiote_port_event_raise(port);
-	}
+  if ((DETECT_signal[port] == true) && (old_DETECT_signal==false)) {
+    nrf_gpiote_port_event_raise(port);
+  }
 }
 
 /*
@@ -309,7 +309,7 @@ static void nrf_gpio_eval_sense(unsigned int port){
  * input: port: The GPIO instance number
  */
 bool nrf_gpio_get_detect_level(unsigned int port){
-	return DETECT_signal[port];
+  return DETECT_signal[port];
 }
 
 /*
@@ -318,19 +318,19 @@ bool nrf_gpio_get_detect_level(unsigned int port){
  */
 static void nrf_gpio_input_change_sideeffects(unsigned int port,unsigned int n)
 {
-	if (per_intoggle_callbacks[port][n] != NULL) {
-		per_intoggle_callbacks[port][n](port, n, (NRF_GPIO_regs[port].IN >> n) & 0x1);
-	}
-	if (test_intoggle_callback != NULL) {
-		test_intoggle_callback(port, n, (NRF_GPIO_regs[port].IN >> n) & 0x1);
-	}
+  if (per_intoggle_callbacks[port][n] != NULL) {
+    per_intoggle_callbacks[port][n](port, n, (NRF_GPIO_regs[port].IN >> n) & 0x1);
+  }
+  if (test_intoggle_callback != NULL) {
+    test_intoggle_callback(port, n, (NRF_GPIO_regs[port].IN >> n) & 0x1);
+  }
 }
 
 /*
  * Get the level of the IN signal for GPIO <port> pin <n>
  */
 bool nrf_gpio_get_IN(unsigned int port, unsigned int n) {
-	return (NRF_GPIO_regs[port].IN >> n) & 0x1;
+  return (NRF_GPIO_regs[port].IN >> n) & 0x1;
 }
 
 /*
@@ -339,18 +339,18 @@ bool nrf_gpio_get_IN(unsigned int port, unsigned int n) {
  */
 static void nrf_gpio_eval_inputs(unsigned int port)
 {
-	uint32_t new_IN = IO_level[port] & get_enabled_inputs(port);
+  uint32_t new_IN = IO_level[port] & get_enabled_inputs(port);
 
-	uint32_t diff = new_IN ^ NRF_GPIO_regs[port].IN;
+  uint32_t diff = new_IN ^ NRF_GPIO_regs[port].IN;
 
-	NRF_GPIO_regs[port].IN = new_IN;
+  NRF_GPIO_regs[port].IN = new_IN;
 
-	for (int n = __builtin_ffs(diff) - 1; n >= 0; n = __builtin_ffs(diff) - 1) {
-		nrf_gpio_input_change_sideeffects(port, n);
-		diff &= ~(1 << n);
-	}
+  for (int n = __builtin_ffs(diff) - 1; n >= 0; n = __builtin_ffs(diff) - 1) {
+    nrf_gpio_input_change_sideeffects(port, n);
+    diff &= ~(1 << n);
+  }
 
-	nrf_gpio_eval_sense(port);
+  nrf_gpio_eval_sense(port);
 }
 
 /*
@@ -367,28 +367,28 @@ static void nrf_gpio_eval_inputs(unsigned int port)
  */
 void nrf_gpio_eval_input(unsigned int port, unsigned int n, bool value)
 {
-	CHECK_PIN_EXISTS(port, n, "input"); /* LCOV_EXCL_BR_LINE */
+  CHECK_PIN_EXISTS(port, n, "input"); /* LCOV_EXCL_BR_LINE */
 
-	uint32_t dir = get_dir(port);
+  uint32_t dir = get_dir(port);
 
-	if ((dir >> n) & 0x1) { /* LCOV_EXCL_START */
-		bs_trace_warning_time_line("%s: Attempted to drive externally a pin which is "
-					   "currently being driven by the SOC. It will be ignored."
-					   "GPIO port %i, pin %i\n",
-					   __func__, port, n);
-		return;
-	}			/* LCOV_EXCL_STOP */
+  if ((dir >> n) & 0x1) { /* LCOV_EXCL_START */
+    bs_trace_warning_time_line("%s: Attempted to drive externally a pin which is "
+        "currently being driven by the SOC. It will be ignored."
+        "GPIO port %i, pin %i\n",
+        __func__, port, n);
+    return;
+  }			/* LCOV_EXCL_STOP */
 
-	int diff = ((IO_level[port] >> n) & 0x1) ^ (uint32_t)value;
+  int diff = ((IO_level[port] >> n) & 0x1) ^ (uint32_t)value;
 
-	if (diff == 0) {
-		/* No toggle */
-		return;
-	}
+  if (diff == 0) {
+    /* No toggle */
+    return;
+  }
 
-	IO_level[port] ^= (uint32_t)1 << n;
+  IO_level[port] ^= (uint32_t)1 << n;
 
-	nrf_gpio_eval_inputs(port);
+  nrf_gpio_eval_inputs(port);
 }
 
 /*
@@ -396,11 +396,11 @@ void nrf_gpio_eval_input(unsigned int port, unsigned int n, bool value)
  */
 static void nrf_gpio_output_change_sideeffects(unsigned int port,unsigned  int n, bool value)
 {
-	nrf_gpio_backend_write_output_change(port, n, value);
-	if (test_outtoggle_callback != NULL) {
-		test_outtoggle_callback(port, n, value);
-	}
-	nrf_gpio_backend_short_propagate(port, n, value);
+  nrf_gpio_backend_write_output_change(port, n, value);
+  if (test_outtoggle_callback != NULL) {
+    test_outtoggle_callback(port, n, value);
+  }
+  nrf_gpio_backend_short_propagate(port, n, value);
 }
 
 /*
@@ -408,34 +408,34 @@ static void nrf_gpio_output_change_sideeffects(unsigned int port,unsigned  int n
  */
 static void nrf_gpio_eval_outputs(unsigned int port)
 {
-	/* Actual level in the pin, but only of the bits driven by output: */
-	static uint32_t O_level[NRF_GPIOS];
+  /* Actual level in the pin, but only of the bits driven by output: */
+  static uint32_t O_level[NRF_GPIOS];
 
-	uint32_t dir = get_dir(port); /* Which pins are driven by output */
+  uint32_t dir = get_dir(port); /* Which pins are driven by output */
 
-	uint32_t out = (~out_override[port] & NRF_GPIO_regs[port].OUT)
-			| (out_override[port] & external_OUT[port]);
+  uint32_t out = (~out_override[port] & NRF_GPIO_regs[port].OUT)
+			    | (out_override[port] & external_OUT[port]);
 
-	uint32_t new_output = dir & out;
+  uint32_t new_output = dir & out;
 
-	uint32_t diff = new_output ^ O_level[port];
+  uint32_t diff = new_output ^ O_level[port];
 
-	if (diff == 0) {
-		return;
-	}
+  if (diff == 0) {
+    return;
+  }
 
-	O_level[port] = new_output;
+  O_level[port] = new_output;
 
-	IO_level[port] &= ~dir;
-	IO_level[port] |= O_level[port];
+  IO_level[port] &= ~dir;
+  IO_level[port] |= O_level[port];
 
-	for (int n = __builtin_ffs(diff) - 1; n >= 0; n = __builtin_ffs(diff) - 1) {
-		nrf_gpio_output_change_sideeffects(port, n, (new_output >> n) & 0x1);
-		diff &= ~(1 << n);
-	}
+  for (int n = __builtin_ffs(diff) - 1; n >= 0; n = __builtin_ffs(diff) - 1) {
+    nrf_gpio_output_change_sideeffects(port, n, (new_output >> n) & 0x1);
+    diff &= ~(1 << n);
+  }
 
-	/* Inputs may be connected to pins driven by outputs, let's check */
-	nrf_gpio_eval_inputs(port);
+  /* Inputs may be connected to pins driven by outputs, let's check */
+  nrf_gpio_eval_inputs(port);
 }
 
 
@@ -444,128 +444,128 @@ static void nrf_gpio_eval_outputs(unsigned int port)
  */
 
 void nrf_gpio_regw_sideeffects_OUT(unsigned int port) {
-	nrf_gpio_eval_outputs(port);
+  nrf_gpio_eval_outputs(port);
 }
 
 void nrf_gpio_regw_sideeffects_OUTSET(unsigned int port) {
-	if (NRF_GPIO_regs[port].OUTSET) {
-		NRF_GPIO_regs[port].OUT |= NRF_GPIO_regs[port].OUTSET;
-		nrf_gpio_eval_outputs(port);
-	}
-	NRF_GPIO_regs[port].OUTSET = NRF_GPIO_regs[port].OUT;
+  if (NRF_GPIO_regs[port].OUTSET) {
+    NRF_GPIO_regs[port].OUT |= NRF_GPIO_regs[port].OUTSET;
+    nrf_gpio_eval_outputs(port);
+  }
+  NRF_GPIO_regs[port].OUTSET = NRF_GPIO_regs[port].OUT;
 }
 
 void nrf_gpio_regw_sideeffects_OUTCLR(unsigned int port) {
-	if (NRF_GPIO_regs[port].OUTCLR) {
-		NRF_GPIO_regs[port].OUT &= ~NRF_GPIO_regs[port].OUTCLR;
-		NRF_GPIO_regs[port].OUTCLR = 0;
-		nrf_gpio_eval_outputs(port);
-	}
+  if (NRF_GPIO_regs[port].OUTCLR) {
+    NRF_GPIO_regs[port].OUT &= ~NRF_GPIO_regs[port].OUTCLR;
+    NRF_GPIO_regs[port].OUTCLR = 0;
+    nrf_gpio_eval_outputs(port);
+  }
 }
 
 void nrf_gpio_regw_sideeffects_DIR(unsigned int port) {
-	/* Mirror change into PIN_CNF[*].DIR */
-	for (int n = 0; n < GPIO_n_ports_pins[port]; n++ ) {
-		NRF_GPIO_regs[port].PIN_CNF[n] &= ~GPIO_PIN_CNF_DIR_Msk;
-		NRF_GPIO_regs[port].PIN_CNF[n] |= (NRF_GPIO_regs[port].DIR >> n) & 0x1;
-	}
+  /* Mirror change into PIN_CNF[*].DIR */
+  for (int n = 0; n < GPIO_n_ports_pins[port]; n++ ) {
+    NRF_GPIO_regs[port].PIN_CNF[n] &= ~GPIO_PIN_CNF_DIR_Msk;
+    NRF_GPIO_regs[port].PIN_CNF[n] |= (NRF_GPIO_regs[port].DIR >> n) & 0x1;
+  }
 
-	nrf_gpio_eval_outputs(port);
+  nrf_gpio_eval_outputs(port);
 }
 
 void nrf_gpio_regw_sideeffects_DIRSET(unsigned int port) {
-	if (NRF_GPIO_regs[port].DIRSET) {
-		NRF_GPIO_regs[port].DIR |= NRF_GPIO_regs[port].DIRSET;
-		nrf_gpio_regw_sideeffects_DIR(port);
-	}
-	NRF_GPIO_regs[port].DIRSET = NRF_GPIO_regs[port].DIR;
+  if (NRF_GPIO_regs[port].DIRSET) {
+    NRF_GPIO_regs[port].DIR |= NRF_GPIO_regs[port].DIRSET;
+    nrf_gpio_regw_sideeffects_DIR(port);
+  }
+  NRF_GPIO_regs[port].DIRSET = NRF_GPIO_regs[port].DIR;
 }
 
 void nrf_gpio_regw_sideeffects_DIRCLR(unsigned int port) {
-	if (NRF_GPIO_regs[port].DIRCLR) {
-		NRF_GPIO_regs[port].DIR &= ~NRF_GPIO_regs[port].DIRCLR;
-		NRF_GPIO_regs[port].DIRCLR = 0;
-		nrf_gpio_regw_sideeffects_DIR(port);
-	}
+  if (NRF_GPIO_regs[port].DIRCLR) {
+    NRF_GPIO_regs[port].DIR &= ~NRF_GPIO_regs[port].DIRCLR;
+    NRF_GPIO_regs[port].DIRCLR = 0;
+    nrf_gpio_regw_sideeffects_DIR(port);
+  }
 }
 
 void nrf_gpio_regw_sideeffects_LATCH(unsigned int port) {
 
-	/* LATCH contains what SW wrote: */
-	uint32_t sw_input = NRF_GPIO_regs[port].LATCH;
+  /* LATCH contains what SW wrote: */
+  uint32_t sw_input = NRF_GPIO_regs[port].LATCH;
 
-	/* Whatever bits SW set to 1, it is trying to clear: */
-	LDETECT[port] &= ~sw_input;
+  /* Whatever bits SW set to 1, it is trying to clear: */
+  LDETECT[port] &= ~sw_input;
 
-	/* But where the sense output is high, the bits are kept high: */
-	LDETECT[port] |= DETECT[port];
+  /* But where the sense output is high, the bits are kept high: */
+  LDETECT[port] |= DETECT[port];
 
-	NRF_GPIO_regs[port].LATCH = LDETECT[port];
+  NRF_GPIO_regs[port].LATCH = LDETECT[port];
 
-	nrf_gpio_update_detect_signal(port);
+  nrf_gpio_update_detect_signal(port);
 
-	/*
-	 * Note the text from the spec:
-	 *   If one or more bits in the LATCH register are '1' after the CPU has
-	 *   performed a clear operation on the LATCH registers, a rising edge will be generated
-	 *   on the LDETECT signal.
-	 * "the CPU has performed a clear operation" == after writing LATCH with any bit to 1
-	 */
-	if (sw_input != 0 && LDETECT[port] != 0 && NRF_GPIO_regs[port].DETECTMODE == 1) {
-		nrf_gpiote_port_event_raise(port);
-	}
+  /*
+   * Note the text from the spec:
+   *   If one or more bits in the LATCH register are '1' after the CPU has
+   *   performed a clear operation on the LATCH registers, a rising edge will be generated
+   *   on the LDETECT signal.
+   * "the CPU has performed a clear operation" == after writing LATCH with any bit to 1
+   */
+  if (sw_input != 0 && LDETECT[port] != 0 && NRF_GPIO_regs[port].DETECTMODE == 1) {
+    nrf_gpiote_port_event_raise(port);
+  }
 }
 
 void nrf_gpio_regw_sideeffects_DETECTMODE(unsigned int port) {
-	nrf_gpio_eval_sense(port);
+  nrf_gpio_eval_sense(port);
 }
 
 void nrf_gpio_regw_sideeffects_PIN_CNF(unsigned int port,unsigned  int n) {
 
-	bool need_output_eval = false;
-	bool need_input_eval = false;
-	bool need_sense_eval = false;
+  bool need_output_eval = false;
+  bool need_input_eval = false;
+  bool need_sense_eval = false;
 
-	int dir = NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_DIR_Msk;
+  int dir = NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_DIR_Msk;
 
-	if (dir != ((NRF_GPIO_regs[port].DIR >> n) & 0x1)) {
-		NRF_GPIO_regs[port].DIR ^= 1 << n;
-		need_output_eval = true;
-	}
+  if (dir != ((NRF_GPIO_regs[port].DIR >> n) & 0x1)) {
+    NRF_GPIO_regs[port].DIR ^= 1 << n;
+    need_output_eval = true;
+  }
 
-	/* Note: DRIVE and PULL are not yet used in this model
+  /* Note: DRIVE and PULL are not yet used in this model
 	int pull = (NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_PULL_Msk)
 					>> GPIO_PIN_CNF_PULL_Pos;
 
 	int drive = (NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_DRIVE_Msk)
 					>> GPIO_PIN_CNF_DRIVE_Pos;
-	*/
+   */
 
-	int input = (NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_INPUT_Msk)
-			>> GPIO_PIN_CNF_INPUT_Pos;
-	if (input != ((INPUT_mask[port] >> n) & 0x1)) {
-		INPUT_mask[port] ^= 1 << n;
-		need_input_eval = true;
-	}
+  int input = (NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_INPUT_Msk)
+			    >> GPIO_PIN_CNF_INPUT_Pos;
+  if (input != ((INPUT_mask[port] >> n) & 0x1)) {
+    INPUT_mask[port] ^= 1 << n;
+    need_input_eval = true;
+  }
 
-	int sense = (NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_SENSE_Msk)
-			>> GPIO_PIN_CNF_SENSE_Pos;
-	if (((sense >> 1) & 0x1) != ((SENSE_mask[port] >> n) & 0x1)) {
-		SENSE_mask[port] ^= 1 << n;
-		need_sense_eval = true;
-	}
-	if ((sense & 0x1) != ((SENSE_inv[port] >> n) & 0x1)) {
-		SENSE_inv[port] ^= 1 << n;
-		need_sense_eval = true;
-	}
+  int sense = (NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_SENSE_Msk)
+			    >> GPIO_PIN_CNF_SENSE_Pos;
+  if (((sense >> 1) & 0x1) != ((SENSE_mask[port] >> n) & 0x1)) {
+    SENSE_mask[port] ^= 1 << n;
+    need_sense_eval = true;
+  }
+  if ((sense & 0x1) != ((SENSE_inv[port] >> n) & 0x1)) {
+    SENSE_inv[port] ^= 1 << n;
+    need_sense_eval = true;
+  }
 
-	if (need_output_eval) {
-		nrf_gpio_eval_outputs(port);
-	}
-	if (need_input_eval) {
-		nrf_gpio_eval_inputs(port);
-	}
-	if (need_sense_eval) {
-		nrf_gpio_eval_sense(port);
-	}
+  if (need_output_eval) {
+    nrf_gpio_eval_outputs(port);
+  }
+  if (need_input_eval) {
+    nrf_gpio_eval_inputs(port);
+  }
+  if (need_sense_eval) {
+    nrf_gpio_eval_sense(port);
+  }
 }

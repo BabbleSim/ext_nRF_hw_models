@@ -38,8 +38,8 @@ void nrf_gpio_test_change_pin_level(unsigned int port, unsigned int n, bool valu
 bool nrf_gpio_get_pin_level(unsigned int port, unsigned int n);
 
 void nrf_gpio_peri_pin_control(unsigned int port, unsigned int n,
-			      int override_output, int override_input, int override_dir,
-			      nrf_gpio_input_callback_t fptr, int new_level);
+                               int override_output, int override_input, int override_dir,
+                               nrf_gpio_input_callback_t fptr, int new_level);
 void nrf_gpio_peri_change_output(unsigned int port, unsigned int n, bool value);
 
 bool nrf_gpio_get_detect_level(unsigned int port);
