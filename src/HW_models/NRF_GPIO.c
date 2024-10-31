@@ -32,6 +32,16 @@
  *  * In real HW, after a write to LATCH, the DETECT event output to the GPIOTE is kept low for
  *    a few clocks, before being raised again (if it needs to), in the model the new pulse/raise
  *    is sent instantaneously to the GPIOTE
+ *
+ * 54L notes:
+ *  * Split security distinctions are ignored
+ *    == there is no distinction for accesses from secure or non secure bus masters or the S/NS address ranges.
+ *    Accessing either through the S or NS address range all registers are equally accessible.
+ *
+ *  * PIN_CNF[n].CTRLSEL is ignored by now, but other peripherals can still take over a pin (irrespectively of .CTRLSEL)
+ *    If another peripheral HW model has taken ownership of a pin, you will get a warning if you try to driver it through
+ *    the GPIO registers. You will be able to read a pin input level even if another peripheral has control over it,
+ *    while the pin input driver is enabled.
  */
 
 #include <stdint.h>
@@ -47,40 +57,41 @@
 #include "bs_tracing.h"
 #include "nsi_tasks.h"
 
-NRF_GPIO_Type NRF_GPIO_regs[NRF_GPIOS];
+NRF_GPIO_Type NRF_GPIO_regs[NHW_GPIO_TOTAL_INST];
 
 /* Number of pins per port: */
-static int GPIO_n_ports_pins[NRF_GPIOS] = NRF_GPIO_PORTS_PINS;
+static int GPIO_n_ports_pins[NHW_GPIO_TOTAL_INST] = NHW_GPIO_NBR_PINS;
 
-static uint32_t IO_level[NRF_GPIOS]; /* Actual level in the pin */
-static uint32_t DETECT[NRF_GPIOS];   /* Sense output / unlatched/non-sticky detect */
-static uint32_t LDETECT[NRF_GPIOS];  /* Latched sense output */
-static bool DETECT_signal[NRF_GPIOS]; /* Individual detect signal to the GPIOTE */
+static uint32_t IO_level[NHW_GPIO_TOTAL_INST]; /* Actual level in the pin */
+static uint32_t DETECT[NHW_GPIO_TOTAL_INST];   /* Sense output / unlatched/non-sticky detect */
+static uint32_t LDETECT[NHW_GPIO_TOTAL_INST];  /* Latched sense output */
+static bool DETECT_signal[NHW_GPIO_TOTAL_INST]; /* Individual detect signal to the GPIOTE */
 
-static uint32_t INPUT_mask[NRF_GPIOS]; /* As a 32bit mask, PIN_CNF[*].INPUT (0: enabled; 1: disabled)*/
-static uint32_t SENSE_mask[NRF_GPIOS]; /* As a 32bit mask, PIN_CNF[*].SENSE.en (1: enabled; 0: disabled)*/
-static uint32_t SENSE_inv[NRF_GPIOS];  /* As a 32bit mask, PIN_CNF[*].SENSE.inv (1: inverted;0: not inverted) */
+static uint32_t INPUT_mask[NHW_GPIO_TOTAL_INST]; /* As a 32bit mask, PIN_CNF[*].INPUT (0: enabled; 1: disabled)*/
+static uint32_t SENSE_mask[NHW_GPIO_TOTAL_INST]; /* As a 32bit mask, PIN_CNF[*].SENSE.en (1: enabled; 0: disabled)*/
+static uint32_t SENSE_inv[NHW_GPIO_TOTAL_INST];  /* As a 32bit mask, PIN_CNF[*].SENSE.inv (1: inverted;0: not inverted) */
 
 /*
  * Is the output driven by another peripheral (1) or the GPIO directly (0).
  * Note that we don't keep track of who "owns" a pin, only that somebody else does
  */
-static uint32_t out_override[NRF_GPIOS];
+static uint32_t out_override[NHW_GPIO_TOTAL_INST];
 /* Out value provided by other peripherals */
-static uint32_t external_OUT[NRF_GPIOS];
+static uint32_t external_OUT[NHW_GPIO_TOTAL_INST];
 
 /* Is the pin input controlled by a peripheral(1) or the GPIO(0) */
-static uint32_t input_override[NRF_GPIOS];
+static uint32_t input_override[NHW_GPIO_TOTAL_INST];
 /* If input_override, is the peripheral configuring the input buffer as connected (1) or disconnected (0) */
-static uint32_t input_override_connected[NRF_GPIOS];
+static uint32_t input_override_connected[NHW_GPIO_TOTAL_INST];
 
 /* Is "dir" controlled by a peripheral(1) or the GPIO(0) */
-static uint32_t dir_override[NRF_GPIOS];
+static uint32_t dir_override[NHW_GPIO_TOTAL_INST];
 /* If dir_override is set, is the peripheral configuring the output as connected (1) or disconnected (0) */
-static uint32_t dir_override_set[NRF_GPIOS];
+static uint32_t dir_override_set[NHW_GPIO_TOTAL_INST];
 
 /* Callbacks for peripherals to be informed of input changes */
-static nrf_gpio_input_callback_t per_intoggle_callbacks[NRF_GPIOS][NRF_GPIO_MAX_PINS_PER_PORT];
+static nrf_gpio_input_callback_hw_t per_intoggle_callbacks[NHW_GPIO_TOTAL_INST][NHW_GPIO_MAX_PINS_PER_PORT];
+static void *per_intoggle_cb_data[NHW_GPIO_TOTAL_INST][NHW_GPIO_MAX_PINS_PER_PORT];
 /* Callbacks for test code to be informed of input/output changes: */
 static nrf_gpio_input_callback_t test_intoggle_callback;
 static nrf_gpio_input_callback_t test_outtoggle_callback;
@@ -91,7 +102,7 @@ static nrf_gpio_input_callback_t test_outtoggle_callback;
 static void nrf_gpio_init(void) {
   memset(NRF_GPIO_regs, 0, sizeof(NRF_GPIO_regs));
 
-  for (int p = 0; p < NRF_GPIOS; p ++) {
+  for (int p = 0; p < NHW_GPIO_TOTAL_INST; p ++) {
     for (int n = 0; n < GPIO_n_ports_pins[p]; n++) {
       NRF_GPIO_regs[p].PIN_CNF[n] = 0x2; /* Disconnected out of reset */
     }
@@ -152,7 +163,7 @@ bool nrf_gpio_get_pin_level(unsigned int port, unsigned int n) {
 }
 
 #define CHECK_PIN_EXISTS(port, n, dir) \
-		if (port >= NRF_GPIOS || n >= GPIO_n_ports_pins[port]) { \
+		if (port >= NHW_GPIO_TOTAL_INST || n >= GPIO_n_ports_pins[port]) { \
 			bs_trace_error_time_line("%s: Error, attempted to toggle "dir" for nonexistent " \
 					"GPIO port %i, pin %i\n", \
 					__func__, port, n); \
@@ -198,9 +209,9 @@ static inline uint32_t get_dir(unsigned int port){
  */
 void nrf_gpio_peri_pin_control(unsigned int port, unsigned int n,
     int override_output, int override_input, int override_dir,
-    nrf_gpio_input_callback_t fptr, int new_level) {
+    nrf_gpio_input_callback_hw_t fptr, void *fptr_data, int new_level) {
 
-  if (port >= NRF_GPIOS || n >= GPIO_n_ports_pins[port]) { /* LCOV_EXCL_BR_LINE */
+  if (port >= NHW_GPIO_TOTAL_INST || n >= GPIO_n_ports_pins[port]) { /* LCOV_EXCL_BR_LINE */
     bs_trace_error_time_line("Programming error\n"); /* LCOV_EXCL_LINE */
   }
 
@@ -232,6 +243,7 @@ void nrf_gpio_peri_pin_control(unsigned int port, unsigned int n,
     need_output_eval = true;
   }
   per_intoggle_callbacks[port][n] = fptr;
+  per_intoggle_cb_data[port][n] = fptr_data;
   if (new_level >= 0) {
     external_OUT[port] &= ~((uint32_t)1 << n);
     external_OUT[port] |= (uint32_t)(new_level?1:0) << n;
@@ -299,7 +311,7 @@ static void nrf_gpio_eval_sense(unsigned int port){
   nrf_gpio_update_detect_signal(port);
 
   if ((DETECT_signal[port] == true) && (old_DETECT_signal==false)) {
-    nrf_gpiote_port_event_raise(port);
+    nrf_gpiote_port_detect_raise(0 /*TODO the GPIOTE instance this GPIO has its DETECT connected to*/, port);
   }
 }
 
@@ -313,24 +325,26 @@ bool nrf_gpio_get_detect_level(unsigned int port){
 }
 
 /*
- * The input has changed and the driver is connected,
- * notify as necessary
- */
-static void nrf_gpio_input_change_sideeffects(unsigned int port,unsigned int n)
-{
-  if (per_intoggle_callbacks[port][n] != NULL) {
-    per_intoggle_callbacks[port][n](port, n, (NRF_GPIO_regs[port].IN >> n) & 0x1);
-  }
-  if (test_intoggle_callback != NULL) {
-    test_intoggle_callback(port, n, (NRF_GPIO_regs[port].IN >> n) & 0x1);
-  }
-}
-
-/*
  * Get the level of the IN signal for GPIO <port> pin <n>
  */
 bool nrf_gpio_get_IN(unsigned int port, unsigned int n) {
   return (NRF_GPIO_regs[port].IN >> n) & 0x1;
+}
+
+/*
+ * The input has changed and the driver is connected,
+ * notify as necessary
+ */
+static void nrf_gpio_input_change_sideeffects(unsigned int port, unsigned int n)
+{
+  bool level = nrf_gpio_get_IN(port,n);
+
+  if (per_intoggle_callbacks[port][n] != NULL) {
+    per_intoggle_callbacks[port][n](port, n, level, per_intoggle_cb_data[port][n]);
+  }
+  if (test_intoggle_callback != NULL) {
+    test_intoggle_callback(port, n, level);
+  }
 }
 
 /*
@@ -409,7 +423,7 @@ static void nrf_gpio_output_change_sideeffects(unsigned int port,unsigned  int n
 static void nrf_gpio_eval_outputs(unsigned int port)
 {
   /* Actual level in the pin, but only of the bits driven by output: */
-  static uint32_t O_level[NRF_GPIOS];
+  static uint32_t O_level[NHW_GPIO_TOTAL_INST];
 
   uint32_t dir = get_dir(port); /* Which pins are driven by output */
 
@@ -512,7 +526,7 @@ void nrf_gpio_regw_sideeffects_LATCH(unsigned int port) {
    * "the CPU has performed a clear operation" == after writing LATCH with any bit to 1
    */
   if (sw_input != 0 && LDETECT[port] != 0 && NRF_GPIO_regs[port].DETECTMODE == 1) {
-    nrf_gpiote_port_event_raise(port);
+    nrf_gpiote_port_detect_raise(0 /*TODO the GPIOTE instance this GPIO has its DETECT connected to*/, port);
   }
 }
 

@@ -77,9 +77,9 @@ extern NRF_GPIO_Type NRF_GPIO_regs[];
 #define NRF_P0_BASE                       (&NRF_GPIO_regs[0])
 #undef NRF_P1_BASE
 #define NRF_P1_BASE                       (&NRF_GPIO_regs[1])
-extern NRF_GPIOTE_Type NRF_GPIOTE_regs;
+extern NRF_GPIOTE_Type NRF_GPIOTE_regs[];
 #undef NRF_GPIOTE_BASE
-#define NRF_GPIOTE_BASE                   (&NRF_GPIOTE_regs)
+#define NRF_GPIOTE_BASE                   (&NRF_GPIOTE_regs[NHW_GPIOTE_0])
 extern NRF_MWU_Type NRF_MWU_regs;
 #undef NRF_MWU_BASE
 #define NRF_MWU_BASE                      (&NRF_MWU_regs)

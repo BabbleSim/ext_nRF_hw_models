@@ -64,9 +64,20 @@
                         } /*Only core,SWI0..5_EGU0_IRQn*/
 #define NHW_EGU_N_EVENTS {16, 16, 16, 16, 16, 16}
 
+#define NHW_GPIO_TOTAL_INST 2
+#define NHW_GPIO_P0 0
+#define NHW_GPIO_P1 1
+#define NHW_GPIO_MAX_PINS_PER_PORT 32
+#define NHW_GPIO_NBR_PINS {32, 10} /* Number of IOs per port */
+#define NHW_GPIO_PARTNER_GPIOTE {0, 0} /* GPIOTE nbr to which the DETECT signal(s) will be sent */
+#define NHW_GPIO_HAS_PIN_SENSE {1} /* Per instance, does it have pin sense/detect mechanism */
+
 #define NHW_GPIOTE_TOTAL_INST 1
 #define NHW_GPIOTE_0 0
-#define NHW_GPIOTE_INT_MAP {{0 , 6}} /*Only core,GPIOTE_IRQn*/
+#define NHW_GPIOTE_N_INT 1 /* Number of interrupts lines, common for all instances */
+#define NHW_GPIOTE_INT_MAP {{{0 , 6}}} /* Only core, GPIOTE_IRQn */
+#define NHW_GPIOTE_MAX_CHANNELS 8    /* Maximum number of channels in any instance */
+#define NHW_GPIOTE_CHANNELS {8} /* Number of channels per instance */
 
 #define NHW_INTCTRL_TOTAL_INST 1
 #define NHW_INTCTRL_MAX_INTLINES 48
@@ -523,6 +534,31 @@
                          * */
 #define NHW_EGU_DPPI_MAP {1, 2} /* Radio, Peri */
 #define NHW_EGU_N_EVENTS {16, 6}
+
+#define NHW_GPIO_TOTAL_INST 3
+#define NHW_GPIO_P0 0
+#define NHW_GPIO_P1 1
+#define NHW_GPIO_P2 2
+#define NHW_GPIO_MAX_PINS_PER_PORT 32
+#define NHW_GPIO_NBR_PINS {7, 17, 11} /* Number of IOs per port */
+#define NHW_GPIO_PARTNER_GPIOTE {1, 0, -1} /* P0->GPIOTE30, P1->GPIOTE20, P2->nothing */
+//TODO:
+#define NHW_GPIO_HAS_PIN_SENSE {1, 1, 0} /* Per instance, does it have pin sense/detect mechanism */
+
+#define NHW_GPIOTE_TOTAL_INST 2
+#define NHW_GPIOTE_20 0
+#define NHW_GPIOTE_30 1
+#define NHW_GPIOTE_MAX_CHANNELS 8    /* Maximum number of channels in any instance */
+#define NHW_GPIOTE_CHANNELS {8, 4}   /* Number of channels per instance */
+#define NHW_GPIOTE_N_INT 2 /* Number of interrupts lines, common for all instances */
+#define NHW_GPIOTE_INT_MAP {{{0, 218},  \
+                             {0, 219}}, \
+                            {{0, 268},  \
+                             {0, 269}}}
+                            /* App, GPIOTE20_0_IRQn */
+                            /* App, GPIOTE20_1_IRQn */
+                            /* App, GPIOTE30_0_IRQn */
+                            /* App, GPIOTE30_1_IRQn */
 
 #define NHW_GRTC_TOTAL_INST 1
 #define NHW_GRTC_N_INT 4

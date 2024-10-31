@@ -14,10 +14,6 @@
 extern "C"{
 #endif
 
-#define NRF_GPIOS 2
-#define NRF_GPIO_MAX_PINS_PER_PORT 32
-#define NRF_GPIO_PORTS_PINS {32, 10} /* Number of IOs per port */
-
 /*
  * Callback another peripheral or tests can register if it wants to be called when an
  * input/output is toggled.
@@ -28,6 +24,7 @@ extern "C"{
  *  * value: the new value (true: high, false: low)
  */
 typedef void (*nrf_gpio_input_callback_t)(unsigned int port, unsigned int n, bool value);
+typedef void (*nrf_gpio_input_callback_hw_t)(unsigned int port, unsigned int n, bool value, void *f_data);
 
 
 unsigned int nrf_gpio_get_number_pins_in_port(int port);
@@ -39,7 +36,7 @@ bool nrf_gpio_get_pin_level(unsigned int port, unsigned int n);
 
 void nrf_gpio_peri_pin_control(unsigned int port, unsigned int n,
                                int override_output, int override_input, int override_dir,
-                               nrf_gpio_input_callback_t fptr, int new_level);
+                               nrf_gpio_input_callback_hw_t fptr, void *fptr_data, int new_level);
 void nrf_gpio_peri_change_output(unsigned int port, unsigned int n, bool value);
 
 bool nrf_gpio_get_detect_level(unsigned int port);

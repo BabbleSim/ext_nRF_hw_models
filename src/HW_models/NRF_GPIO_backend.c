@@ -42,7 +42,7 @@ static char *gpio_conf_file_path = NULL; /* Possible file for configuration (sho
 static struct {
 	uint8_t port;
 	uint8_t pin;
-} shorts[NRF_GPIOS][NRF_GPIO_MAX_PINS_PER_PORT][MAX_SHORTS];
+} shorts[NHW_GPIO_TOTAL_INST][NHW_GPIO_MAX_PINS_PER_PORT][MAX_SHORTS];
 
 static FILE *output_file_ptr; /* File pointer for gpio_out_file_path */
 
@@ -224,15 +224,15 @@ void nrf_gpio_backend_register_short(uint8_t Port_out, uint8_t Pin_out,
 		bs_trace_error_line("%s: Number of supported shorts per output (%i) exceeded\n",
 				__func__, MAX_SHORTS);
 	}
-	if (Port_out >= NRF_GPIOS) {
+	if (Port_out >= NHW_GPIO_TOTAL_INST) {
 		bs_trace_error_time_line("%s: GPIO configuration file attempted to set short from "
 				"non existing GPIO port (%u>=%u)\n",
-				__func__, Port_out, NRF_GPIOS);
+				__func__, Port_out, NHW_GPIO_TOTAL_INST);
 	}
-	if (Port_in >= NRF_GPIOS) {
+	if (Port_in >= NHW_GPIO_TOTAL_INST) {
 		bs_trace_error_time_line("%s: GPIO configuration file attempted to set short to "
 				"non existing GPIO port (%u>=%u)\n",
-				__func__, Port_in, NRF_GPIOS);
+				__func__, Port_in, NHW_GPIO_TOTAL_INST);
 	}
 	max_pins = nrf_gpio_get_number_pins_in_port(Port_out);
 	if (Pin_out >= max_pins) {
@@ -347,10 +347,10 @@ static void nrf_gpio_input_process_next_time(char *buf)
 			bs_trace_error_time_line("%s: GPIO input file went back in time(%s)\n",
 						__func__, buf);
 		}
-		if (port >= NRF_GPIOS) {
+		if (port >= NHW_GPIO_TOTAL_INST) {
 			bs_trace_error_time_line("%s: GPIO input file attempted to access not "
 						"existing GPIO port (%u>=%u) (%s)\n",
-						__func__, port, NRF_GPIOS, buf);
+						__func__, port, NHW_GPIO_TOTAL_INST, buf);
 		}
 		unsigned int max_pins = nrf_gpio_get_number_pins_in_port(port);
 		if (pin >= max_pins) {

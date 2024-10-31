@@ -39,67 +39,81 @@
  */
 
 #include <stdint.h>
+#include "NHW_config.h"
 #include "NRF_GPIOTE.h"
 #include "hal/nrf_gpiote.h"
 #include "bs_tracing.h"
 
+static int gpiote_number_from_ptr(NRF_GPIOTE_Type const * p_reg){
+  int i = ( (int)p_reg - (int)&NRF_GPIOTE_regs[0] ) / sizeof(NRF_GPIOTE_Type);
+  return i;
+}
+
 void nrf_gpiote_task_trigger(NRF_GPIOTE_Type * p_reg, nrf_gpiote_task_t task)
 {
-	uint32_t *reg = (uint32_t *)((uintptr_t)p_reg + task);
-	*(volatile uint32_t *)reg = 0x1UL;
+  uint32_t *reg = (uint32_t *)((uintptr_t)p_reg + task);
+  *(volatile uint32_t *)reg = 0x1UL;
 
-	if ((reg >= &NRF_GPIOTE_regs.TASKS_OUT[0])
-	    && (reg<= &NRF_GPIOTE_regs.TASKS_OUT[N_GPIOTE_CHANNELS])) {
-		nrf_gpiote_regw_sideeffects_TASKS_OUT(reg - &NRF_GPIOTE_regs.TASKS_OUT[0]);
-	} else if ((reg >= &NRF_GPIOTE_regs.TASKS_SET[0])
-		   && (reg<= &NRF_GPIOTE_regs.TASKS_SET[N_GPIOTE_CHANNELS])) {
-		nrf_gpiote_regw_sideeffects_TASKS_SET(reg - &NRF_GPIOTE_regs.TASKS_SET[0]);
-	} else if ((reg >= &NRF_GPIOTE_regs.TASKS_CLR[0])
-		   && (reg<= &NRF_GPIOTE_regs.TASKS_CLR[N_GPIOTE_CHANNELS])) {
-		nrf_gpiote_regw_sideeffects_TASKS_CLR(reg - &NRF_GPIOTE_regs.TASKS_CLR[0]);
-	} else {
-		bs_trace_error_time_line("%s: Unknown GPIOTE tasks %i\n",task); /* LCOV_EXCL_LINE */
-	}
+  uint inst = gpiote_number_from_ptr(p_reg);
+
+  if ((reg >= &NRF_GPIOTE_regs[inst].TASKS_OUT[0])
+      && (reg<= &NRF_GPIOTE_regs[inst].TASKS_OUT[NHW_GPIOTE_MAX_CHANNELS])) {
+    nrf_gpiote_regw_sideeffects_TASKS_OUT(inst, reg - &NRF_GPIOTE_regs[inst].TASKS_OUT[0]);
+  } else if ((reg >= &NRF_GPIOTE_regs[inst].TASKS_SET[0])
+             && (reg<= &NRF_GPIOTE_regs[inst].TASKS_SET[NHW_GPIOTE_MAX_CHANNELS])) {
+    nrf_gpiote_regw_sideeffects_TASKS_SET(inst, reg - &NRF_GPIOTE_regs[inst].TASKS_SET[0]);
+  } else if ((reg >= &NRF_GPIOTE_regs[inst].TASKS_CLR[0])
+             && (reg<= &NRF_GPIOTE_regs[inst].TASKS_CLR[NHW_GPIOTE_MAX_CHANNELS])) {
+    nrf_gpiote_regw_sideeffects_TASKS_CLR(inst, reg - &NRF_GPIOTE_regs[inst].TASKS_CLR[0]);
+  } else {
+    bs_trace_error_time_line("%s: Unknown GPIOTE tasks %i\n",task); /* LCOV_EXCL_LINE */
+  }
 }
 
 void nrf_gpiote_event_clear(NRF_GPIOTE_Type * p_reg, nrf_gpiote_event_t event)
 {
-	uint32_t *reg = (uint32_t *)((uintptr_t)p_reg + event);
-	*(volatile uint32_t *)reg = 0;
+  uint32_t *reg = (uint32_t *)((uintptr_t)p_reg + event);
+  *(volatile uint32_t *)reg = 0;
 
-	if ((reg >= &NRF_GPIOTE_regs.EVENTS_IN[0])
-	    && (reg <= &NRF_GPIOTE_regs.EVENTS_IN[N_GPIOTE_CHANNELS])) {
-		nrf_gpiote_regw_sideeffects_EVENTS_IN(reg - &NRF_GPIOTE_regs.EVENTS_IN[0]);
-	} else if (reg == &NRF_GPIOTE_regs.EVENTS_PORT) {
-		nrf_gpiote_regw_sideeffects_EVENTS_PORT();
-	} else {
-		bs_trace_error_time_line("%s: Unknown GPIOTE event %i\n",event); /* LCOV_EXCL_LINE */
-	}
+  uint inst = gpiote_number_from_ptr(p_reg);
+
+  if ((reg >= &NRF_GPIOTE_regs[inst].EVENTS_IN[0])
+      && (reg <= &NRF_GPIOTE_regs[inst].EVENTS_IN[NHW_GPIOTE_MAX_CHANNELS])) {
+    nrf_gpiote_regw_sideeffects_EVENTS_IN(inst, reg - &NRF_GPIOTE_regs[inst].EVENTS_IN[0]);
+  } else if (reg == &NRF_GPIOTE_regs[inst].EVENTS_PORT) {
+    nrf_gpiote_regw_sideeffects_EVENTS_PORT(inst);
+  } else {
+    bs_trace_error_time_line("%s: Unknown GPIOTE event %i\n",event); /* LCOV_EXCL_LINE */
+  }
 }
 
 void nrf_gpiote_int_enable(NRF_GPIOTE_Type * p_reg, uint32_t mask)
 {
+    uint inst = gpiote_number_from_ptr(p_reg);
     p_reg->NRFX_CONCAT_2(INTENSET, NRF_GPIOTE_IRQ_GROUP) = mask;
-    nrf_gpiote_regw_sideeffects_INTENSET();
+    nrf_gpiote_regw_sideeffects_INTENSET(inst);
 
 }
 
 void nrf_gpiote_int_disable(NRF_GPIOTE_Type * p_reg, uint32_t mask)
 {
+    uint inst = gpiote_number_from_ptr(p_reg);
     p_reg->NRFX_CONCAT_2(INTENCLR, NRF_GPIOTE_IRQ_GROUP) = mask;
-    nrf_gpiote_regw_sideeffects_INTENCLR();
+    nrf_gpiote_regw_sideeffects_INTENCLR(inst);
 }
 
 void nrf_gpiote_event_enable(NRF_GPIOTE_Type * p_reg, uint32_t idx)
 {
+   uint inst = gpiote_number_from_ptr(p_reg);
    p_reg->CONFIG[idx] |= GPIOTE_CONFIG_MODE_Event;
-   nrf_gpiote_regw_sideeffects_CONFIG(idx);
+   nrf_gpiote_regw_sideeffects_CONFIG(inst, idx);
 }
 
 void nrf_gpiote_event_disable(NRF_GPIOTE_Type * p_reg, uint32_t idx)
 {
+   uint inst = gpiote_number_from_ptr(p_reg);
    p_reg->CONFIG[idx] &= ~GPIOTE_CONFIG_MODE_Msk;
-   nrf_gpiote_regw_sideeffects_CONFIG(idx);
+   nrf_gpiote_regw_sideeffects_CONFIG(inst, idx);
 }
 
 void nrf_gpiote_event_configure(NRF_GPIOTE_Type *     p_reg,
@@ -107,23 +121,26 @@ void nrf_gpiote_event_configure(NRF_GPIOTE_Type *     p_reg,
                                 uint32_t              pin,
                                 nrf_gpiote_polarity_t polarity)
 {
+  uint inst = gpiote_number_from_ptr(p_reg);
   p_reg->CONFIG[idx] &= ~(GPIOTE_CONFIG_PORT_PIN_Msk | GPIOTE_CONFIG_POLARITY_Msk);
   p_reg->CONFIG[idx] |= ((pin << GPIOTE_CONFIG_PSEL_Pos) & GPIOTE_CONFIG_PORT_PIN_Msk) |
                         ((polarity << GPIOTE_CONFIG_POLARITY_Pos) & GPIOTE_CONFIG_POLARITY_Msk);
-  nrf_gpiote_regw_sideeffects_CONFIG(idx);
+  nrf_gpiote_regw_sideeffects_CONFIG(inst, idx);
 }
 
 void nrf_gpiote_task_enable(NRF_GPIOTE_Type * p_reg, uint32_t idx)
 {
+    uint inst = gpiote_number_from_ptr(p_reg);
     uint32_t final_config = p_reg->CONFIG[idx] | GPIOTE_CONFIG_MODE_Task;
     p_reg->CONFIG[idx] = final_config;
-    nrf_gpiote_regw_sideeffects_CONFIG(idx);
+    nrf_gpiote_regw_sideeffects_CONFIG(inst, idx);
 }
 
 void nrf_gpiote_task_disable(NRF_GPIOTE_Type * p_reg, uint32_t idx)
 {
+    uint inst = gpiote_number_from_ptr(p_reg);
     p_reg->CONFIG[idx] &= ~GPIOTE_CONFIG_MODE_Msk;
-    nrf_gpiote_regw_sideeffects_CONFIG(idx);
+    nrf_gpiote_regw_sideeffects_CONFIG(inst, idx);
 }
 
 void nrf_gpiote_task_configure(NRF_GPIOTE_Type *     p_reg,
@@ -132,6 +149,7 @@ void nrf_gpiote_task_configure(NRF_GPIOTE_Type *     p_reg,
                                nrf_gpiote_polarity_t polarity,
                                nrf_gpiote_outinit_t  init_val)
 {
+  uint inst = gpiote_number_from_ptr(p_reg);
   p_reg->CONFIG[idx] &= ~(GPIOTE_CONFIG_PORT_PIN_Msk |
                           GPIOTE_CONFIG_POLARITY_Msk |
                           GPIOTE_CONFIG_OUTINIT_Msk);
@@ -140,23 +158,25 @@ void nrf_gpiote_task_configure(NRF_GPIOTE_Type *     p_reg,
                         ((polarity << GPIOTE_CONFIG_POLARITY_Pos) & GPIOTE_CONFIG_POLARITY_Msk) |
                         ((init_val << GPIOTE_CONFIG_OUTINIT_Pos) & GPIOTE_CONFIG_OUTINIT_Msk);
 
-  nrf_gpiote_regw_sideeffects_CONFIG(idx);
+  nrf_gpiote_regw_sideeffects_CONFIG(inst, idx);
 }
 
 void nrf_gpiote_task_force(NRF_GPIOTE_Type *    p_reg,
                            uint32_t             idx,
                            nrf_gpiote_outinit_t init_val)
 {
+    uint inst = gpiote_number_from_ptr(p_reg);
     p_reg->CONFIG[idx] = (p_reg->CONFIG[idx] & ~GPIOTE_CONFIG_OUTINIT_Msk) |
                          ((init_val << GPIOTE_CONFIG_OUTINIT_Pos) & GPIOTE_CONFIG_OUTINIT_Msk);
-    nrf_gpiote_regw_sideeffects_CONFIG(idx);
+    nrf_gpiote_regw_sideeffects_CONFIG(inst, idx);
 }
 
 void nrf_gpiote_te_default(NRF_GPIOTE_Type * p_reg, uint32_t idx)
 {
+    uint inst = gpiote_number_from_ptr(p_reg);
     p_reg->CONFIG[idx] = 0;
 #if !defined(NRF51_SERIES) && !defined(NRF52_SERIES)
     p_reg->CONFIG[idx] = 0;
 #endif
-    nrf_gpiote_regw_sideeffects_CONFIG(idx);
+    nrf_gpiote_regw_sideeffects_CONFIG(inst, idx);
 }

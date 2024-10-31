@@ -10,19 +10,18 @@
 extern "C"{
 #endif
 
-#define N_GPIOTE_CHANNELS (sizeof(NRF_GPIOTE_regs.CONFIG)/sizeof(NRF_GPIOTE_regs.CONFIG[0]))
+void nrf_gpiote_port_detect_raise(unsigned int inst, unsigned int port);
 
-void nrf_gpiote_port_event_raise(unsigned int port);
+void nrf_gpiote_regw_sideeffects_TASKS_OUT(unsigned int inst, unsigned int n);
+void nrf_gpiote_regw_sideeffects_TASKS_SET(unsigned int inst, unsigned int n);
+void nrf_gpiote_regw_sideeffects_TASKS_CLR(unsigned int inst, unsigned int n);
+void nrf_gpiote_regw_sideeffects_EVENTS_IN(unsigned int inst, unsigned int n);
+void nrf_gpiote_regw_sideeffects_EVENTS_PORT(unsigned int inst);
+void nrf_gpiote_regw_sideeffects_INTENSET(unsigned int inst);
+void nrf_gpiote_regw_sideeffects_INTENCLR(unsigned int inst);
+void nrf_gpiote_regw_sideeffects_CONFIG(unsigned int inst, unsigned int n);
 
-void nrf_gpiote_regw_sideeffects_TASKS_OUT(unsigned int n);
-void nrf_gpiote_regw_sideeffects_TASKS_SET(unsigned int n);
-void nrf_gpiote_regw_sideeffects_TASKS_CLR(unsigned int n);
-void nrf_gpiote_regw_sideeffects_EVENTS_IN(unsigned int n);
-void nrf_gpiote_regw_sideeffects_EVENTS_PORT(void);
-void nrf_gpiote_regw_sideeffects_INTENSET(void);
-void nrf_gpiote_regw_sideeffects_INTENCLR(void);
-void nrf_gpiote_regw_sideeffects_CONFIG(unsigned int n);
-
+#if NHW_HAS_PPI
 void nrf_gpiote_TASKS_SET_0(void);
 void nrf_gpiote_TASKS_SET_1(void);
 void nrf_gpiote_TASKS_SET_2(void);
@@ -47,6 +46,7 @@ void nrf_gpiote_TASKS_OUT_4(void);
 void nrf_gpiote_TASKS_OUT_5(void);
 void nrf_gpiote_TASKS_OUT_6(void);
 void nrf_gpiote_TASKS_OUT_7(void);
+#endif
 
 #ifdef __cplusplus
 }
