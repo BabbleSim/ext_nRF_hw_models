@@ -95,6 +95,7 @@ struct gpio_status {
 
   int nbr_pins;
   int partner_GPIOTE;
+  int has_sense;
 };
 
 static struct gpio_status gpio_st[NHW_GPIO_TOTAL_INST];
@@ -111,6 +112,7 @@ static void nrf_gpio_init(void) {
 
   int GPIO_n_ports_pins[NHW_GPIO_TOTAL_INST] = NHW_GPIO_NBR_PINS;
   int GPIOTE_partners[NHW_GPIO_TOTAL_INST] = NHW_GPIO_PARTNER_GPIOTE;
+  int has_sense[NHW_GPIO_TOTAL_INST] = NHW_GPIO_HAS_PIN_SENSE;
 
   for (int p = 0; p < NHW_GPIO_TOTAL_INST; p ++) {
     for (int n = 0; n < GPIO_n_ports_pins[p]; n++) {
@@ -119,6 +121,7 @@ static void nrf_gpio_init(void) {
     gpio_st[p].INPUT_mask = UINT32_MAX; /* All disconnected out of reset */
     gpio_st[p].nbr_pins = GPIO_n_ports_pins[p];
     gpio_st[p].partner_GPIOTE = GPIOTE_partners[p];
+    gpio_st[p].has_sense = has_sense[p];
   }
 
   nrf_gpio_backend_init();
@@ -323,6 +326,10 @@ static void nrf_gpio_update_detect_signal(unsigned int port) {
 static void nrf_gpio_eval_sense(unsigned int port){
   struct gpio_status *st = &gpio_st[port];
 
+  if (!st->has_sense) {
+    return;
+  }
+
   /* Note SENSE_dir inverts the output */
   st->DETECT = (NRF_GPIO_regs[port].IN ^ st->SENSE_inv) & st->SENSE_mask;
   st->LDETECT |= st->DETECT;
@@ -332,7 +339,7 @@ static void nrf_gpio_eval_sense(unsigned int port){
 
   nrf_gpio_update_detect_signal(port);
 
-  if ((st->DETECT_signal == true) && (old_DETECT_signal==false)) {
+  if ((st->DETECT_signal == true) && (old_DETECT_signal==false) && (st->partner_GPIOTE>=0)) {
     nrf_gpiote_port_detect_raise(st->partner_GPIOTE, port);
   }
 }
@@ -529,6 +536,10 @@ void nrf_gpio_regw_sideeffects_DIRCLR(unsigned int port) {
 void nrf_gpio_regw_sideeffects_LATCH(unsigned int port) {
   struct gpio_status *st = &gpio_st[port];
 
+  if (!st->has_sense) {
+    return;
+  }
+
   /* LATCH contains what SW wrote: */
   uint32_t sw_input = NRF_GPIO_regs[port].LATCH;
 
@@ -558,7 +569,7 @@ void nrf_gpio_regw_sideeffects_DETECTMODE(unsigned int port) {
   nrf_gpio_eval_sense(port);
 }
 
-void nrf_gpio_regw_sideeffects_PIN_CNF(unsigned int port,unsigned  int n) {
+void nrf_gpio_regw_sideeffects_PIN_CNF(unsigned int port, unsigned int n) {
 
   struct gpio_status *st = &gpio_st[port];
 
