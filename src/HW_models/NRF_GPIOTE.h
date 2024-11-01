@@ -48,6 +48,12 @@ void nrf_gpiote_TASKS_OUT_6(void);
 void nrf_gpiote_TASKS_OUT_7(void);
 #endif
 
+#if NHW_HAS_DPPI
+void nhw_gpiote_regw_sideeffects_SUBSCRIBE_OUT(unsigned int inst, unsigned int ch_n);
+void nhw_gpiote_regw_sideeffects_SUBSCRIBE_SET(unsigned int inst, unsigned int ch_n);
+void nhw_gpiote_regw_sideeffects_SUBSCRIBE_CLR(unsigned int inst, unsigned int ch_n);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

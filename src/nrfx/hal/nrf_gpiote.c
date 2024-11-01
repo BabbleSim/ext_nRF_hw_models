@@ -284,3 +284,41 @@ void nrf_gpiote_te_default(NRF_GPIOTE_Type * p_reg, uint32_t idx)
 #endif
     nrf_gpiote_regw_sideeffects_CONFIG(inst, idx);
 }
+
+#if defined(DPPI_PRESENT)
+static void nrf_gpiote_subscribe_common(NRF_GPIOTE_Type * p_reg,
+                                        nrf_gpiote_task_t task)
+{
+  uint inst = gpiote_number_from_ptr(p_reg);
+  int task_nbr;
+
+  if ((task >= NRF_GPIOTE_TASK_OUT_0) && (task < NRF_GPIOTE_TASK_SET_0)) {
+    task_nbr = (task - NRF_GPIOTE_TASK_OUT_0)/sizeof(uint32_t);
+    nhw_gpiote_regw_sideeffects_SUBSCRIBE_OUT(inst, task_nbr);
+  } else if ((task >= NRF_GPIOTE_TASK_SET_0) && (task < NRF_GPIOTE_TASK_CLR_0)) {
+    task_nbr = (task - NRF_GPIOTE_TASK_SET_0)/sizeof(uint32_t);
+    nhw_gpiote_regw_sideeffects_SUBSCRIBE_SET(inst, task_nbr );
+  } else if (task >= NRF_GPIOTE_TASK_CLR_0) {
+    task_nbr = (task - NRF_GPIOTE_TASK_CLR_0)/sizeof(uint32_t);
+    nhw_gpiote_regw_sideeffects_SUBSCRIBE_CLR(inst, task_nbr);
+  } else {
+    bs_trace_error_line_time("Attempted to subscribe to a not-supported task in the nrf_timer (%i)\n",
+                             task);
+  }
+}
+
+void nrf_gpiote_subscribe_set(NRF_GPIOTE_Type * p_reg,
+                              nrf_gpiote_task_t task,
+                              uint8_t           channel)
+{
+    *((volatile uint32_t *) ((uint8_t *) p_reg + (uint32_t) task + 0x80uL)) =
+            ((uint32_t)channel | NRF_SUBSCRIBE_PUBLISH_ENABLE);
+    nrf_gpiote_subscribe_common(p_reg, task);
+}
+
+void nrf_gpiote_subscribe_clear(NRF_GPIOTE_Type * p_reg, nrf_gpiote_task_t task)
+{
+    *((volatile uint32_t *) ((uint8_t *) p_reg + (uint32_t) task + 0x80uL)) = 0;
+    nrf_gpiote_subscribe_common(p_reg, task);
+}
+#endif // defined(DPPI_PRESENT)

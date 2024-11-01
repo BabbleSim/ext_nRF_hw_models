@@ -31,7 +31,7 @@
 #include "NHW_peri_types.h"
 #include "NRF_GPIOTE.h"
 #include "NRF_GPIO.h"
-#include "NRF_PPI.h"
+#include "NHW_xPPI.h"
 #include "irq_ctrl.h"
 #include "bs_tracing.h"
 #include "nsi_tasks.h"
@@ -57,6 +57,12 @@ struct gpiote_status {
   uint n_channels;
   uint32_t GPIOTE_ITEN[NHW_GPIOTE_N_INT];
   bool gpiote_int_line[NHW_GPIOTE_N_INT]; /* Is the GPIOTE currently driving its interrupt line high */
+#if (NHW_HAS_DPPI)
+  uint dppi_map;
+  struct nhw_subsc_mem subscribed_OUT[NHW_GPIOTE_MAX_CHANNELS];
+  struct nhw_subsc_mem subscribed_SET[NHW_GPIOTE_MAX_CHANNELS];
+  struct nhw_subsc_mem subscribed_CLR[NHW_GPIOTE_MAX_CHANNELS];
+#endif
 };
 static struct gpiote_status gpiote_st[NHW_GPIOTE_TOTAL_INST];
 
@@ -67,8 +73,14 @@ static void nrf_gpiote_init(void) {
   memset(&NRF_GPIOTE_regs, 0, sizeof(NRF_GPIOTE_regs));
 
   uint n_ch[] = NHW_GPIOTE_CHANNELS;
+#if (NHW_HAS_DPPI)
+  uint dppi_map[] = NHW_GPIOTE_DPPI_MAP;
+#endif
   for (int i = 0; i < NHW_GPIOTE_TOTAL_INST; i++) {
     gpiote_st[i].n_channels = n_ch[i];
+#if (NHW_HAS_DPPI)
+    gpiote_st[i].dppi_map = dppi_map[i];
+#endif
   }
 }
 
@@ -158,11 +170,11 @@ static void nrf_gpiote_eval_interrupt(unsigned int inst) {
     }
 #else
     mask = (st->GPIOTE_ITEN[line] & GPIOTE_INTENCLR0_PORT0NONSECURE_Msk) >> GPIOTE_INTENCLR0_PORT0NONSECURE_Pos;
-    if (NRF_GPIOTE_regs[inst].EVENTS_PORT.NONSECURE && mask) {
+    if (NRF_GPIOTE_regs[inst].EVENTS_PORT[0].NONSECURE && mask) {
       new_int_line = true;
     }
     mask = (st->GPIOTE_ITEN[line] & GPIOTE_INTENCLR0_PORT0SECURE_Msk) >> GPIOTE_INTENCLR0_PORT0SECURE_Pos;
-    if (NRF_GPIOTE_regs[inst].EVENTS_PORT.SECURE && mask) {
+    if (NRF_GPIOTE_regs[inst].EVENTS_PORT[0].SECURE && mask) {
       new_int_line = true;
     }
 #endif
@@ -176,20 +188,31 @@ static void nrf_gpiote_eval_interrupt(unsigned int inst) {
 static void nhw_GPIOTE_signal_EVENTS_IN(unsigned int inst, unsigned int n) {
   NRF_GPIOTE_regs[inst].EVENTS_IN[n] = 1;
   nrf_gpiote_eval_interrupt(inst);
+#if (NHW_HAS_PPI)
   nrf_ppi_event(GPIOTE_EVENTS_IN_0 + n);
-  //TODO: PPI vs DPPI
+#elif (NHW_HAS_DPPI)
+  nhw_dppi_event_signal_if(gpiote_st[inst].dppi_map,
+                           NRF_GPIOTE_regs[inst].PUBLISH_IN[n]);
+#endif
 }
 
 static void nhw_GPIOTE_signal_EVENTS_PORT(unsigned int inst) {
 #if !NHW_GPIOTE_IS_54
   NRF_GPIOTE_regs[inst].EVENTS_PORT = 1;
 #else
-  NRF_GPIOTE_regs[inst].EVENTS_PORT.NONSECURE = 1;
-  NRF_GPIOTE_regs[inst].EVENTS_PORT.SECURE = 1;
+  NRF_GPIOTE_regs[inst].EVENTS_PORT[0].NONSECURE = 1;
+  NRF_GPIOTE_regs[inst].EVENTS_PORT[0].SECURE = 1;
 #endif
   nrf_gpiote_eval_interrupt(inst);
+
+#if (NHW_HAS_PPI)
   nrf_ppi_event(GPIOTE_EVENTS_PORT);
-  //TODO: PPI vs DPPI
+#elif (NHW_HAS_DPPI)
+  nhw_dppi_event_signal_if(gpiote_st[inst].dppi_map,
+                           NRF_GPIOTE_regs[inst].PUBLISH_PORT[0].SECURE);
+  nhw_dppi_event_signal_if(gpiote_st[inst].dppi_map,
+                           NRF_GPIOTE_regs[inst].PUBLISH_PORT[0].NONSECURE);
+#endif
 }
 
 /*
@@ -336,6 +359,29 @@ void nrf_gpiote_regw_sideeffects_CONFIG(unsigned int inst, unsigned int ch_n) {
         "value(%u)\n", __func__, ch_n, mode);
   } /* LCOV_EXCL_STOP */
 }
+
+#if (NHW_HAS_DPPI)
+#define NHW_GPIOTE_REGW_SIDEFFECTS_SUBSCRIBE(TASK_N)                                     \
+  static void nrf_gpiote_TASKS_##TASK_N##_wrap(void* param) {                            \
+    unsigned int inst = (uintptr_t)param >> 16;                                          \
+    uint ch_n = (uintptr_t)param & 0xFFFF;                                               \
+    nrf_gpiote_TASKS_##TASK_N(inst, ch_n);                                               \
+  }                                                                                      \
+                                                                                         \
+  void nhw_gpiote_regw_sideeffects_SUBSCRIBE_##TASK_N(uint inst, uint ch_n) {            \
+    struct gpiote_status *st = &gpiote_st[inst];                                         \
+                                                                                         \
+    nhw_dppi_common_subscribe_sideeffect(st->dppi_map,                                   \
+                                         NRF_GPIOTE_regs[inst].SUBSCRIBE_##TASK_N[ch_n],\
+                                         &st->subscribed_##TASK_N[ch_n],                 \
+                                         nrf_gpiote_TASKS_##TASK_N##_wrap,               \
+                                         (void*)((inst << 16) + ch_n));                  \
+  }
+
+NHW_GPIOTE_REGW_SIDEFFECTS_SUBSCRIBE(OUT)
+NHW_GPIOTE_REGW_SIDEFFECTS_SUBSCRIBE(SET)
+NHW_GPIOTE_REGW_SIDEFFECTS_SUBSCRIBE(CLR)
+#endif
 
 /*
  * Trampolines to automatically call from the PPI

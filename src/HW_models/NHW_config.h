@@ -559,6 +559,7 @@
                             /* App, GPIOTE20_1_IRQn */
                             /* App, GPIOTE30_0_IRQn */
                             /* App, GPIOTE30_1_IRQn */
+#define NHW_GPIOTE_DPPI_MAP {2, 3} /* GPIOTE20 in Peri , GPIOTE30 in LP */
 #define NHW_GPIOTE_IS_54 1
 
 #define NHW_GRTC_TOTAL_INST 1
