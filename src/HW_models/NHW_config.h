@@ -78,6 +78,7 @@
 #define NHW_GPIOTE_INT_MAP {{{0 , 6}}} /* Only core, GPIOTE_IRQn */
 #define NHW_GPIOTE_MAX_CHANNELS 8    /* Maximum number of channels in any instance */
 #define NHW_GPIOTE_CHANNELS {8} /* Number of channels per instance */
+#define NHW_GPIOTE_IS_54 0
 
 #define NHW_INTCTRL_TOTAL_INST 1
 #define NHW_INTCTRL_MAX_INTLINES 48
@@ -559,6 +560,7 @@
                             /* App, GPIOTE20_1_IRQn */
                             /* App, GPIOTE30_0_IRQn */
                             /* App, GPIOTE30_1_IRQn */
+#define NHW_GPIOTE_IS_54 1
 
 #define NHW_GRTC_TOTAL_INST 1
 #define NHW_GRTC_N_INT 4

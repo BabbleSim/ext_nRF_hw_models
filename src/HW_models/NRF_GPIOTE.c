@@ -151,6 +151,7 @@ static void nrf_gpiote_eval_interrupt(unsigned int inst) {
       }
     }
     //TODO: Double PORT interrupts for 54L (PORT0NONSECURE PORT0SECURE)
+
     mask = (st->GPIOTE_ITEN[line] & GPIOTE_INTENCLR_PORT_Msk) >> GPIOTE_INTENCLR_PORT_Pos;
     if (NRF_GPIOTE_regs[inst].EVENTS_PORT && mask) {
       new_int_line = true;
@@ -254,20 +255,35 @@ void nrf_gpiote_regw_sideeffects_EVENTS_PORT(unsigned int inst) {
   //TODO: For 54, have HAL call this one for both PORT.SECURE and PORT.NONSECURE
 }
 
-void nrf_gpiote_regw_sideeffects_INTENSET(unsigned int inst) {
-  //TODO: add parameter for which int line
-  if (NRF_GPIOTE_regs[inst].INTENSET) {
-    gpiote_st[inst].GPIOTE_ITEN[0] |= NRF_GPIOTE_regs[inst].INTENSET;
-    NRF_GPIOTE_regs[inst].INTENSET = gpiote_st[inst].GPIOTE_ITEN[0];
+#if NHW_GPIOTE_IS_54
+static const ptrdiff_t gpiote_int_pdiff =
+    offsetof(NRF_GPIOTE_Type, INTENSET1) - offsetof(NRF_GPIOTE_Type, INTENSET0);
+#endif
+
+void nrf_gpiote_regw_sideeffects_INTENSET(unsigned int inst, unsigned int interrupt_nbr) {
+#if NHW_GPIOTE_IS_54
+  uint32_t *INTENSET = (uint32_t *)((uintptr_t)&NRF_GPIOTE_regs[inst].INTENSET0 + interrupt_nbr*gpiote_int_pdiff);
+#else
+  uint32_t *INTENSET = (uint32_t *)(uintptr_t)&NRF_GPIOTE_regs[inst].INTENSET;
+#endif
+
+  if (*INTENSET) {
+    gpiote_st[inst].GPIOTE_ITEN[interrupt_nbr] |= *INTENSET ;
+    *INTENSET  = gpiote_st[inst].GPIOTE_ITEN[interrupt_nbr];
     nrf_gpiote_eval_interrupt(inst);
   }
 }
 
-void nrf_gpiote_regw_sideeffects_INTENCLR(unsigned int inst) {
-  //TODO: add parameter for which int line
-  if (NRF_GPIOTE_regs[inst].INTENCLR) {
-    gpiote_st[inst].GPIOTE_ITEN[0] &= ~NRF_GPIOTE_regs[inst].INTENCLR;
-    NRF_GPIOTE_regs[inst].INTENCLR = 0;
+void nrf_gpiote_regw_sideeffects_INTENCLR(unsigned int inst, unsigned int interrupt_nbr) {
+#if NHW_GPIOTE_IS_54
+  uint32_t *INTENCLR = (uint32_t *)((uintptr_t)&NRF_GPIOTE_regs[inst].INTENCLR0 + interrupt_nbr*gpiote_int_pdiff);
+#else
+  uint32_t *INTENCLR = (uint32_t *)(uintptr_t)&NRF_GPIOTE_regs[inst].INTENCLR;
+#endif
+
+  if (*INTENCLR) {
+    gpiote_st[inst].GPIOTE_ITEN[interrupt_nbr] &= ~*INTENCLR;
+    *INTENCLR = 0;
     nrf_gpiote_eval_interrupt(inst);
   }
 }

@@ -17,8 +17,8 @@ void nrf_gpiote_regw_sideeffects_TASKS_SET(unsigned int inst, unsigned int n);
 void nrf_gpiote_regw_sideeffects_TASKS_CLR(unsigned int inst, unsigned int n);
 void nrf_gpiote_regw_sideeffects_EVENTS_IN(unsigned int inst, unsigned int n);
 void nrf_gpiote_regw_sideeffects_EVENTS_PORT(unsigned int inst);
-void nrf_gpiote_regw_sideeffects_INTENSET(unsigned int inst);
-void nrf_gpiote_regw_sideeffects_INTENCLR(unsigned int inst);
+void nrf_gpiote_regw_sideeffects_INTENSET(unsigned int inst, unsigned int interrupt_nbr);
+void nrf_gpiote_regw_sideeffects_INTENCLR(unsigned int inst, unsigned int interrupt_nbr);
 void nrf_gpiote_regw_sideeffects_CONFIG(unsigned int inst, unsigned int n);
 
 #if NHW_HAS_PPI
