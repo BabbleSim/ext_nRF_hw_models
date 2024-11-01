@@ -59,9 +59,6 @@
 
 NRF_GPIO_Type NRF_GPIO_regs[NHW_GPIO_TOTAL_INST];
 
-/* Number of pins per port: */
-static int GPIO_n_ports_pins[NHW_GPIO_TOTAL_INST] = NHW_GPIO_NBR_PINS;
-
 struct gpio_status {
   uint32_t IO_level; /* Actual levels in the pins */
   uint32_t O_level;
@@ -95,6 +92,9 @@ struct gpio_status {
   /* Callbacks for peripherals to be informed of input changes */
   nrf_gpio_input_callback_hw_t per_intoggle_callbacks[NHW_GPIO_MAX_PINS_PER_PORT];
   void *per_intoggle_cb_data[NHW_GPIO_MAX_PINS_PER_PORT];
+
+  int nbr_pins;
+  int partner_GPIOTE;
 };
 
 static struct gpio_status gpio_st[NHW_GPIO_TOTAL_INST];
@@ -109,11 +109,16 @@ static nrf_gpio_input_callback_t test_outtoggle_callback;
 static void nrf_gpio_init(void) {
   memset(NRF_GPIO_regs, 0, sizeof(NRF_GPIO_regs));
 
+  int GPIO_n_ports_pins[NHW_GPIO_TOTAL_INST] = NHW_GPIO_NBR_PINS;
+  int GPIOTE_partners[NHW_GPIO_TOTAL_INST] = NHW_GPIO_PARTNER_GPIOTE;
+
   for (int p = 0; p < NHW_GPIO_TOTAL_INST; p ++) {
     for (int n = 0; n < GPIO_n_ports_pins[p]; n++) {
       NRF_GPIO_regs[p].PIN_CNF[n] = 0x2; /* Disconnected out of reset */
     }
     gpio_st[p].INPUT_mask = UINT32_MAX; /* All disconnected out of reset */
+    gpio_st[p].nbr_pins = GPIO_n_ports_pins[p];
+    gpio_st[p].partner_GPIOTE = GPIOTE_partners[p];
   }
 
   nrf_gpio_backend_init();
@@ -122,7 +127,7 @@ static void nrf_gpio_init(void) {
 NSI_TASK(nrf_gpio_init, HW_INIT, 100);
 
 unsigned int nrf_gpio_get_number_pins_in_port(int port) {
-  return GPIO_n_ports_pins[port];
+  return gpio_st[port].nbr_pins;
 }
 
 static void nrf_gpio_eval_outputs(unsigned int port);
@@ -170,7 +175,7 @@ bool nrf_gpio_get_pin_level(unsigned int port, unsigned int n) {
 }
 
 #define CHECK_PIN_EXISTS(port, n, dir) \
-		if (port >= NHW_GPIO_TOTAL_INST || n >= GPIO_n_ports_pins[port]) { \
+		if (port >= NHW_GPIO_TOTAL_INST || n >= gpio_st[port].nbr_pins) { \
 			bs_trace_error_time_line("%s: Error, attempted to toggle "dir" for nonexistent " \
 					"GPIO port %i, pin %i\n", \
 					__func__, port, n); \
@@ -220,15 +225,15 @@ void nrf_gpio_peri_pin_control(unsigned int port, unsigned int n,
     int override_output, int override_input, int override_dir,
     nrf_gpio_input_callback_hw_t fptr, void *fptr_data, int new_level) {
 
-  if (port >= NHW_GPIO_TOTAL_INST || n >= GPIO_n_ports_pins[port]) { /* LCOV_EXCL_BR_LINE */
+  struct gpio_status *st = &gpio_st[port];
+
+  if (port >= NHW_GPIO_TOTAL_INST || n >= st->nbr_pins) { /* LCOV_EXCL_BR_LINE */
     bs_trace_error_time_line("Programming error\n"); /* LCOV_EXCL_LINE */
   }
 
   uint32_t mask = 1<<n;
   bool need_output_eval = false;
   bool need_input_eval = false;
-
-  struct gpio_status *st = &gpio_st[port];
 
   if (override_output >= 0) {
     st->out_override &= ~mask;
@@ -328,7 +333,7 @@ static void nrf_gpio_eval_sense(unsigned int port){
   nrf_gpio_update_detect_signal(port);
 
   if ((st->DETECT_signal == true) && (old_DETECT_signal==false)) {
-    nrf_gpiote_port_detect_raise(0 /*TODO the GPIOTE instance this GPIO has its DETECT connected to*/, port);
+    nrf_gpiote_port_detect_raise(st->partner_GPIOTE, port);
   }
 }
 
@@ -497,7 +502,7 @@ void nrf_gpio_regw_sideeffects_OUTCLR(unsigned int port) {
 
 void nrf_gpio_regw_sideeffects_DIR(unsigned int port) {
   /* Mirror change into PIN_CNF[*].DIR */
-  for (int n = 0; n < GPIO_n_ports_pins[port]; n++ ) {
+  for (int n = 0; n < gpio_st[port].nbr_pins; n++ ) {
     NRF_GPIO_regs[port].PIN_CNF[n] &= ~GPIO_PIN_CNF_DIR_Msk;
     NRF_GPIO_regs[port].PIN_CNF[n] |= (NRF_GPIO_regs[port].DIR >> n) & 0x1;
   }
@@ -545,7 +550,7 @@ void nrf_gpio_regw_sideeffects_LATCH(unsigned int port) {
    * "the CPU has performed a clear operation" == after writing LATCH with any bit to 1
    */
   if (sw_input != 0 && st->LDETECT != 0 && NRF_GPIO_regs[port].DETECTMODE == 1) {
-    nrf_gpiote_port_detect_raise(0 /*TODO the GPIOTE instance this GPIO has its DETECT connected to*/, port);
+    nrf_gpiote_port_detect_raise(st->partner_GPIOTE, port);
   }
 }
 
