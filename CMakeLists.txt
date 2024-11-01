@@ -34,7 +34,7 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
   if(CONFIG_SOC_SERIES_BSIM_NRF52X)
     file(STRINGS make_inc/52833_hw_files HW_MODEL_SRCS)
     file(STRINGS make_inc/52833_hal_files HAL_SRCS)
-    set(VARIANT_FLAGS 
+    set(VARIANT_FLAGS
         -DNRF52833_XXAA
         -DNRF52833
     )
@@ -76,7 +76,7 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
   # The HW models are built in the runner context, so they have access to the host OS
   target_sources(native_simulator INTERFACE ${HW_MODEL_SRCS})
 
-  target_compile_options(native_simulator BEFORE INTERFACE 
+  target_compile_options(native_simulator BEFORE INTERFACE
     -I${NSI_DIR}/common/src/include
     -I${NSI_DIR}/common/src/
     -I$ENV{BSIM_COMPONENTS_PATH}/libUtilv1/src/
