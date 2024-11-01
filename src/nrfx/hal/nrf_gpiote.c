@@ -80,8 +80,14 @@ void nrf_gpiote_event_clear(NRF_GPIOTE_Type * p_reg, nrf_gpiote_event_t event)
   if ((reg >= &NRF_GPIOTE_regs[inst].EVENTS_IN[0])
       && (reg <= &NRF_GPIOTE_regs[inst].EVENTS_IN[NHW_GPIOTE_MAX_CHANNELS])) {
     nrf_gpiote_regw_sideeffects_EVENTS_IN(inst, reg - &NRF_GPIOTE_regs[inst].EVENTS_IN[0]);
+#if !NHW_GPIOTE_IS_54
   } else if (reg == &NRF_GPIOTE_regs[inst].EVENTS_PORT) {
     nrf_gpiote_regw_sideeffects_EVENTS_PORT(inst);
+#else
+  } else if ((reg == &NRF_GPIOTE_regs[inst].EVENTS_PORT[0].NONSECURE)
+             || (reg == &NRF_GPIOTE_regs[inst].EVENTS_PORT[0].SECURE)) {
+    nrf_gpiote_regw_sideeffects_EVENTS_PORT(inst);
+#endif
   } else {
     bs_trace_error_time_line("%s: Unknown GPIOTE event %i\n",event); /* LCOV_EXCL_LINE */
   }

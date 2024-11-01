@@ -150,12 +150,22 @@ static void nrf_gpiote_eval_interrupt(unsigned int inst) {
         break; /* No need to check more */
       }
     }
-    //TODO: Double PORT interrupts for 54L (PORT0NONSECURE PORT0SECURE)
 
+#if !NHW_GPIOTE_IS_54
     mask = (st->GPIOTE_ITEN[line] & GPIOTE_INTENCLR_PORT_Msk) >> GPIOTE_INTENCLR_PORT_Pos;
     if (NRF_GPIOTE_regs[inst].EVENTS_PORT && mask) {
       new_int_line = true;
     }
+#else
+    mask = (st->GPIOTE_ITEN[line] & GPIOTE_INTENCLR0_PORT0NONSECURE_Msk) >> GPIOTE_INTENCLR0_PORT0NONSECURE_Pos;
+    if (NRF_GPIOTE_regs[inst].EVENTS_PORT.NONSECURE && mask) {
+      new_int_line = true;
+    }
+    mask = (st->GPIOTE_ITEN[line] & GPIOTE_INTENCLR0_PORT0SECURE_Msk) >> GPIOTE_INTENCLR0_PORT0SECURE_Pos;
+    if (NRF_GPIOTE_regs[inst].EVENTS_PORT.SECURE && mask) {
+      new_int_line = true;
+    }
+#endif
 
     hw_irq_ctrl_toggle_level_irq_line_if(&st->gpiote_int_line[line],
         new_int_line,
@@ -171,11 +181,15 @@ static void nhw_GPIOTE_signal_EVENTS_IN(unsigned int inst, unsigned int n) {
 }
 
 static void nhw_GPIOTE_signal_EVENTS_PORT(unsigned int inst) {
+#if !NHW_GPIOTE_IS_54
   NRF_GPIOTE_regs[inst].EVENTS_PORT = 1;
+#else
+  NRF_GPIOTE_regs[inst].EVENTS_PORT.NONSECURE = 1;
+  NRF_GPIOTE_regs[inst].EVENTS_PORT.SECURE = 1;
+#endif
   nrf_gpiote_eval_interrupt(inst);
   nrf_ppi_event(GPIOTE_EVENTS_PORT);
   //TODO: PPI vs DPPI
-  //TODO: 54L generate both PORT SECURE & NONSECURE EVENTS
 }
 
 /*
@@ -252,7 +266,6 @@ void nrf_gpiote_regw_sideeffects_EVENTS_IN(unsigned int inst, unsigned int n) {
 
 void nrf_gpiote_regw_sideeffects_EVENTS_PORT(unsigned int inst) {
   nrf_gpiote_eval_interrupt(inst);
-  //TODO: For 54, have HAL call this one for both PORT.SECURE and PORT.NONSECURE
 }
 
 #if NHW_GPIOTE_IS_54
