@@ -627,7 +627,7 @@ void nhw_nmvc_read_buffer(void *dest, uint32_t address, size_t size) {
     }
   }
 
-  if (offset + size >= backend->size) {
+  if (offset + size > backend->size) {
     OUT_OF_FLASH_ERROR(address + size);
   }
 
