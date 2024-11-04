@@ -215,8 +215,8 @@ static inline uint32_t get_dir(unsigned int port){
  *	* override_dir:
  *		* -1 : Don't change
  *		*  0 : Leave DIR to be controlled by the GPIO module
- *		*  2 : Take external control of DIR, and disconnect
- *		*  3 : Take external control of DIR, and connect
+ *		*  2 : Take external control of DIR, and disconnect (not driving output)
+ *		*  3 : Take external control of DIR, and connect (driving output)
  *      * fptr: Function to be called whenever that input toggles (if enabled).
  *              Set to NULL if not needed.
  *      * new_level:
