@@ -6,6 +6,8 @@ src/nrfx/hal/nrf_clock.c
 src/nrfx/hal/nrf_common.c
 src/nrfx/hal/nrf_dppi.c
 src/nrfx/hal/nrf_egu.c
+src/nrfx/hal/nrf_gpio.c
+src/nrfx/hal/nrf_gpiote.c
 src/nrfx/hal/nrf_grtc.c
 src/nrfx/hal/nrf_hack.c
 src/nrfx/hal/nrf_ppib.c
