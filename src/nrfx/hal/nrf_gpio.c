@@ -10,6 +10,8 @@
  * modifications, specially:
  * 	nrf_gpio_cfg()
  * 	nrf_gpio_reconfigure()
+ * 	nrf_gpio_port_pin_output_set()
+ * 	nrf_gpio_port_pin_input_set()
  * 	nrf_gpio_pin_dir_set()
  * 	nrf_gpio_pin_toggle()
  * 	nrf_gpio_port_detect_latch_set()
@@ -131,6 +133,39 @@ void nrf_gpio_reconfigure(uint32_t                     pin_number,
     reg->PIN_CNF[pin_number] = cnf;
 
     nrf_gpio_regw_sideeffects_PIN_CNF(gpio_number_from_ptr(reg), pin_number);
+}
+
+
+void nrf_gpio_port_pin_output_set(NRF_GPIO_Type * p_reg, uint32_t pin_number)
+{
+    uint32_t cnf = ((uint32_t)NRF_GPIO_PIN_DIR_OUTPUT << GPIO_PIN_CNF_DIR_Pos) |
+           ((uint32_t)NRF_GPIO_PIN_INPUT_DISCONNECT << GPIO_PIN_CNF_INPUT_Pos) |
+           ((uint32_t)NRF_GPIO_PIN_NOPULL << GPIO_PIN_CNF_PULL_Pos)            |
+#if defined(GPIO_PIN_CNF_DRIVE_Pos)
+           ((uint32_t)NRF_GPIO_PIN_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)             |
+#else
+           ((uint32_t)NRF_GPIO_PIN_S0S1 << GPIO_PIN_CNF_DRIVE0_Pos)            |
+#endif
+           ((uint32_t)NRF_GPIO_PIN_NOSENSE << GPIO_PIN_CNF_SENSE_Pos);
+    p_reg->PIN_CNF[pin_number] = cnf;
+    nrf_gpio_regw_sideeffects_PIN_CNF(gpio_number_from_ptr(p_reg), pin_number);
+}
+
+void nrf_gpio_port_pin_input_set(NRF_GPIO_Type *     p_reg,
+                                                   uint32_t            pin_number,
+                                                   nrf_gpio_pin_pull_t pull_config)
+{
+    uint32_t cnf = ((uint32_t)NRF_GPIO_PIN_DIR_INPUT << GPIO_PIN_CNF_DIR_Pos) |
+           ((uint32_t)NRF_GPIO_PIN_INPUT_CONNECT << GPIO_PIN_CNF_INPUT_Pos)   |
+           ((uint32_t)pull_config << GPIO_PIN_CNF_PULL_Pos)                   |
+#if defined(GPIO_PIN_CNF_DRIVE_Pos)
+           ((uint32_t)NRF_GPIO_PIN_S0S1 << GPIO_PIN_CNF_DRIVE_Pos)            |
+#else
+           ((uint32_t)NRF_GPIO_PIN_S0S1 << GPIO_PIN_CNF_DRIVE0_Pos)           |
+#endif
+           ((uint32_t)NRF_GPIO_PIN_NOSENSE << GPIO_PIN_CNF_SENSE_Pos);
+    p_reg->PIN_CNF[pin_number] = cnf;
+    nrf_gpio_regw_sideeffects_PIN_CNF(gpio_number_from_ptr(p_reg), pin_number);
 }
 
 void nrf_gpio_pin_dir_set(uint32_t pin_number, nrf_gpio_pin_dir_t direction)
