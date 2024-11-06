@@ -10,21 +10,20 @@
  *
  * This model has the following limitations:
  *  * INTENCLR will always read as 0
+ *
  *  * Unlike in real HW, tasks cannot occur simultaneously, they always happen in some sequence
  *    so task priority is not accounted for
  *
- * 5340:
- *  * Only the net core GPIOTE is present.
+ * 53 & 54
+ *  * Split security distinctions are ignored
+ *    == there is no distinction for accesses from secure or non secure bus masters or the S/NS address ranges.
+ *    Accessing from either the S or NS address range all registers are equally accessible.
  *
  * 54L notes:
  *  * Unlike in real HW, a GPIOTE channel can be connected to any GPIO port and pin.
  *
  *  * Both EVENTS_PORT.SECURE & NONSECURE will be raised at the same time. This is due to the GPIO
  *    not considering which pins are labeled as secure or not secure in the SPU.
- *
- *  * Split security distinctions are ignored
- *    == there is no distinction for accesses from secure or non secure bus masters or the S/NS address ranges.
- *    Accessing from either the S or NS address range all registers are equally accessible.
  */
 
 #include <stdint.h>
@@ -339,6 +338,12 @@ void nrf_gpiote_regw_sideeffects_CONFIG(unsigned int inst, unsigned int ch_n) {
                       >>GPIOTE_CONFIG_PSEL_Pos;
   unsigned int port = (NRF_GPIOTE_regs[inst].CONFIG[ch_n] & GPIOTE_CONFIG_PORT_Msk)
                        >>GPIOTE_CONFIG_PORT_Pos;
+#if defined(NRF5340)
+  /* The App 0,1 ports (from SW POV) are connected in the model to the simulated ports 2 and 3 */
+  if ((inst == NHW_GPIOTE_APP0) || (inst == NHW_GPIOTE_APP1)) {
+    port += NHW_GPIO_APP_P0;
+  }
+#endif
   unsigned int polarity = (NRF_GPIOTE_regs[inst].CONFIG[ch_n] & GPIOTE_CONFIG_POLARITY_Msk)
                            >>GPIOTE_CONFIG_POLARITY_Pos;
   unsigned int outinit = (NRF_GPIOTE_regs[inst].CONFIG[ch_n] & GPIOTE_CONFIG_OUTINIT_Msk)

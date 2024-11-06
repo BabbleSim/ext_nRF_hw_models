@@ -1,9 +1,25 @@
 ## GPIO models
 
-A model of the GPIO peripherals (both P0 and P1 ports) is included with these models.
+A model of the GPIO peripherals is included with these models.
 
 You can find information about their limitations and approximations in
 [the source files](../src/HW_models/NRF_GPIO.c).
+
+These are the modeled ports and their mapping to indexes used in these models:
+
+* 52822
+    * P0: 0
+    * P1: 1
+* 5340 NOTE: The Net and App cores ports are mapped to different/separate simulated ports/pins,
+  unlike in real HW where they are connected to the same physical pins.
+    * Net core P0: 0
+    * Net core P1: 1
+    * App core P0: 2
+    * App core P1: 3
+* 54L15
+    * P0 (LP domain): 0
+    * P1 (Per domain): 1
+    * P2 (MCU domain): 2
 
 Note that as of today these models:
 * Consider the output drivers to have 0 impedance: The drive is instantaneous.

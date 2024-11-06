@@ -34,15 +34,19 @@
  *    is sent instantaneously to the GPIOTE
  *
  * 5340 notes:
- *  * Only the net core GPIO peripherals are present.
+ *  * Unlike in real HW, the Net and App cores GPIO peripherals are mapped to different/separate
+ *    simulated ports.
  *
  *  * MCUSEL is ignored at this point.
  *
- * 54L notes:
+ * 53 & 54 notes:
  *  * Split security distinctions are ignored
  *    == there is no distinction for accesses from secure or non secure bus masters or the S/NS address ranges.
  *    Accessing either through the S or NS address range all registers are equally accessible.
  *
+ *  * A possible secure/non secure pin configuration in the SPU is ignored
+ *
+ * 54L notes:
  *  * PIN_CNF[n].CTRLSEL is ignored by now, but other peripherals can still take over a pin (irrespectively of .CTRLSEL)
  *    If another peripheral HW model has taken ownership of a pin, you will get a warning if you try to driver it through
  *    the GPIO registers. You will be able to read a pin input level even if another peripheral has control over it,
@@ -70,7 +74,8 @@ struct gpio_status {
 
   uint32_t DETECT;   /* Sense output / unlatched/non-sticky detect */
   uint32_t LDETECT;  /* Latched sense output */
-  bool DETECT_signal; /* Individual detect signal to the GPIOTE */
+  bool DETECT_signal; /* Individual detect signal to the GPIOTE (for 5340 == DETECT_NSEC) */
+  bool DETECT_SEC_signal; /* Only used for 5340 */
 
   uint32_t INPUT_mask; /* As a 32bit mask, PIN_CNF[*].INPUT (0: enabled; 1: disabled)*/
   uint32_t SENSE_mask; /* As a 32bit mask, PIN_CNF[*].SENSE.en (1: enabled; 0: disabled)*/
@@ -323,6 +328,14 @@ static void nrf_gpio_update_detect_signal(unsigned int port) {
   } else {//gpio.detect signal from latched detect
     st->DETECT_signal = (st->LDETECT != 0);
   }
+
+#if defined(NRF5340)
+  if (NRF_GPIO_regs[port].DETECTMODE_SEC == 0){
+    st->DETECT_SEC_signal = (st->DETECT != 0);
+  } else {//gpio.detect signal from latched detect
+    st->DETECT_SEC_signal = (st->LDETECT != 0);
+  }
+#endif
 }
 
 /*
@@ -341,12 +354,22 @@ static void nrf_gpio_eval_sense(unsigned int port){
   NRF_GPIO_regs[port].LATCH = st->LDETECT;
 
   bool old_DETECT_signal = st->DETECT_signal;
-
+#if defined(NRF5340)
+  bool old_DETECT_SEC_signal = st->DETECT_SEC_signal;
+#endif
   nrf_gpio_update_detect_signal(port);
 
   if ((st->DETECT_signal == true) && (old_DETECT_signal==false) && (st->partner_GPIOTE>=0)) {
     nrf_gpiote_port_detect_raise(st->partner_GPIOTE, port);
   }
+
+#if defined(NRF5340)
+  if ((port == NHW_GPIO_APP_P0) || (port == NHW_GPIO_APP_P1)) {
+    if ((st->DETECT_SEC_signal == true) && (old_DETECT_SEC_signal==false)) {
+      nrf_gpiote_port_detect_raise(NHW_GPIOTE_APP0, port);
+    }
+  }
+#endif
 }
 
 /*
@@ -565,11 +588,20 @@ void nrf_gpio_regw_sideeffects_LATCH(unsigned int port) {
    *   on the LDETECT signal.
    * "the CPU has performed a clear operation" == after writing LATCH with any bit to 1
    */
-  if (sw_input != 0 && st->LDETECT != 0 && NRF_GPIO_regs[port].DETECTMODE == 1) {
+  if (sw_input != 0 && st->LDETECT != 0 && NRF_GPIO_regs[port].DETECTMODE == 1 && (st->partner_GPIOTE>=0)) {
     nrf_gpiote_port_detect_raise(st->partner_GPIOTE, port);
   }
+
+#if defined(NRF5340)
+  if ((port == NHW_GPIO_APP_P0) || (port == NHW_GPIO_APP_P1)) {
+    if ((sw_input != 0) && (st->LDETECT != 0) && (NRF_GPIO_regs[port].DETECTMODE_SEC == 1)) {
+      nrf_gpiote_port_detect_raise(NHW_GPIOTE_APP0, port);
+    }
+  }
+#endif
 }
 
+/* For 5340: To be called for either DETECTMODE or DETECTMODE_SEC */
 void nrf_gpio_regw_sideeffects_DETECTMODE(unsigned int port) {
   nrf_gpio_eval_sense(port);
 }

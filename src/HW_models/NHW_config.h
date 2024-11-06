@@ -301,24 +301,34 @@
 #define NHW_FICR_APP 0
 #define NHW_FICR_NET 1
 
-/* By now, only the net core GPIO and GPIOTE are present */
-#define NHW_GPIO_TOTAL_INST 2
+/* Note the net and app core ports are fully separate */
+#define NHW_GPIO_TOTAL_INST 4
 #define NHW_GPIO_NET_P0 0
 #define NHW_GPIO_NET_P1 1
+#define NHW_GPIO_APP_P0 2
+#define NHW_GPIO_APP_P1 3
 #define NHW_GPIO_MAX_PINS_PER_PORT 32
-#define NHW_GPIO_NBR_PINS {32, 16} /* Number of IOs per port */
-#define NHW_GPIO_PARTNER_GPIOTE {0, 0} /* NET_P0->GPIOT_NET, NET_P1->GPIOTE_NET */
-#define NHW_GPIO_HAS_PIN_SENSE {1, 1} /* Per instance, does it have pin sense/detect mechanism */
+#define NHW_GPIO_NBR_PINS {32, 16, 32, 16} /* Number of IOs per port */
+#define NHW_GPIO_PARTNER_GPIOTE {0, 0, 2, 2} /* NET_P0->GPIOT_NET, NET_P1->GPIOTE_NET */
+                                             /* APP_P0/1->APP GPIOTE1 (NS)
+                                              * (secure connection handled in code as special case)*/
+#define NHW_GPIO_HAS_PIN_SENSE {1, 1, 1, 1} /* Per instance, does it have pin sense/detect mechanism */
 
-#define NHW_GPIOTE_TOTAL_INST 1
+#define NHW_GPIOTE_TOTAL_INST 3
 #define NHW_GPIOTE_NET 0
+#define NHW_GPIOTE_APP0 1 /* AKA GPIOTESEC */
+#define NHW_GPIOTE_APP1 2
 #define NHW_GPIOTE_MAX_CHANNELS 8    /* Maximum number of channels in any instance */
-#define NHW_GPIOTE_CHANNELS {8}   /* Number of channels per instance */
+#define NHW_GPIOTE_CHANNELS {8, 8, 8}   /* Number of channels per instance */
 #define NHW_GPIOTE_N_INT 1 /* Number of interrupts lines, common for all instances */
-#define NHW_GPIOTE_INT_MAP {{{1, 10}}}
+#define NHW_GPIOTE_INT_MAP {{{1, 10}},\
+                            {{0, 13}},\
+                            {{0, 47}}}
                             /* Net, GPIOTE_IRQn */
-#define NHW_GPIOTE_DPPI_MAP {1} /* Net */
-#define NHW_GPIOTE_IS_54 0
+                            /* App, GPIOTE0_IRQn */
+                            /* App, GPIOTE1_IRQn */
+#define NHW_GPIOTE_DPPI_MAP {1, 0 ,0} /* Net, App, App */
+#define NHW_GPIOTE_IS_54 0 /* Multiple int. lines and PORTxSECURE/NONSECURE */
 
 #define NHW_INTCTRL_TOTAL_INST 2
 #define NHW_INTCTRL_MAX_INTLINES 58

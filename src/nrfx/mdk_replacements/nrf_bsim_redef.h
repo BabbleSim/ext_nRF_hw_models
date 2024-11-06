@@ -368,8 +368,9 @@ extern NRF_UARTE_Type NRF_UARTE_regs[];
 #define NRF_TWIS3_S_BASE            NULL
 #undef NRF_UARTE3_S_BASE
 #define NRF_UARTE3_S_BASE           (&NRF_UARTE_regs[NHW_UARTE_APP3])
+extern NRF_GPIOTE_Type NRF_GPIOTE_regs[];
 #undef NRF_GPIOTE0_S_BASE
-#define NRF_GPIOTE0_S_BASE          NULL
+#define NRF_GPIOTE0_S_BASE          (&NRF_GPIOTE_regs[NHW_GPIOTE_APP0])
 #undef NRF_SAADC_NS_BASE
 #define NRF_SAADC_NS_BASE           NULL
 #undef NRF_SAADC_S_BASE
@@ -481,7 +482,7 @@ extern NRF_NFCT_Type NRF_NFCT_regs;
 #undef NRF_NFCT_S_BASE
 #define NRF_NFCT_S_BASE             (&NRF_NFCT_regs)
 #undef NRF_GPIOTE1_NS_BASE
-#define NRF_GPIOTE1_NS_BASE         NULL
+#define NRF_GPIOTE1_NS_BASE         (&NRF_GPIOTE_regs[NHW_GPIOTE_APP1])
 extern NRF_MUTEX_Type NRF_MUTEX_regs;
 #undef NRF_MUTEX_NS_BASE
 #define NRF_MUTEX_NS_BASE           (&NRF_MUTEX_regs)
@@ -512,14 +513,15 @@ extern NRF_NVMC_Type *NRF_NVMC_regs_p[];
 #define NRF_KMU_S_BASE              NULL
 #undef NRF_NVMC_S_BASE
 #define NRF_NVMC_S_BASE             (NRF_NVMC_regs_p[NHW_NVMC_APP0])
+extern NRF_GPIO_Type NRF_GPIO_regs[];
 #undef NRF_P0_NS_BASE
-#define NRF_P0_NS_BASE              NULL
+#define NRF_P0_NS_BASE              (&NRF_GPIO_regs[NHW_GPIO_APP_P0])
 #undef NRF_P1_NS_BASE
-#define NRF_P1_NS_BASE              NULL
+#define NRF_P1_NS_BASE              (&NRF_GPIO_regs[NHW_GPIO_APP_P1])
 #undef NRF_P0_S_BASE
-#define NRF_P0_S_BASE               NULL
+#define NRF_P0_S_BASE               (&NRF_GPIO_regs[NHW_GPIO_APP_P0])
 #undef NRF_P1_S_BASE
-#define NRF_P1_S_BASE               NULL
+#define NRF_P1_S_BASE               (&NRF_GPIO_regs[NHW_GPIO_APP_P1])
 #undef NRF_CRYPTOCELL_S_BASE
 #define NRF_CRYPTOCELL_S_BASE       NULL
 #undef NRF_VMC_NS_BASE
