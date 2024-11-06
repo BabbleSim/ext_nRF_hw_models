@@ -301,6 +301,25 @@
 #define NHW_FICR_APP 0
 #define NHW_FICR_NET 1
 
+/* By now, only the net core GPIO and GPIOTE are present */
+#define NHW_GPIO_TOTAL_INST 2
+#define NHW_GPIO_NET_P0 0
+#define NHW_GPIO_NET_P1 1
+#define NHW_GPIO_MAX_PINS_PER_PORT 32
+#define NHW_GPIO_NBR_PINS {32, 16} /* Number of IOs per port */
+#define NHW_GPIO_PARTNER_GPIOTE {0, 0} /* NET_P0->GPIOT_NET, NET_P1->GPIOTE_NET */
+#define NHW_GPIO_HAS_PIN_SENSE {1, 1} /* Per instance, does it have pin sense/detect mechanism */
+
+#define NHW_GPIOTE_TOTAL_INST 1
+#define NHW_GPIOTE_NET 0
+#define NHW_GPIOTE_MAX_CHANNELS 8    /* Maximum number of channels in any instance */
+#define NHW_GPIOTE_CHANNELS {8}   /* Number of channels per instance */
+#define NHW_GPIOTE_N_INT 1 /* Number of interrupts lines, common for all instances */
+#define NHW_GPIOTE_INT_MAP {{{1, 10}}}
+                            /* Net, GPIOTE_IRQn */
+#define NHW_GPIOTE_DPPI_MAP {1} /* Net */
+#define NHW_GPIOTE_IS_54 0
+
 #define NHW_INTCTRL_TOTAL_INST 2
 #define NHW_INTCTRL_MAX_INTLINES 58
 

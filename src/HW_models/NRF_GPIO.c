@@ -33,6 +33,11 @@
  *    a few clocks, before being raised again (if it needs to), in the model the new pulse/raise
  *    is sent instantaneously to the GPIOTE
  *
+ * 5340 notes:
+ *  * Only the net core GPIO peripherals are present.
+ *
+ *  * MCUSEL is ignored at this point.
+ *
  * 54L notes:
  *  * Split security distinctions are ignored
  *    == there is no distinction for accesses from secure or non secure bus masters or the S/NS address ranges.

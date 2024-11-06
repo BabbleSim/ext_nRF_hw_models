@@ -13,6 +13,9 @@
  *  * Unlike in real HW, tasks cannot occur simultaneously, they always happen in some sequence
  *    so task priority is not accounted for
  *
+ * 5340:
+ *  * Only the net core GPIOTE is present.
+ *
  * 54L notes:
  *  * Unlike in real HW, a GPIOTE channel can be connected to any GPIO port and pin.
  *
@@ -208,10 +211,15 @@ static void nhw_GPIOTE_signal_EVENTS_PORT(unsigned int inst) {
 #if (NHW_HAS_PPI)
   nrf_ppi_event(GPIOTE_EVENTS_PORT);
 #elif (NHW_HAS_DPPI)
+  #if !(NHW_GPIOTE_IS_54)
+  nhw_dppi_event_signal_if(gpiote_st[inst].dppi_map,
+                           NRF_GPIOTE_regs[inst].PUBLISH_PORT);
+  #else
   nhw_dppi_event_signal_if(gpiote_st[inst].dppi_map,
                            NRF_GPIOTE_regs[inst].PUBLISH_PORT[0].SECURE);
   nhw_dppi_event_signal_if(gpiote_st[inst].dppi_map,
                            NRF_GPIOTE_regs[inst].PUBLISH_PORT[0].NONSECURE);
+  #endif
 #endif
 }
 

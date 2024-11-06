@@ -2128,6 +2128,177 @@ typedef struct {                                /*!< (@ 0x01FF0000) FICR_NS Stru
 } NRF_FICR_NET_Type;                            /*!< Size = 1024 (0x400)                                                       */
 
 
+/* =========================================================================================================================== */
+/* ================                                           P0_NS                                           ================ */
+/* =========================================================================================================================== */
+
+
+/**
+  * @brief GPIO Port 0 (P0_NS)
+  */
+
+typedef struct {                                /*!< (@ 0x418C0500) P0_NS Structure                                            */
+  __IM  uint32_t  RESERVED;
+  __IOM uint32_t  OUT;                          /*!< (@ 0x00000004) Write GPIO port                                            */
+  __IOM uint32_t  OUTSET;                       /*!< (@ 0x00000008) Set individual bits in GPIO port                           */
+  __IOM uint32_t  OUTCLR;                       /*!< (@ 0x0000000C) Clear individual bits in GPIO port                         */
+  __IM  uint32_t  IN;                           /*!< (@ 0x00000010) Read GPIO port                                             */
+  __IOM uint32_t  DIR;                          /*!< (@ 0x00000014) Direction of GPIO pins                                     */
+  __IOM uint32_t  DIRSET;                       /*!< (@ 0x00000018) DIR set register                                           */
+  __IOM uint32_t  DIRCLR;                       /*!< (@ 0x0000001C) DIR clear register                                         */
+  __IOM uint32_t  LATCH;                        /*!< (@ 0x00000020) Latch register indicating what GPIO pins that
+                                                                    have met the criteria set in the PIN_CNF[n].SENSE
+                                                                    registers                                                  */
+  __IOM uint32_t  DETECTMODE;                   /*!< (@ 0x00000024) Select between default DETECT signal behavior
+                                                                    and LDETECT mode (For non-secure pin only)                 */
+  __IOM uint32_t  DETECTMODE_SEC;               /*!< (@ 0x00000028) Select between default DETECT signal behavior
+                                                                    and LDETECT mode (For secure pin only)                     */
+  __IM  uint32_t  RESERVED1[117];
+  __IOM uint32_t  PIN_CNF[32];                  /*!< (@ 0x00000200) Description collection: Configuration of GPIO
+                                                                    pins                                                       */
+} NRF_GPIO_Type;                                /*!< Size = 640 (0x280)                                                        */
+
+
+/* =========================================================================================================================== */
+/* ================                                         GPIOTE_NS                                         ================ */
+/* =========================================================================================================================== */
+
+
+/**
+  * @brief GPIO Tasks and Events (GPIOTE_NS)
+  */
+
+typedef struct {                                /*!< (@ 0x4100A000) GPIOTE_NS Structure                                        */
+  __OM  uint32_t  TASKS_OUT[8];                 /*!< (@ 0x00000000) Description collection: Task for writing to pin
+                                                                    specified in CONFIG[n].PSEL. Action on pin
+                                                                    is configured in CONFIG[n].POLARITY.                       */
+  __IM  uint32_t  RESERVED[4];
+  __OM  uint32_t  TASKS_SET[8];                 /*!< (@ 0x00000030) Description collection: Task for writing to pin
+                                                                    specified in CONFIG[n].PSEL. Action on pin
+                                                                    is to set it high.                                         */
+  __IM  uint32_t  RESERVED1[4];
+  __OM  uint32_t  TASKS_CLR[8];                 /*!< (@ 0x00000060) Description collection: Task for writing to pin
+                                                                    specified in CONFIG[n].PSEL. Action on pin
+                                                                    is to set it low.                                          */
+  __IOM uint32_t  SUBSCRIBE_OUT[8];             /*!< (@ 0x00000080) Description collection: Subscribe configuration
+                                                                    for task OUT[n]                                            */
+  __IM  uint32_t  RESERVED2[4];
+  __IOM uint32_t  SUBSCRIBE_SET[8];             /*!< (@ 0x000000B0) Description collection: Subscribe configuration
+                                                                    for task SET[n]                                            */
+  __IM  uint32_t  RESERVED3[4];
+  __IOM uint32_t  SUBSCRIBE_CLR[8];             /*!< (@ 0x000000E0) Description collection: Subscribe configuration
+                                                                    for task CLR[n]                                            */
+  __IOM uint32_t  EVENTS_IN[8];                 /*!< (@ 0x00000100) Description collection: Event generated from
+                                                                    pin specified in CONFIG[n].PSEL                            */
+  __IM  uint32_t  RESERVED4[23];
+  __IOM uint32_t  EVENTS_PORT;                  /*!< (@ 0x0000017C) Event generated from multiple input GPIO pins
+                                                                    with SENSE mechanism enabled                               */
+  __IOM uint32_t  PUBLISH_IN[8];                /*!< (@ 0x00000180) Description collection: Publish configuration
+                                                                    for event IN[n]                                            */
+  __IM  uint32_t  RESERVED5[23];
+  __IOM uint32_t  PUBLISH_PORT;                 /*!< (@ 0x000001FC) Publish configuration for event PORT                       */
+  __IM  uint32_t  RESERVED6[65];
+  __IOM uint32_t  INTENSET;                     /*!< (@ 0x00000304) Enable interrupt                                           */
+  __IOM uint32_t  INTENCLR;                     /*!< (@ 0x00000308) Disable interrupt                                          */
+  __IM  uint32_t  RESERVED7[126];
+  __IOM uint32_t  LATENCY;                      /*!< (@ 0x00000504) Latency selection for Event mode (MODE=Event)
+                                                                    with rising or falling edge detection on
+                                                                    the pin.                                                   */
+  __IM  uint32_t  RESERVED8[2];
+  __IOM uint32_t  CONFIG[8];                    /*!< (@ 0x00000510) Description collection: Configuration for OUT[n],
+                                                                    SET[n], and CLR[n] tasks and IN[n] event                   */
+} NRF_GPIOTE_Type;                              /*!< Size = 1328 (0x530)                                                       */
+
+
+/* Bit 31 : Write '1' to disable interrupt for event PORT */
+#define GPIOTE_INTENCLR_PORT_Pos (31UL) /*!< Position of PORT field. */
+#define GPIOTE_INTENCLR_PORT_Msk (0x1UL << GPIOTE_INTENCLR_PORT_Pos) /*!< Bit mask of PORT field. */
+#define GPIOTE_INTENCLR_PORT_Disabled (0UL) /*!< Read: Disabled */
+#define GPIOTE_INTENCLR_PORT_Enabled (1UL) /*!< Read: Enabled */
+#define GPIOTE_INTENCLR_PORT_Clear (1UL) /*!< Disable */
+
+/* Register: GPIOTE_CONFIG */
+/* Description: Description collection: Configuration for OUT[n], SET[n], and CLR[n] tasks and IN[n] event */
+
+/* Bit 20 : When in task mode: Initial value of the output when the GPIOTE channel is configured. When in event mode: No effect. */
+#define GPIOTE_CONFIG_OUTINIT_Pos (20UL) /*!< Position of OUTINIT field. */
+#define GPIOTE_CONFIG_OUTINIT_Msk (0x1UL << GPIOTE_CONFIG_OUTINIT_Pos) /*!< Bit mask of OUTINIT field. */
+#define GPIOTE_CONFIG_OUTINIT_Low (0UL) /*!< Task mode: Initial value of pin before task triggering is low */
+#define GPIOTE_CONFIG_OUTINIT_High (1UL) /*!< Task mode: Initial value of pin before task triggering is high */
+
+/* Bits 17..16 : When In task mode: Operation to be performed on output when OUT[n] task is triggered. When In event mode: Operation on input that shall trigger IN[n] event. */
+#define GPIOTE_CONFIG_POLARITY_Pos (16UL) /*!< Position of POLARITY field. */
+#define GPIOTE_CONFIG_POLARITY_Msk (0x3UL << GPIOTE_CONFIG_POLARITY_Pos) /*!< Bit mask of POLARITY field. */
+#define GPIOTE_CONFIG_POLARITY_None (0UL) /*!< Task mode: No effect on pin from OUT[n] task. Event mode: no IN[n] event generated on pin activity. */
+#define GPIOTE_CONFIG_POLARITY_LoToHi (1UL) /*!< Task mode: Set pin from OUT[n] task. Event mode: Generate IN[n] event when rising edge on pin. */
+#define GPIOTE_CONFIG_POLARITY_HiToLo (2UL) /*!< Task mode: Clear pin from OUT[n] task. Event mode: Generate IN[n] event when falling edge on pin. */
+#define GPIOTE_CONFIG_POLARITY_Toggle (3UL) /*!< Task mode: Toggle pin from OUT[n]. Event mode: Generate IN[n] when any change on pin. */
+
+/* Bit 13 : Port number */
+#define GPIOTE_CONFIG_PORT_Pos (13UL) /*!< Position of PORT field. */
+#define GPIOTE_CONFIG_PORT_Msk (0x1UL << GPIOTE_CONFIG_PORT_Pos) /*!< Bit mask of PORT field. */
+
+/* Bits 12..8 : GPIO number associated with SET[n], CLR[n], and OUT[n] tasks and IN[n] event */
+#define GPIOTE_CONFIG_PSEL_Pos (8UL) /*!< Position of PSEL field. */
+#define GPIOTE_CONFIG_PSEL_Msk (0x1FUL << GPIOTE_CONFIG_PSEL_Pos) /*!< Bit mask of PSEL field. */
+
+/* Bits 1..0 : Mode */
+#define GPIOTE_CONFIG_MODE_Pos (0UL) /*!< Position of MODE field. */
+#define GPIOTE_CONFIG_MODE_Msk (0x3UL << GPIOTE_CONFIG_MODE_Pos) /*!< Bit mask of MODE field. */
+#define GPIOTE_CONFIG_MODE_Disabled (0UL) /*!< Disabled. Pin specified by PSEL will not be acquired by the GPIOTE module. */
+#define GPIOTE_CONFIG_MODE_Event (1UL) /*!< Event mode */
+#define GPIOTE_CONFIG_MODE_Task (3UL) /*!< Task mode */
+
+/* Register: GPIO_PIN_CNF */
+/* Description: Description collection: Configuration of GPIO pins */
+
+/* Bits 30..28 : Select which MCU/Subsystem controls this pin Note: this field is only accessible from secure code. */
+#define GPIO_PIN_CNF_MCUSEL_Pos (28UL) /*!< Position of MCUSEL field. */
+#define GPIO_PIN_CNF_MCUSEL_Msk (0x7UL << GPIO_PIN_CNF_MCUSEL_Pos) /*!< Bit mask of MCUSEL field. */
+#define GPIO_PIN_CNF_MCUSEL_AppMCU (0x0UL) /*!< Application MCU */
+#define GPIO_PIN_CNF_MCUSEL_NetworkMCU (0x1UL) /*!< Network MCU */
+#define GPIO_PIN_CNF_MCUSEL_Peripheral (0x3UL) /*!< Peripheral with dedicated pins */
+#define GPIO_PIN_CNF_MCUSEL_TND (0x7UL) /*!< Trace and Debug Subsystem */
+
+/* Bits 17..16 : Pin sensing mechanism */
+#define GPIO_PIN_CNF_SENSE_Pos (16UL) /*!< Position of SENSE field. */
+#define GPIO_PIN_CNF_SENSE_Msk (0x3UL << GPIO_PIN_CNF_SENSE_Pos) /*!< Bit mask of SENSE field. */
+#define GPIO_PIN_CNF_SENSE_Disabled (0UL) /*!< Disabled */
+#define GPIO_PIN_CNF_SENSE_High (2UL) /*!< Sense for high level */
+#define GPIO_PIN_CNF_SENSE_Low (3UL) /*!< Sense for low level */
+
+/* Bits 11..8 : Drive configuration */
+#define GPIO_PIN_CNF_DRIVE_Pos (8UL) /*!< Position of DRIVE field. */
+#define GPIO_PIN_CNF_DRIVE_Msk (0xFUL << GPIO_PIN_CNF_DRIVE_Pos) /*!< Bit mask of DRIVE field. */
+#define GPIO_PIN_CNF_DRIVE_S0S1 (0UL) /*!< Standard '0', standard '1' */
+#define GPIO_PIN_CNF_DRIVE_H0S1 (1UL) /*!< High drive '0', standard '1' */
+#define GPIO_PIN_CNF_DRIVE_S0H1 (2UL) /*!< Standard '0', high drive '1' */
+#define GPIO_PIN_CNF_DRIVE_H0H1 (3UL) /*!< High drive '0', high 'drive '1'' */
+#define GPIO_PIN_CNF_DRIVE_D0S1 (4UL) /*!< Disconnect '0', standard '1' (normally used for wired-or connections) */
+#define GPIO_PIN_CNF_DRIVE_D0H1 (5UL) /*!< Disconnect '0', high drive '1' (normally used for wired-or connections) */
+#define GPIO_PIN_CNF_DRIVE_S0D1 (6UL) /*!< Standard '0', disconnect '1' (normally used for wired-and connections) */
+#define GPIO_PIN_CNF_DRIVE_H0D1 (7UL) /*!< High drive '0', disconnect '1' (normally used for wired-and connections) */
+#define GPIO_PIN_CNF_DRIVE_E0E1 (11UL) /*!< Extra high drive '0', extra high drive '1' */
+
+/* Bits 3..2 : Pull configuration */
+#define GPIO_PIN_CNF_PULL_Pos (2UL) /*!< Position of PULL field. */
+#define GPIO_PIN_CNF_PULL_Msk (0x3UL << GPIO_PIN_CNF_PULL_Pos) /*!< Bit mask of PULL field. */
+#define GPIO_PIN_CNF_PULL_Disabled (0UL) /*!< No pull */
+#define GPIO_PIN_CNF_PULL_Pulldown (1UL) /*!< Pull down on pin */
+#define GPIO_PIN_CNF_PULL_Pullup (3UL) /*!< Pull up on pin */
+
+/* Bit 1 : Connect or disconnect input buffer */
+#define GPIO_PIN_CNF_INPUT_Pos (1UL) /*!< Position of INPUT field. */
+#define GPIO_PIN_CNF_INPUT_Msk (0x1UL << GPIO_PIN_CNF_INPUT_Pos) /*!< Bit mask of INPUT field. */
+#define GPIO_PIN_CNF_INPUT_Connect (0UL) /*!< Connect input buffer */
+#define GPIO_PIN_CNF_INPUT_Disconnect (1UL) /*!< Disconnect input buffer */
+
+/* Bit 0 : Pin direction. Same physical register as DIR register */
+#define GPIO_PIN_CNF_DIR_Pos (0UL) /*!< Position of DIR field. */
+#define GPIO_PIN_CNF_DIR_Msk (0x1UL << GPIO_PIN_CNF_DIR_Pos) /*!< Bit mask of DIR field. */
+#define GPIO_PIN_CNF_DIR_Input (0UL) /*!< Configure pin as an input pin */
+#define GPIO_PIN_CNF_DIR_Output (1UL) /*!< Configure pin as an output pin */
+
 
 /* =========================================================================================================================== */
 /* ================                                          IPC_NS                                           ================ */

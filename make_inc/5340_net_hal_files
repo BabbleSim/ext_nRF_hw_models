@@ -7,6 +7,8 @@ src/nrfx/hal/nrf_dppi.c
 src/nrfx/hal/nrf_ecb.c
 src/nrfx/hal/nrf_egu.c
 src/nrfx/hal/nrf_hack.c
+src/nrfx/hal/nrf_gpio.c
+src/nrfx/hal/nrf_gpiote.c
 src/nrfx/hal/nrf_ipc.c
 src/nrfx/hal/nrf_mutex.c
 src/nrfx/hal/nrf_nvmc.c

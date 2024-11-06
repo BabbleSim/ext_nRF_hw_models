@@ -148,8 +148,9 @@ extern NRF_RADIO_Type NRF_RADIO_regs;
 extern NRF_RNG_Type NRF_RNG_regs;
 #undef NRF_RNG_NS_BASE
 #define NRF_RNG_NS_BASE            (&NRF_RNG_regs)
+extern NRF_GPIOTE_Type NRF_GPIOTE_regs[];
 #undef NRF_GPIOTE_NS_BASE
-#define NRF_GPIOTE_NS_BASE         NULL
+#define NRF_GPIOTE_NS_BASE         (&NRF_GPIOTE_regs[NHW_GPIOTE_NET])
 #undef NRF_WDT_NS_BASE
 #define NRF_WDT_NS_BASE            NULL
 #undef NRF_ECB_NS_BASE
@@ -217,10 +218,11 @@ extern NRF_NVMC_Type *NRF_NVMC_regs_p[];
 #define NRF_NVMC_NS_BASE           (NRF_NVMC_regs_p[NHW_NVMC_NET0])
 #undef NRF_VMC_NS_BASE
 #define NRF_VMC_NS_BASE            NULL
+extern NRF_GPIO_Type NRF_GPIO_regs[];
 #undef NRF_P0_NS_BASE
-#define NRF_P0_NS_BASE             NULL
+#define NRF_P0_NS_BASE             (&NRF_GPIO_regs[NHW_GPIO_NET_P0])
 #undef NRF_P1_NS_BASE
-#define NRF_P1_NS_BASE             NULL
+#define NRF_P1_NS_BASE             (&NRF_GPIO_regs[NHW_GPIO_NET_P1])
 
 /********************************************************************/
 /********************************************************************/
