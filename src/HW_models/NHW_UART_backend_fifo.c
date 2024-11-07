@@ -583,12 +583,12 @@ static void nhw_ufifo_backend_register_cmdline(void) {
       .type = 'd',
       .call_when_found = uf_parse_mdt,
       .dest = (void *)&uf_mdt,
-      .descript = "(By default 10e3=10ms) Maximum amount of time the backend will spend without dequeuing"
+      .descript = "(By default 10e3=10ms) Maximum amount of time the backend will spend without dequeuing "
                   "the Rx FIFO when the UART is not running in Tx or Rx mode. "
-                  "This needs to be small enough to avoid the pipe from filling up and causing"
-                  "a deadlock. It can also be set to a very small value (order of 10micros) if you want to"
-                  "ensure the UART keeps registering the CTS signal toggles even when it is not running"
-                  "(This only makes sense if you have registered a short or a PPI event in the CTS signal"
+                  "This needs to be small enough to avoid the pipe from filling up and causing "
+                  "a deadlock. It can also be set to a very small value (order of 10micros) if you want to "
+                  "ensure the UART keeps registering the CTS signal toggles even when it is not running "
+                  "(This only makes sense if you have registered a short or a PPI event in the CTS signal "
                   "events). The smaller the value the greater the overhead."
     },
     ARG_TABLE_ENDMARKER
