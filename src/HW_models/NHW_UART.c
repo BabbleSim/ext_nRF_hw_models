@@ -1107,7 +1107,7 @@ void nhw_UARTE_regw_sideeffects_TASKS_SUSPEND(unsigned int inst) {
     nhw_UARTE_TASK_##TASK_N((int) param);                                            \
   }                                                                                  \
                                                                                      \
-  void nhw_uarte_regw_sideeffects_SUBSCRIBE_##TASK_N(uint inst)                      \
+  void nhw_UARTE_regw_sideeffects_SUBSCRIBE_##TASK_N(uint inst)                      \
   {                                                                                  \
      static struct nhw_subsc_mem TASK_N##_subscribed[NHW_UARTE_TOTAL_INST];          \
      struct uarte_status *this = &nhw_uarte_st[inst];                                \
