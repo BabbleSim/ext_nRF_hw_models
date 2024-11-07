@@ -20,6 +20,8 @@
 #include "hal/nrf_aar.h"
 #include "hal/nrf_ppi.h"
 #include "hal/nrf_ecb.h"
+#include "hal/nrf_uart.h"
+#include "hal/nrf_uarte.h"
 #elif defined(NRF5340_XXAA_NETWORK)
 #include "hal/nrf_aar.h"
 #include "hal/nrf_ccm.h"
@@ -36,6 +38,7 @@
 #include "hal/nrf_ipc.h"
 #include "hal/nrf_rtc.h"
 #include "hal/nrf_timer.h"
+#include "hal/nrf_uarte.h"
 #elif defined(NRF5340_XXAA_APPLICATION)
 #include "hal/nrf_clock.h"
 #include "hal/nrf_dppi.h"
@@ -44,6 +47,7 @@
 #include "hal/nrf_ipc.h"
 #include "hal/nrf_rtc.h"
 #include "hal/nrf_timer.h"
+#include "hal/nrf_uarte.h"
 #elif defined(NRF54L15_XXAA)
 #include "hal/nrf_aar.h"
 #include "hal/nrf_ccm.h"
@@ -133,7 +137,11 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
 #if defined(NRF52833_XXAA)
   IF_PER(CLOCK, , , clock)
   } else IF_PER(RADIO, , , radio)
+  } else IF_PER(UART, 0, , uart)
+  } else IF_PER(UARTE, 0, , uarte)
+  } else IF_PER(UARTE, 1, , uarte)
   } else IF_PER(RNG, , , rng)
+  } else IF_PER(GPIOTE, , , gpiote)
   } else IF_PER(TIMER, 0, , timer)
   } else IF_PER(TIMER, 1, , timer)
   } else IF_PER(TIMER, 2, , timer)
@@ -152,6 +160,7 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   } else IF_PER(RTC, 0, , rtc)
   } else IF_PER(RTC, 1, , rtc)
   } else IF_PER(RTC, 2, , rtc)
+  } else IF_PER(TEMP, , , temp)
   } else {
     bs_trace_error_time_line("Tried to look for a task register not known to these HW models\n");
     return; /* unreachable */
@@ -168,10 +177,10 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   } else IF_PER(AAR, , _NS, aar)
   } else IF_PER(CCM, , _NS, ccm)
   } else IF_PER(DPPIC, , _NS, dppi)
-  /*} else IF_PER(TEMP, , _NS, temp)*/ //Lacking definition in official nrf HAL
+  } else IF_PER(TEMP, , _NS, temp)
   } else IF_PER(RTC, 0, _NS, rtc)
   } else IF_PER(IPC, , _NS, ipc)
-  /* 19 SERIAL0 */
+  } else IF_PER(UARTE, 0, _NS, uarte)
   } else IF_PER(EGU, 0, _NS, egu)
   } else IF_PER(RTC, 1, _NS, rtc)
   } else IF_PER(TIMER, 1, _NS, timer)
@@ -191,11 +200,15 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   /*} else IF_PER(POWER, , _NS, power)
   } else IF_PER(RESET, , _NS, reset)
   } else IF_PER(CTRLAP, , _NS, ctrlap)
-  } else IF_PER(SPIM, 0, _NS, spi)
-  } else IF_PER(SPIM, 1, _NS, spi)
-  } else IF_PER(SPIM, 4, _NS, spi)
-  } else IF_PER(SPIM, 2, _NS, spi)
-  } else IF_PER(SPIM, 3, _NS, spi) */
+  } else IF_PER(SPIM, 0, _NS, spi) */
+  } else IF_PER(UARTE, 0, _NS, uarte)
+  /*} else IF_PER(SPIM, 1, _NS, spi)*/
+  } else IF_PER(UARTE, 1, _NS, uarte)
+  /*} else IF_PER(SPIM, 4, _NS, spi)
+  } else IF_PER(SPIM, 2, _NS, spi)*/
+  } else IF_PER(UARTE, 2, _NS, uarte)
+  /*} else IF_PER(SPIM, 3, _NS, spi) */
+  } else IF_PER(UARTE, 3, _NS, uarte)
   } else IF_PER(GPIOTE, 0, _S, gpiote)
   /*} else IF_PER(SAADC, , _NS, saadc)*/
   } else IF_PER(TIMER, 0, _NS, timer)
@@ -279,7 +292,7 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   //} else IF_PER(SAADC, , _S, saadc)
   //} else IF_PER(NFCT, , _S, nfct)
   } else IF_PER(TEMP, , _S, temp)
-  //} else IF_PER(GPIOTE, 20, _S, gpiote)
+  } else IF_PER(GPIOTE, 20, _S, gpiote)
   //} else IF_PER(TAMPC, , _S, tamp)
   //} else IF_PER(I2S, 20, _S, i2s)
   //} else IF_PER(QDEC, 20, _S, qdec)
@@ -296,7 +309,7 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   //} else IF_PER(LPCOMP, , _S, lpcomp)
   //} else IF_PER(WDT, 30, _S, wdt)
   //} else IF_PER(WDT, 31, _S, wdt)
-  //} else IF_PER(GPIOTE, 30, _S, gpiote)
+  } else IF_PER(GPIOTE, 30, _S, gpiote)
   } else IF_PER(CLOCK, , _NS, clock)
   //} else IF_PER(POWER, , _NS, power)
   //} else IF_PER(RESET, , _NS, reset)
