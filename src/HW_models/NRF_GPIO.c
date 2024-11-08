@@ -29,28 +29,41 @@
  *  * Note b.3:
  *    During pin reconfigurations, there can be spurious transitions in the pins outputs
  *    which may not correspond to how the real HW would behave
- *  * In real HW, after a write to LATCH, the DETECT event output to the GPIOTE is kept low for
+ *  * Note b.4:
+ *    In real HW, after a write to LATCH, the DETECT event output to the GPIOTE is kept low for
  *    a few clocks, before being raised again (if it needs to), in the model the new pulse/raise
  *    is sent instantaneously to the GPIOTE
  *
  * 5340 notes:
- *  * Unlike in real HW, the Net and App cores GPIO peripherals are mapped to different/separate
+ *  * Note 53.1: Unlike in real HW, the Net and App cores GPIO peripherals are mapped to different/separate
  *    simulated ports.
  *
- *  * MCUSEL is ignored at this point.
+ *  * Note 53.2: MCUSEL is ignored at this point. (see point above)
+ *
+ *  * Note 53.3: Like in real HW DETECTMODE & DETECTMODE_SEC control the generation of DETECT_SEC & DETEC_NONSEC,
+ *    which are connected to GPIOTE0 (GPIOTESEC) and GPIOTE1 respectively.
+ *    But, all pins sense output (be them secure or not) is used as input for *both*.
+ *    Note: This only affects the app core GPIOs, the net core GPIOs do not have the DETECT_SEC signal
+ *    connected to anything.
  *
  * 53 & 54 notes:
- *  * Split security distinctions are ignored
+ *  * Note 534.1: Split security distinctions are ignored
  *    == there is no distinction for accesses from secure or non secure bus masters or the S/NS address ranges.
  *    Accessing either through the S or NS address range all registers are equally accessible.
  *
- *  * A possible secure/non secure pin configuration in the SPU is ignored
+ *  * Note 534.2: A possible secure/non secure pin configuration in the SPU is ignored
  *
  * 54L notes:
- *  * PIN_CNF[n].CTRLSEL is ignored by now, but other peripherals can still take over a pin (irrespectively of .CTRLSEL)
- *    If another peripheral HW model has taken ownership of a pin, you will get a warning if you try to driver it through
+ *  * Note 54.1: PIN_CNF[n].CTRLSEL is ignored by now, but other peripherals can still take over a pin (irrespectively of .CTRLSEL)
+ *    If another peripheral HW model has taken ownership of a pin, you will get a warning if you try to drive it through
  *    the GPIO registers. You will be able to read a pin input level even if another peripheral has control over it,
  *    while the pin input driver is enabled.
+ *
+ *  * Note 54.2: As we do not check pins secure configuration, at this point both DETECT_SEC & DETEC_NONSEC are generated
+ *    at the same time from all pins sense outputs
+ *
+ *  * Note 54.3: Considerations regarding the LATCH register split security (different behavior depending on S/NS master access)
+ *    are ignored (due to Note 534.1)
  */
 
 #include <stdint.h>

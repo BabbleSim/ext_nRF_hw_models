@@ -5,22 +5,6 @@ A model of the GPIO peripherals is included with these models.
 You can find information about their limitations and approximations in
 [the source files](../src/HW_models/NRF_GPIO.c).
 
-These are the modeled ports and their mapping to indexes used in these models:
-
-* 52822
-    * P0: 0
-    * P1: 1
-* 5340 NOTE: The Net and App cores ports are mapped to different/separate simulated ports/pins,
-  unlike in real HW where they are connected to the same physical pins.
-    * Net core P0: 0
-    * Net core P1: 1
-    * App core P0: 2
-    * App core P1: 3
-* 54L15
-    * P0 (LP domain): 0
-    * P1 (Per domain): 1
-    * P2 (MCU domain): 2
-
 Note that as of today these models:
 * Consider the output drivers to have 0 impedance: The drive is instantaneous.
 * Do not allow outputs drivers to be in a tristate mode (an output can be disconnected, but not
@@ -56,6 +40,24 @@ by registering a callback with `nrf_gpio_test_register_in_callback()` and
 With the first one, the callback will be called each time an *input gpio pin register* is modified.
 With the second one, each time the output pin itself changes. That is, both will be called only
 if the pin is connected/driven in that direction.
+
+### Mapping of real ports to simulated port indexes
+
+* 52822
+    * P0: 0
+    * P1: 1
+* 5340 NOTE: The Net and App cores ports are mapped to different/separate simulated ports/pins,
+  unlike in real HW where they are connected to the same physical pins. Note that from the embedded
+  SW point of view (that is, when configuring an App core GPIOTE channel), the App core port P0 is
+  port "0" just like when configuring it in real HW).
+    * Net core P0: 0
+    * Net core P1: 1
+    * App core P0: 2
+    * App core P1: 3
+* 54L15
+    * P0 (LP domain): 0
+    * P1 (Per domain): 1
+    * P2 (MCU domain): 2
 
 ### Stimuli file format
 

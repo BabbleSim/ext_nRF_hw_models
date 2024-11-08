@@ -14,15 +14,24 @@
  *  * Unlike in real HW, tasks cannot occur simultaneously, they always happen in some sequence
  *    so task priority is not accounted for
  *
+ * 53:
+ *  * Unlike in real HW, pins security configuration is ignored. The GPIOTE channels can be connected to any
+ *    pin irrespectively of their security configuration. For the App core, this means both GPIOTE0 and GPIOTE1
+ *    can have any channel connected to any pin in the app core GPIOs.
+ *
+ *  * Check the GPIO peripheral notes. Note that the app core and net core ports are fully separate simulated ports
+ *    unlike in real HW where they are connected to the same analog pin I/Os.
+ *
  * 53 & 54
  *  * Split security distinctions are ignored
  *    == there is no distinction for accesses from secure or non secure bus masters or the S/NS address ranges.
- *    Accessing from either the S or NS address range all registers are equally accessible.
+ *    In all cases all registers are equally accessible, their read content will be the same, and writes will be
+ *    handled equally.
  *
  * 54L notes:
  *  * Unlike in real HW, a GPIOTE channel can be connected to any GPIO port and pin.
  *
- *  * Both EVENTS_PORT.SECURE & NONSECURE will be raised at the same time. This is due to the GPIO
+ *  * Both EVENTS_PORT.SECURE & NONSECURE will be raised at the same time. This is due to the GPIO model
  *    not considering which pins are labeled as secure or not secure in the SPU.
  */
 
