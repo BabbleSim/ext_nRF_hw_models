@@ -16,8 +16,7 @@
  *   * Check the selected backend notes, for more possible limitations
  *
  *   * The plain UART functionality is present in all UARTEs,
- *     and both for the nRF52 and nRF5340.
- *     (though it is not reachable in practice in an nRF5340 due to the lack of HAL)
+ *     for the nRF52
  *
  *   * PSEL is ignored, pins are assumed connected.
  *
@@ -89,7 +88,9 @@
 
 static struct uarte_status nhw_uarte_st[NHW_UARTE_TOTAL_INST];
 NRF_UARTE_Type NRF_UARTE_regs[NHW_UARTE_TOTAL_INST];
+#if (NHW_UARTE_HAS_UART)
 NRF_UART_Type *NRF_UART_regs[NHW_UARTE_TOTAL_INST];
+#endif
 
 static bs_time_t Timer_UART_common = TIME_NEVER;
 static bs_time_t Timer_UART_peri = TIME_NEVER;
@@ -123,8 +124,10 @@ static void nhw_uarte_init(void) {
 
     u_el->inst = i;
 
+#if (NHW_UARTE_HAS_UART)
     NRF_UART_regs[i] = (NRF_UART_Type *)&NRF_UARTE_regs[i];
     u_el->UART_regs[i] = (NRF_UART_Type *)&NRF_UARTE_regs[i];
+#endif
     u_el->UARTE_regs[i] = (NRF_UARTE_Type *)&NRF_UARTE_regs[i];
 
     u_el->Rx_TO_timer = TIME_NEVER;
@@ -208,7 +211,11 @@ static void nhw_uarte_update_timer(void) {
 }
 
 static bool uart_enabled(uint inst) {
+#if (NHW_UARTE_HAS_UART)
   return NRF_UARTE_regs[inst].ENABLE == 4;
+#else
+  return false;
+#endif
 }
 
 static bool uarte_enabled(uint inst) {
@@ -224,13 +231,14 @@ bs_time_t nhw_uarte_one_byte_time(uint inst) {
   bs_time_t duration = 1 + 8 + 1; /* Start bit, byte, and at least 1 stop bit */
   uint32_t CONFIG = NRF_UARTE_regs[inst].CONFIG;
 
-  if (CONFIG & UART_CONFIG_PARITY_Msk) {
+  if (CONFIG & UARTE_CONFIG_PARITY_Msk) {
     duration +=1;
   }
-  if (CONFIG & UART_CONFIG_STOP_Msk) { /* Two stop bits */
+  if (CONFIG & UARTE_CONFIG_STOP_Msk) { /* Two stop bits */
     duration +=1;
   }
 
+#if (NHW_UARTE_HAS_UART)
   if (uart_enabled(inst)) {
     /* We round to the nearest microsecond */
     switch (NRF_UARTE_regs[inst].BAUDRATE)
@@ -293,7 +301,9 @@ bs_time_t nhw_uarte_one_byte_time(uint inst) {
           inst, NRF_UARTE_regs[inst].BAUDRATE);
       break;
     }
-  } else /* UARTE */ {
+  } else
+#endif
+  /* UARTE */ {
     /* We round to the nearest microsecond */
     switch (NRF_UARTE_regs[inst].BAUDRATE)
     {
@@ -376,7 +386,9 @@ static uint8_t Rx_FIFO_pop(uint inst, struct uarte_status *u_el) {
   u_el->Rx_FIFO_cnt -=1;
 
   if (u_el->Rx_FIFO_cnt > 0) {
+#if (NHW_UARTE_HAS_UART)
     NRF_UART_regs[inst]->RXD = u_el->Rx_FIFO[0];
+#endif
     nhw_UARTE_signal_EVENTS_RXDRDY(inst);
   }
 
@@ -387,13 +399,15 @@ static void Rx_FIFO_push(uint inst, struct uarte_status *u_el, uint8_t value) {
   if (u_el->Rx_FIFO_cnt >= RX_FIFO_SIZE) {
     Rx_FIFO_pop(inst, u_el);
     bs_trace_warning_time_line("UART%i: Pushed to full Rx FIFO, oldest value dropped\n", inst);
-    NRF_UART_regs[inst]->ERRORSRC |= UART_ERRORSRC_OVERRUN_Msk;
+    NRF_UARTE_regs[inst].ERRORSRC |= UARTE_ERRORSRC_OVERRUN_Msk;
     nhw_UARTE_signal_EVENTS_ERROR(inst);
   }
   u_el->Rx_FIFO[u_el->Rx_FIFO_cnt++] = value;
 
   if (u_el->Rx_FIFO_cnt == 1){
+#if (NHW_UARTE_HAS_UART)
     NRF_UART_regs[inst]->RXD = u_el->Rx_FIFO[0];
+#endif
     nhw_UARTE_signal_EVENTS_RXDRDY(inst);
   }
 }
@@ -422,7 +436,7 @@ static void nhw_UARTE_Rx_DMA_attempt(uint inst, struct uarte_status * u_el) {
 }
 
 static bool flow_control_on(uint inst) {
-  return (NRF_UART_regs[inst]->CONFIG & UART_CONFIG_HWFC_Msk) != 0;
+  return (NRF_UARTE_regs[inst].CONFIG & UARTE_CONFIG_HWFC_Msk) != 0;
 }
 
 static void propagate_RTS_R(uint inst, struct uarte_status *u_el) {
@@ -895,11 +909,13 @@ void nhw_UARTE_TASK_FLUSHRX(int inst) {
   }
 }
 
+#if (NHW_UARTE_HAS_UART)
 void nhw_UARTE_TASK_SUSPEND(int inst) {
   /* UART(not-E) only task */
   nhw_UARTE_TASK_STOPTX(inst);
   nhw_UARTE_TASK_STOPRX(inst);
 }
+#endif
 
 void nhw_UARTE_regw_sideeffects_ENABLE(unsigned int inst) {
   struct uarte_status * u_el = &nhw_uarte_st[inst];
@@ -962,6 +978,7 @@ void nhw_UARTE_regw_sideeffects_ERRORSRC(unsigned int inst) {
   NRF_UARTE_regs[inst].ERRORSRC = 0;
 }
 
+#if (NHW_UARTE_HAS_UART)
 uint32_t nhw_UARTE_regr_sideeffects_RXD(unsigned int inst) {
   if (!uart_enabled(inst)) {
     bs_trace_warning("RXD read while UART%i was not enabled\n", inst);
@@ -1016,6 +1033,7 @@ void nhw_UARTE_regw_sideeffects_TXD(unsigned int inst)
 
   nhw_UART_Tx_queue_byte(inst, u_el, NRF_UART_regs[inst]->TXD);
 }
+#endif
 
 #if (NHW_HAS_PPI)
   #define _NHW_UARTE_XPPI_EVENT(inst, event)    \
@@ -1093,6 +1111,7 @@ NHW_SIDEEFFECTS_TASKS(UARTE, NRF_UARTE_regs[inst]., STARTTX)
 NHW_SIDEEFFECTS_TASKS(UARTE, NRF_UARTE_regs[inst]., STOPTX)
 NHW_SIDEEFFECTS_TASKS(UARTE, NRF_UARTE_regs[inst]., FLUSHRX)
 
+#if (NHW_UARTE_HAS_UART)
 void nhw_UARTE_regw_sideeffects_TASKS_SUSPEND(unsigned int inst) {
   /* Needs special treatment for being an UART(non-E) only task */
   if ( NRF_UART_regs[inst]->TASKS_SUSPEND ) {
@@ -1100,6 +1119,7 @@ void nhw_UARTE_regw_sideeffects_TASKS_SUSPEND(unsigned int inst) {
     nhw_UARTE_TASK_SUSPEND(inst);
   }
 }
+#endif
 
 #define NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(TASK_N)                                  \
   static void nhw_UARTE_TASK_##TASK_N##_wrap(void* param)                             \

@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "NHW_UART_backend_if.h"
+#include "NHW_config.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -32,7 +33,9 @@ struct uarte_status {
 
   uint inst;
 
+#if (NHW_UARTE_HAS_UART)
   NRF_UART_Type *UART_regs[NHW_UARTE_TOTAL_INST];
+#endif
   NRF_UARTE_Type *UARTE_regs[NHW_UARTE_TOTAL_INST];
 #if (NHW_HAS_DPPI)
   /* Mapping of peripheral instance to DPPI instance */

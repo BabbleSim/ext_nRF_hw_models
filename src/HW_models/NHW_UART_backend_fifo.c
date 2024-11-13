@@ -385,8 +385,8 @@ static void uf_rx_process_last_msg_pre(uint inst, struct ufifo_st_t *u_el) {
 }
 
 static void uf_rx_check_config_match(uint inst, struct ufifo_st_t *u_el) {
-  if (( (NRF_UARTE_regs[inst].CONFIG & ~UART_CONFIG_HWFC_Msk)
-        != (u_el->rx_line_params.config & ~UART_CONFIG_HWFC_Msk)
+  if (( (NRF_UARTE_regs[inst].CONFIG & ~UARTE_CONFIG_HWFC_Msk)
+        != (u_el->rx_line_params.config & ~UARTE_CONFIG_HWFC_Msk)
       )
       || (NRF_UARTE_regs[inst].BAUDRATE != u_el->rx_line_params.baud)) {
     bs_trace_warning_time_line("UART%i: Receiving a byte with mismatched configuration. "
