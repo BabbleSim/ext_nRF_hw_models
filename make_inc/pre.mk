@@ -23,4 +23,4 @@ WARNINGS:=-Wall -Wpedantic
 COVERAGE:=
 COMMON_CC_FLAGS:=\
   ${ARCH} ${DEBUG} ${OPT} ${WARNINGS} -MMD -MP -std=gnu11 \
-  -fdata-sections -ffunction-sections -D_XOPEN_SOURCE=500
+  -fdata-sections -ffunction-sections -D_XOPEN_SOURCE=500 -fno-pie -fno-pic
