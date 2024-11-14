@@ -12,18 +12,15 @@
  */
 
 /**
- * Notes:
+ * Notes (common for all):
  *   * Check the selected backend notes, for more possible limitations
- *
- *   * The plain UART functionality is present in all UARTEs,
- *     for the nRF52
  *
  *   * PSEL is ignored, pins are assumed connected.
  *
  *   * Unlike in real HW, it is irrelevant if the external oscillator is enabled
  *     or not. The UART timing will always be equally precise.
  *
- *   * After a StartTx, the UART is ready to Tx right away
+ *   * After a STARTTX, the UART is ready to Tx right away
  *     (it does not take ~1 us as in the real HW)
  *
  *   * The effective transmit rate is going to be marginally different than in reality, due to
@@ -60,6 +57,13 @@
  *   * In real HW, it seems all internal status is lost when the enable register is cleared.
  *     The HW models behaves this way.
  *
+ * * 52:
+ *   * The plain UART functionality is present in all UARTEs,
+ *     for the nRF52
+ *
+ * * 54:
+ *   * DMA_{RX,TX}.TERMINATEONBUSERROR is ignored EVENTS_DMA.{RX,TX}.BUSERROR is never generated
+ *     and BUSERRORADDRESS is never set
  *
  * Implementation notes:
  *
@@ -414,7 +418,11 @@ static void Rx_FIFO_push(uint inst, struct uarte_status *u_el, uint8_t value) {
 
 static void nhw_UARTE_Rx_DMA_end(uint inst, struct uarte_status * u_el) {
   u_el->rx_dma_status = DMA_Off;
+#if NHW_UARTE_54NAMING
+  NRF_UARTE_regs[inst].DMA.RX.AMOUNT = u_el->RXD_AMOUNT;
+#else
   NRF_UARTE_regs[inst].RXD.AMOUNT = u_el->RXD_AMOUNT;
+#endif
   nhw_UARTE_signal_EVENTS_ENDRX(inst);
 }
 
@@ -573,10 +581,17 @@ static void nhw_UARTE_eval_interrupt(uint inst) {
   if (uarte_enabled(inst)) {
     /* It is unclear if these UART*E* events being still pended would still keep
      * the int line high even in UART(not E) mode */
+#if !(NHW_UARTE_54NAMING)
     NHW_CHECK_INTERRUPT(UARTE, NRF_UARTE_regs[inst]., ENDRX, inten)
     NHW_CHECK_INTERRUPT(UARTE, NRF_UARTE_regs[inst]., ENDTX, inten)
     NHW_CHECK_INTERRUPT(UARTE, NRF_UARTE_regs[inst]., RXSTARTED, inten)
     NHW_CHECK_INTERRUPT(UARTE, NRF_UARTE_regs[inst]., TXSTARTED, inten)
+#else
+    NHW_CHECK_INTERRUPT_ST(UARTE, NRF_UARTE_regs[inst]., DMA.RX.END, DMARXEND, inten)
+    NHW_CHECK_INTERRUPT_ST(UARTE, NRF_UARTE_regs[inst]., DMA.TX.END, DMATXEND, inten)
+    NHW_CHECK_INTERRUPT_ST(UARTE, NRF_UARTE_regs[inst]., DMA.RX.READY, DMARXREADY, inten)
+    NHW_CHECK_INTERRUPT_ST(UARTE, NRF_UARTE_regs[inst]., DMA.TX.READY, DMATXREADY, inten)
+#endif
     NHW_CHECK_INTERRUPT(UARTE, NRF_UARTE_regs[inst]., TXSTOPPED, inten)
   }
 
@@ -616,8 +631,13 @@ void nhw_UARTE_TASK_STARTRX(int inst)
   }
 
   if (uarte_enabled(inst)) {
+#if !NHW_UARTE_54NAMING
     u_el->RXD_PTR = NRF_UARTE_regs[inst].RXD.PTR;
     u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].RXD.MAXCNT;
+#else
+    u_el->RXD_PTR = NRF_UARTE_regs[inst].DMA.RX.PTR;
+    u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].DMA.RX.MAXCNT;
+#endif
     u_el->RXD_AMOUNT = 0;
     u_el->rx_dma_status = DMAing;
     nhw_UARTE_signal_EVENTS_RXSTARTED(inst); /* Instantaneously ready */
@@ -662,7 +682,11 @@ void nhw_UARTE_TASK_STOPRX(int inst)
 
 static void nHW_UARTE_Tx_DMA_end(int inst, struct uarte_status * u_el) {
   u_el->tx_dma_status = DMA_Off;
+#if !NHW_UARTE_54NAMING
   NRF_UARTE_regs[inst].TXD.AMOUNT = u_el->TXD_AMOUNT;
+#else
+  NRF_UARTE_regs[inst].DMA.TX.AMOUNT = u_el->TXD_AMOUNT;
+#endif
   nhw_UARTE_signal_EVENTS_ENDTX(inst);
 }
 
@@ -700,8 +724,13 @@ void nhw_UARTE_TASK_STARTTX(int inst)
   }
 
   if (uarte_enabled(inst)) {
+#if !(NHW_UARTE_54NAMING)
     u_el->TXD_PTR = NRF_UARTE_regs[inst].TXD.PTR;
     u_el->TXD_MAXCNT = NRF_UARTE_regs[inst].TXD.MAXCNT;
+#else
+    u_el->TXD_PTR = NRF_UARTE_regs[inst].DMA.TX.PTR;
+    u_el->TXD_MAXCNT = NRF_UARTE_regs[inst].DMA.TX.MAXCNT;
+#endif
     u_el->TXD_AMOUNT = 0;
     u_el->tx_dma_status = DMAing;
     nhw_UARTE_signal_EVENTS_TXSTARTED(inst); /* Instantaneously ready */
@@ -899,8 +928,13 @@ void nhw_UARTE_TASK_FLUSHRX(int inst) {
 
   struct uarte_status * u_el = &nhw_uarte_st[inst];
 
+#if !(NHW_UARTE_54NAMING)
   u_el->RXD_PTR = NRF_UARTE_regs[inst].RXD.PTR;
   u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].RXD.MAXCNT;
+#else
+  u_el->RXD_PTR = NRF_UARTE_regs[inst].DMA.RX.PTR;
+  u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].DMA.RX.MAXCNT;
+#endif
   u_el->RXD_AMOUNT = 0;
   u_el->rx_dma_status = DMAing;
   nhw_UARTE_Rx_DMA_attempt(inst, u_el);
@@ -1036,67 +1070,90 @@ void nhw_UARTE_regw_sideeffects_TXD(unsigned int inst)
 #endif
 
 #if (NHW_HAS_PPI)
-  #define _NHW_UARTE_XPPI_EVENT(inst, event)    \
+  #define _NHW_UARTE_XPPI_EVENT(inst, event, eventl)    \
   if (inst == 0) { \
     nrf_ppi_event(UARTE0_EVENTS_##event); \
   } else { \
     nrf_ppi_event(UARTE1_EVENTS_##event); \
   }
 #elif (NHW_HAS_DPPI)
-  #define _NHW_UARTE_XPPI_EVENT(inst, event)    \
+  #define _NHW_UARTE_XPPI_EVENT(inst, event, eventl)    \
      nhw_dppi_event_signal_if(nhw_uarte_st[inst].dppi_map,  \
-                              NRF_UARTE_regs[inst].PUBLISH_##event)
+                              NRF_UARTE_regs[inst].PUBLISH_##eventl)
 #endif /* (NHW_HAS_PPI) / (NHW_HAS_DPPI)*/
 
-#define _NHW_UARTE_SIGNAL_EVENT_body(event) \
+#define _NHW_UARTE_SIGNAL_EVENT_body(event, eventl) \
   { \
-    NRF_UARTE_regs[inst].EVENTS_##event = 1; \
+    NRF_UARTE_regs[inst].EVENTS_##eventl = 1; \
     nhw_UARTE_eval_interrupt(inst); \
-    _NHW_UARTE_XPPI_EVENT(inst, event); \
+    _NHW_UARTE_XPPI_EVENT(inst, event, eventl); \
   }
 
-#define NHW_UARTE_SIGNAL_EVENT(event) \
+#define NHW_UARTE_SIGNAL_EVENT(event, eventl) \
   static void nhw_UARTE_signal_EVENTS_##event(unsigned int inst) \
-    _NHW_UARTE_SIGNAL_EVENT_body(event)
+    _NHW_UARTE_SIGNAL_EVENT_body(event, eventl)
 
-#define NHW_UARTE_SIGNAL_EVENT_ns(event) \
+#define NHW_UARTE_SIGNAL_EVENT_ns(event, eventl) \
   static void nhw_UARTE_signal_EVENTS_##event##_noshort(unsigned int inst) \
-    _NHW_UARTE_SIGNAL_EVENT_body(event)
+    _NHW_UARTE_SIGNAL_EVENT_body(event, eventl)
 
-NHW_UARTE_SIGNAL_EVENT_ns(CTS)
-NHW_UARTE_SIGNAL_EVENT_ns(NCTS)
-NHW_UARTE_SIGNAL_EVENT(RXDRDY)
-NHW_UARTE_SIGNAL_EVENT_ns(ENDRX) /* DMA Rx done */
-NHW_UARTE_SIGNAL_EVENT(TXDRDY)
-NHW_UARTE_SIGNAL_EVENT(ENDTX) /* DMA Tx done */
-NHW_UARTE_SIGNAL_EVENT(ERROR)
-NHW_UARTE_SIGNAL_EVENT(RXTO) /* Receiver done closing */
-NHW_UARTE_SIGNAL_EVENT(RXSTARTED)
-NHW_UARTE_SIGNAL_EVENT(TXSTARTED)
-NHW_UARTE_SIGNAL_EVENT(TXSTOPPED)
+NHW_UARTE_SIGNAL_EVENT_ns(CTS, CTS)
+NHW_UARTE_SIGNAL_EVENT_ns(NCTS, NCTS)
+NHW_UARTE_SIGNAL_EVENT(RXDRDY, RXDRDY)
+#if !(NHW_UARTE_54NAMING)
+NHW_UARTE_SIGNAL_EVENT_ns(ENDRX, ENDRX) /* DMA Rx done */
+NHW_UARTE_SIGNAL_EVENT_ns(ENDTX, ENDTX) /* DMA Tx done */
+NHW_UARTE_SIGNAL_EVENT(RXSTARTED, RXSTARTED)
+NHW_UARTE_SIGNAL_EVENT(TXSTARTED, TXSTARTED)
+#else
+NHW_UARTE_SIGNAL_EVENT_ns(ENDRX, DMA.RX.END)
+NHW_UARTE_SIGNAL_EVENT_ns(ENDTX, DMA.TX.END)
+NHW_UARTE_SIGNAL_EVENT(RXSTARTED, DMA.RX.READY)
+NHW_UARTE_SIGNAL_EVENT(TXSTARTED, DMA.TX.READY)
+#endif
+NHW_UARTE_SIGNAL_EVENT(TXDRDY, TXDRDY)
+NHW_UARTE_SIGNAL_EVENT(ERROR, ERROR)
+NHW_UARTE_SIGNAL_EVENT(RXTO, RXTO) /* Receiver done closing */
+NHW_UARTE_SIGNAL_EVENT(TXSTOPPED, TXSTOPPED)
 
 static void nhw_UARTE_signal_EVENTS_CTS(unsigned int inst) {
+#if (NHW_UARTE_HAS_UART)
 #define UARTE_SHORTS_CTS_STARTRX_Msk UART_SHORTS_CTS_STARTRX_Msk
   if (uart_enabled(inst)) { //Only in UART mode
     NHW_SHORT(UARTE, inst, NRF_UARTE_regs[inst]., CTS, STARTRX)
   }
+#endif
   nhw_UARTE_signal_EVENTS_CTS_noshort(inst);
 }
 
 static void nhw_UARTE_signal_EVENTS_NCTS(unsigned int inst) {
+#if (NHW_UARTE_HAS_UART)
 #define UARTE_SHORTS_NCTS_STOPRX_Msk UART_SHORTS_NCTS_STOPRX_Msk
   if (uart_enabled(inst)) { //Only in UART mode
     NHW_SHORT(UARTE, inst, NRF_UARTE_regs[inst]., NCTS, STOPRX)
   }
+#endif
   nhw_UARTE_signal_EVENTS_NCTS_noshort(inst);
 }
 
 static void nhw_UARTE_signal_EVENTS_ENDRX(unsigned int inst) {
   if (uarte_enabled(inst)) { //Only in UART-E mode
+#if !(NHW_UARTE_54NAMING)
     NHW_SHORT(UARTE, inst, NRF_UARTE_regs[inst]., ENDRX, STARTRX)
     NHW_SHORT(UARTE, inst, NRF_UARTE_regs[inst]., ENDRX, STOPRX)
+#else
+    NHW_SHORT_ST(UARTE, inst, NRF_UARTE_regs[inst]., DMA_RX_END, STARTRX, DMA_RX_START)
+    NHW_SHORT_ST(UARTE, inst, NRF_UARTE_regs[inst]., DMA_RX_END, STOPRX, DMA_RX_STOP)
+#endif
   }
   nhw_UARTE_signal_EVENTS_ENDRX_noshort(inst);
+}
+
+static void nhw_UARTE_signal_EVENTS_ENDTX(unsigned int inst) {
+#if (NHW_UARTE_54NAMING)
+  NHW_SHORT_ST(UARTE, inst, NRF_UARTE_regs[inst]., DMA_TX_END, STOPTX, DMA_TX_STOP)
+#endif
+  nhw_UARTE_signal_EVENTS_ENDTX_noshort(inst);
 }
 
 NHW_SIDEEFFECTS_INTSET(UARTE, NRF_UARTE_regs[inst]., NRF_UARTE_regs[inst].INTEN)
@@ -1105,10 +1162,18 @@ NHW_SIDEEFFECTS_INTEN(UARTE, NRF_UARTE_regs[inst]., NRF_UARTE_regs[inst].INTEN)
 
 NHW_SIDEEFFECTS_EVENTS(UARTE)
 
+#if !(NHW_UARTE_54NAMING)
 NHW_SIDEEFFECTS_TASKS(UARTE, NRF_UARTE_regs[inst]., STARTRX)
 NHW_SIDEEFFECTS_TASKS(UARTE, NRF_UARTE_regs[inst]., STOPRX)
 NHW_SIDEEFFECTS_TASKS(UARTE, NRF_UARTE_regs[inst]., STARTTX)
 NHW_SIDEEFFECTS_TASKS(UARTE, NRF_UARTE_regs[inst]., STOPTX)
+#else
+NHW_SIDEEFFECTS_TASKS_ST(UARTE, NRF_UARTE_regs[inst]., STARTRX, DMA.RX.START)
+NHW_SIDEEFFECTS_TASKS_ST(UARTE, NRF_UARTE_regs[inst]., STOPRX, DMA.RX.STOP)
+NHW_SIDEEFFECTS_TASKS_ST(UARTE, NRF_UARTE_regs[inst]., STARTTX, DMA.TX.START)
+NHW_SIDEEFFECTS_TASKS_ST(UARTE, NRF_UARTE_regs[inst]., STOPTX, DMA.TX.STOP)
+#endif
+
 NHW_SIDEEFFECTS_TASKS(UARTE, NRF_UARTE_regs[inst]., FLUSHRX)
 
 #if (NHW_UARTE_HAS_UART)
@@ -1121,8 +1186,8 @@ void nhw_UARTE_regw_sideeffects_TASKS_SUSPEND(unsigned int inst) {
 }
 #endif
 
-#define NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(TASK_N)                                  \
-  static void nhw_UARTE_TASK_##TASK_N##_wrap(void* param)                             \
+#define NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(TASK_N, TASK_ST_N)                       \
+  static void nhw_UARTE_TASK_##TASK_N##_wrap(void* param)                            \
   {                                                                                  \
     nhw_UARTE_TASK_##TASK_N((int) param);                                            \
   }                                                                                  \
@@ -1133,18 +1198,25 @@ void nhw_UARTE_regw_sideeffects_TASKS_SUSPEND(unsigned int inst) {
      struct uarte_status *this = &nhw_uarte_st[inst];                                \
                                                                                      \
      nhw_dppi_common_subscribe_sideeffect(this->dppi_map,                            \
-                                          this->UARTE_regs[inst]->SUBSCRIBE_##TASK_N,\
+                                          this->UARTE_regs[inst]->SUBSCRIBE_##TASK_ST_N,\
                                           &TASK_N##_subscribed[inst],                \
                                           nhw_UARTE_TASK_##TASK_N##_wrap,            \
                                           (void*) inst);                             \
   }
 
 #if (NHW_HAS_DPPI)
-NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STARTRX)
-NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STOPRX)
-NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STARTTX)
-NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STOPTX)
-NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(FLUSHRX)
+#if !(NHW_UARTE_54NAMING)
+NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STARTRX, STARTRX)
+NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STOPRX, STOPRX)
+NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STARTTX, STARTTX)
+NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STOPTX, STOPTX)
+#else
+NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STARTRX, DMA.RX.START)
+NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STOPRX, DMA.RX.STOP)
+NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STARTTX, DMA.TX.START)
+NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STOPTX, DMA.TX.STOP)
+#endif
+NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(FLUSHRX, FLUSHRX)
 #endif /* NHW_HAS_DPPI */
 
 #if (NHW_HAS_PPI)

@@ -90,6 +90,9 @@ void nrf_uarte_configure(NRF_UARTE_Type           * p_reg,
 #if defined(UARTE_CONFIG_PARITYTYPE_Msk)
                   | (uint32_t)p_cfg->paritytype
 #endif
+#if NRF_UARTE_HAS_FRAME_TIMEOUT
+                  | (uint32_t)p_cfg->frame_timeout
+#endif
                   | (uint32_t)p_cfg->hwfc;
   nhw_UARTE_regw_sideeffects_CONFIG(i);
 }

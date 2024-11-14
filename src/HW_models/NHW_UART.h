@@ -14,6 +14,13 @@
 extern "C"{
 #endif
 
+/* Note that for 54 devices some tasks have been renamed:
+ * TASK_DMA.RX.START == Old TASK_STARTRX
+ * TASK_DMA.TX.START == Old TASK_STARTX
+ * TASK_DMA.RX.STOP == Old TASK_STOPRX
+ * TASK_DMA.TX.STOP == Old TASK_STOPTX
+ * These side-effecting functions below are to be used for both the old and new name
+ */
 void nhw_UARTE_regw_sideeffects_TASKS_STARTRX(uint i);
 void nhw_UARTE_regw_sideeffects_TASKS_STOPRX(uint i);
 void nhw_UARTE_regw_sideeffects_TASKS_STARTTX(uint i);

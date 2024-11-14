@@ -64,6 +64,7 @@
 #include "hal/nrf_rtc.h"
 #include "hal/nrf_timer.h"
 #include "hal/nrf_temp.h"
+#include "hal/nrf_uarte.h"
 #endif
 
 #include "bs_tracing.h"
@@ -249,7 +250,7 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   } else IF_PER(ECB, 00, _S, ecb)
   //} else IF_PER(CRCEN, , _S, cracen)
   //} else IF_PER(SPIM, 00, _S, spi)
-  //} else IF_PER(UARTE, 00, _S, uarte)
+  } else IF_PER(UARTE, 00, _S, uarte)
   //} else IF_PER(GLITCHDET, , _S, glitchdet)
   //} else IF_PER(RRAMC, , _S, rramc)
   //} else IF_PER(VPR, 00 , _S, vpr)
@@ -270,13 +271,13 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   //} else IF_PER(PPIB, 22, _S, ppib)
   //} else IF_PER(SPIM, 20, _S, spi)
   //} else IF_PER(TWIM, 20, _S, twi)
-  //} else IF_PER(UARTE, 20, _S, uarte)
+  } else IF_PER(UARTE, 20, _S, uarte)
   //} else IF_PER(SPIM, 21, _S, spi)
   //} else IF_PER(TWIM, 21, _S, twi)
-  //} else IF_PER(UARTE, 21, _S, uarte)
+  } else IF_PER(UARTE, 21, _S, uarte)
   //} else IF_PER(SPIM, 22, _S, spi)
   //} else IF_PER(TWIM, 22, _S, twi)
-  //} else IF_PER(UARTE, 22, _S, uarte)
+  } else IF_PER(UARTE, 22, _S, uarte)
   } else IF_PER(EGU, 20, _S, egu)
   } else IF_PER(TIMER, 20, _S, timer)
   } else IF_PER(TIMER, 21, _S, timer)
@@ -303,7 +304,7 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   //} else IF_PER(PPIB, 30, _S, ppib)
   //} else IF_PER(SPIM, 30, _S, spi)
   //} else IF_PER(TWIM, 30, _S, twi)
-  //} else IF_PER(UARTE, 30, _S, uarte)
+  } else IF_PER(UARTE, 30, _S, uarte)
   } else IF_PER(RTC, 30, _S, rtc)
   //} else IF_PER(COMP, , _S, comp)
   //} else IF_PER(LPCOMP, , _S, lpcomp)

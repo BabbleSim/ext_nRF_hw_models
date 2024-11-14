@@ -199,6 +199,7 @@
 #define NHW_UARTE_HAS_UART 1
 #define NHW_UARTE_NAMES {"UATE0", \
                          "UATE1"}
+#define NHW_UARTE_54NAMING 0
 
 #define NHW_BSTICKER_TOTAL_INST 1
 #define NHW_BSTICKER_TIMER_INT_MAP {{0 , 0}} /*Only core, -*/
@@ -506,6 +507,7 @@
                          "App UATE2", \
                          "App UATE3", \
                          "Net UATE0"}
+#define NHW_UARTE_54NAMING 0
 
 #define NHW_FAKE_TIMER_TOTAL_INST 2
 #define NHW_FAKE_TIMER_INT_MAP {{0 , 0}, \
@@ -846,6 +848,32 @@
 #define NHW_TIMER_FREQ {128, 32, 16, 16, 16, 16, 16}
 #define NHW_TIMER_DPPI_MAP {0, 1, 2, 2, 2, 2, 2}
 
+
+#define NHW_UARTE_TOTAL_INST 5
+#define NHW_UARTE00 0
+#define NHW_UARTE20 1
+#define NHW_UARTE21 2
+#define NHW_UARTE22 3
+#define NHW_UARTE30 4
+#define NHW_UARTE_INT_MAP {{0 , 74}, \
+                          {0 , 198}, \
+                          {0 , 199}, \
+                          {0 , 200}, \
+                          {0 , 260}, \
+                          } /* App, SERIAL00_IRQn,
+                               App, SERIAL20_IRQn,
+                               App, SERIAL21_IRQn,
+                               App, SERIAL22_IRQn,
+                               App, SERIAL30_IRQn,
+                               */
+#define NHW_UARTE_DPPI_MAP {0, 2, 2, 2, 3} /* Global, 4xPeri, LP */
+#define NHW_UARTE_HAS_UART 0
+#define NHW_UARTE_NAMES {"UARTE00", \
+                         "UARTE20", \
+                         "UARTE21", \
+                         "UARTE2", \
+                         "UARTE30"}
+#define NHW_UARTE_54NAMING 1
 
 #define NHW_FAKE_TIMER_TOTAL_INST 2
 #define NHW_FAKE_TIMER_INT_MAP {{0 , 0}, \

@@ -32,3 +32,6 @@ src/HW_models/NHW_SPU.c
 src/HW_models/NHW_SWI.c
 src/HW_models/NHW_TEMP.c
 src/HW_models/NHW_TIMER.c
+src/HW_models/NHW_UART.c
+src/HW_models/NHW_UART_backend_fifo.c
+src/HW_models/NHW_UART_be_loopb.c

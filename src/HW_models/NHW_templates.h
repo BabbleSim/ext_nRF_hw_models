@@ -36,6 +36,17 @@
   }
 
 /*
+ * version of NHW_SIDEEFFECTS_TASKS() where the task is in a struct
+ */
+#define NHW_SIDEEFFECTS_TASKS_ST(peri, peri_regs, task, taskst) \
+  void nhw_##peri##_regw_sideeffects_TASKS_##task(unsigned int inst) { \
+    if ( peri_regs TASKS_##taskst ) { \
+      peri_regs TASKS_##taskst = 0; \
+      nhw_##peri##_TASK_##task(inst); \
+    } \
+  }
+
+/*
  * SUBSCRIBE register write side-effects
  */
 #define NHW_SIDEEFFECTS_SUBSCRIBE_si(peri, task) \
@@ -152,6 +163,14 @@
     new_int_line = true; \
   }
 
+/*
+ * version of NHW_CHECK_INTERRUPT() where the event is in a struct
+ */
+#define NHW_CHECK_INTERRUPT_ST(peri, peri_regs, event, intevnt, inten) \
+  if (peri_regs EVENTS_##event && (inten &  peri##_INTENSET_##intevnt##_Msk)){ \
+    new_int_line = true; \
+  }
+
 #define NHW_CHECK_INTERRUPT_si(peri, event, inten) \
   if (NRF_##peri##_regs.EVENTS_##event && (inten &  peri##_INTENSET_##event##_Msk)){ \
     new_int_line = true; \
@@ -164,6 +183,14 @@
 
 #define NHW_SHORT(peri, inst, peri_regs, event, task) \
   if (peri_regs SHORTS & peri##_SHORTS_##event##_##task##_Msk) { \
+    nhw_##peri##_TASK_##task(inst); \
+  }
+
+/*
+ * version of NHW_SHORT() where the task is in a struct
+ */
+#define NHW_SHORT_ST(peri, inst, peri_regs, event, task, task_st) \
+  if (peri_regs SHORTS & peri##_SHORTS_##event##_##task_st##_Msk) { \
     nhw_##peri##_TASK_##task(inst); \
   }
 
