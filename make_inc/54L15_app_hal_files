@@ -14,6 +14,7 @@ src/nrfx/hal/nrf_ppib.c
 src/nrfx/hal/nrf_radio.c
 src/nrfx/hal/nrf_rramc.c
 src/nrfx/hal/nrf_rtc.c
+src/nrfx/hal/nrf_temp.c
 src/nrfx/hal/nrf_timer.c
 src/nrfx/hal/nrf_hal_originals.c
 src/nrfx/mdk_replacements/system.c

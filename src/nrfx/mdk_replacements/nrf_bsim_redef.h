@@ -791,10 +791,11 @@ extern NRF_NFCT_Type NRF_NFCT_regs;
 #define NRF_NFCT_NS_BASE (&NRF_NFCT_regs)
 #undef NRF_NFCT_S_BASE
 #define NRF_NFCT_S_BASE (&NRF_NFCT_regs)
+extern NRF_TEMP_Type NRF_TEMP_regs;
 #undef NRF_TEMP_NS_BASE
-#define NRF_TEMP_NS_BASE NULL
+#define NRF_TEMP_NS_BASE (&NRF_TEMP_regs)
 #undef NRF_TEMP_S_BASE
-#define NRF_TEMP_S_BASE NULL
+#define NRF_TEMP_S_BASE (&NRF_TEMP_regs)
 #undef NRF_P1_NS_BASE
 #define NRF_P1_NS_BASE (&NRF_GPIO_regs[NHW_GPIO_P1])
 #undef NRF_P1_S_BASE
