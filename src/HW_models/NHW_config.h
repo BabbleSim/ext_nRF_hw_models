@@ -868,6 +868,7 @@
                                */
 #define NHW_UARTE_DPPI_MAP {0, 2, 2, 2, 3} /* Global, 4xPeri, LP */
 #define NHW_UARTE_HAS_UART 0
+#define NHW_UARTE_HAS_FRAMETIMEOUT 1
 #define NHW_UARTE_NAMES {"UARTE00", \
                          "UARTE20", \
                          "UARTE21", \

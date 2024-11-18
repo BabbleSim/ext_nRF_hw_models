@@ -111,6 +111,9 @@ static void nhw_UARTE_signal_EVENTS_TXSTOPPED(unsigned int inst);
 static void nhw_UARTE_signal_EVENTS_ENDTX(unsigned int inst);
 static void nhw_UARTE_signal_EVENTS_RXSTARTED(unsigned int inst);
 static void nhw_UARTE_signal_EVENTS_ENDRX(unsigned int inst);
+#if (NHW_UARTE_HAS_FRAMETIMEOUT)
+static void nhw_UARTE_signal_EVENTS_FRAMETIMEOUT(unsigned int inst);
+#endif
 static void nhw_UARTE_Tx_send_byte(unsigned int inst, struct uarte_status *u_el);
 static void nhw_UART_Tx_queue_byte(uint inst, struct uarte_status *u_el, uint8_t byte);
 static void nhw_UARTE_Rx_DMA_attempt(uint inst, struct uarte_status *u_el);
@@ -136,6 +139,7 @@ static void nhw_uarte_init(void) {
 
     u_el->Rx_TO_timer = TIME_NEVER;
     u_el->Tx_byte_done_timer = TIME_NEVER;
+    u_el->frametimeout_timer = TIME_NEVER;
 
     NRF_UARTE_regs[i].PSEL.RTS = 0xFFFFFFFF;
     NRF_UARTE_regs[i].PSEL.TXD = 0xFFFFFFFF;
@@ -209,6 +213,9 @@ static void nhw_uarte_update_timer(void) {
   for (int i = 0; i < NHW_UARTE_TOTAL_INST; i++) {
     struct uarte_status * u_el = &nhw_uarte_st[i];
     bs_time_t smaller = BS_MIN(u_el->Rx_TO_timer, u_el->Tx_byte_done_timer);
+#if (NHW_UARTE_HAS_FRAMETIMEOUT)
+    smaller = BS_MIN(smaller, u_el->frametimeout_timer);
+#endif
     Timer_UART_peri = BS_MIN(Timer_UART_peri, smaller);
   }
   nhw_uarte_update_common_timer();
@@ -226,22 +233,11 @@ static bool uarte_enabled(uint inst) {
   return NRF_UARTE_regs[inst].ENABLE == 8;
 }
 
-/**
- * Return the time in microseconds it takes for one byte to be Tx or Rx
- * including start, parity and stop bits.
- * Accounting for the UART configuration and baud rate
+/*
+ * Return the duration of <nbits> bits in microseconds
  */
-bs_time_t nhw_uarte_one_byte_time(uint inst) {
-  bs_time_t duration = 1 + 8 + 1; /* Start bit, byte, and at least 1 stop bit */
-  uint32_t CONFIG = NRF_UARTE_regs[inst].CONFIG;
-
-  if (CONFIG & UARTE_CONFIG_PARITY_Msk) {
-    duration +=1;
-  }
-  if (CONFIG & UARTE_CONFIG_STOP_Msk) { /* Two stop bits */
-    duration +=1;
-  }
-
+static bs_time_t nhw_uarte_nbits_time(uint inst, uint nbits) {
+  bs_time_t duration = nbits;
 #if (NHW_UARTE_HAS_UART)
   if (uart_enabled(inst)) {
     /* We round to the nearest microsecond */
@@ -372,6 +368,25 @@ bs_time_t nhw_uarte_one_byte_time(uint inst) {
   }
 
   return duration;
+}
+
+/**
+ * Return the time in microseconds it takes for one byte to be Tx or Rx
+ * including start, parity and stop bits.
+ * Accounting for the UART configuration and baud rate
+ */
+bs_time_t nhw_uarte_one_byte_time(uint inst) {
+  bs_time_t duration = 1 + 8 + 1; /* Start bit, byte, and at least 1 stop bit */
+  uint32_t CONFIG = NRF_UARTE_regs[inst].CONFIG;
+
+  if (CONFIG & UARTE_CONFIG_PARITY_Msk) {
+    duration +=1;
+  }
+  if (CONFIG & UARTE_CONFIG_STOP_Msk) { /* Two stop bits */
+    duration +=1;
+  }
+
+  return nhw_uarte_nbits_time(inst, duration);
 }
 
 static uint8_t Rx_FIFO_pop(uint inst, struct uarte_status *u_el) {
@@ -593,6 +608,9 @@ static void nhw_UARTE_eval_interrupt(uint inst) {
     NHW_CHECK_INTERRUPT_ST(UARTE, NRF_UARTE_regs[inst]., DMA.TX.READY, DMATXREADY, inten)
 #endif
     NHW_CHECK_INTERRUPT(UARTE, NRF_UARTE_regs[inst]., TXSTOPPED, inten)
+#if defined(UARTE_INTENSET_FRAMETIMEOUT_Msk)
+    NHW_CHECK_INTERRUPT(UARTE, NRF_UARTE_regs[inst]., FRAMETIMEOUT, inten)
+#endif
   }
 
   hw_irq_ctrl_toggle_level_irq_line_if(&uart_int_line[inst],
@@ -677,6 +695,8 @@ void nhw_UARTE_TASK_STOPRX(int inst)
   //Start Rx TO timer to turn Rx fully off and generate RXTO
   u_el->Rx_TO_timer = nsi_hws_get_time() + 5*nhw_uarte_one_byte_time(inst);
   u_el->rx_status = Rx_turning_off;
+  //And clear a possible frametimeout
+  u_el->frametimeout_timer = TIME_NEVER;
   nhw_uarte_update_timer();
 }
 
@@ -848,6 +868,28 @@ static void nhw_UART_Tx_queue_byte(uint inst, struct uarte_status *u_el, uint8_t
   }
 }
 
+#if (NHW_UARTE_HAS_FRAMETIMEOUT)
+static void nhw_uart_maybe_program_frametimeout(int inst) {
+  if (!(NRF_UARTE_regs[inst].CONFIG & UARTE_CONFIG_FRAMETIMEOUT_Msk)) {
+    return;
+  }
+
+  struct uarte_status *u_el = &nhw_uarte_st[inst];
+
+  u_el->frametimeout_timer = nsi_hws_get_time() +
+                 nhw_uarte_nbits_time(inst, NRF_UARTE_regs[inst].FRAMETIMEOUT);
+  nhw_uarte_update_timer();
+}
+
+/*
+ * The frame timeout timer has timed out
+ */
+static void nhw_uart_frametimeout_timer_triggered(int inst, struct uarte_status *u_el)
+{
+  u_el->frametimeout_timer = TIME_NEVER;
+  nhw_UARTE_signal_EVENTS_FRAMETIMEOUT(inst);
+}
+#endif
 
 /*
  * The Rx TO timer has timed out
@@ -895,6 +937,11 @@ static void nhw_uart_timer_triggered(void)
   for (int inst = 0; inst < NHW_UARTE_TOTAL_INST; inst++) {
     struct uarte_status *u_el = &nhw_uarte_st[inst];
 
+#if (NHW_UARTE_HAS_FRAMETIMEOUT)
+    if (current_time == u_el->frametimeout_timer) {
+      nhw_uart_frametimeout_timer_triggered(inst, u_el);
+    }
+#endif
     if (current_time == u_el->Rx_TO_timer) {
       nhw_uart_Rx_TO_timer_triggered(inst, u_el);
     }
@@ -1099,7 +1146,7 @@ void nhw_UARTE_regw_sideeffects_TXD(unsigned int inst)
 
 NHW_UARTE_SIGNAL_EVENT_ns(CTS, CTS)
 NHW_UARTE_SIGNAL_EVENT_ns(NCTS, NCTS)
-NHW_UARTE_SIGNAL_EVENT(RXDRDY, RXDRDY)
+NHW_UARTE_SIGNAL_EVENT_ns(RXDRDY, RXDRDY)
 #if !(NHW_UARTE_54NAMING)
 NHW_UARTE_SIGNAL_EVENT_ns(ENDRX, ENDRX) /* DMA Rx done */
 NHW_UARTE_SIGNAL_EVENT_ns(ENDTX, ENDTX) /* DMA Tx done */
@@ -1110,6 +1157,9 @@ NHW_UARTE_SIGNAL_EVENT_ns(ENDRX, DMA.RX.END)
 NHW_UARTE_SIGNAL_EVENT_ns(ENDTX, DMA.TX.END)
 NHW_UARTE_SIGNAL_EVENT(RXSTARTED, DMA.RX.READY)
 NHW_UARTE_SIGNAL_EVENT(TXSTARTED, DMA.TX.READY)
+#endif
+#if (NHW_UARTE_HAS_FRAMETIMEOUT)
+NHW_UARTE_SIGNAL_EVENT_ns(FRAMETIMEOUT, FRAMETIMEOUT)
 #endif
 NHW_UARTE_SIGNAL_EVENT(TXDRDY, TXDRDY)
 NHW_UARTE_SIGNAL_EVENT(ERROR, ERROR)
@@ -1136,6 +1186,13 @@ static void nhw_UARTE_signal_EVENTS_NCTS(unsigned int inst) {
   nhw_UARTE_signal_EVENTS_NCTS_noshort(inst);
 }
 
+static void nhw_UARTE_signal_EVENTS_RXDRDY(unsigned int inst) {
+#if (NHW_UARTE_HAS_FRAMETIMEOUT)
+  nhw_uart_maybe_program_frametimeout(inst);
+#endif
+  nhw_UARTE_signal_EVENTS_RXDRDY_noshort(inst);
+}
+
 static void nhw_UARTE_signal_EVENTS_ENDRX(unsigned int inst) {
   if (uarte_enabled(inst)) { //Only in UART-E mode
 #if !(NHW_UARTE_54NAMING)
@@ -1155,6 +1212,13 @@ static void nhw_UARTE_signal_EVENTS_ENDTX(unsigned int inst) {
 #endif
   nhw_UARTE_signal_EVENTS_ENDTX_noshort(inst);
 }
+
+#if (NHW_UARTE_HAS_FRAMETIMEOUT)
+static void nhw_UARTE_signal_EVENTS_FRAMETIMEOUT(unsigned int inst) {
+  NHW_SHORT_ST(UARTE, inst, NRF_UARTE_regs[inst]., FRAMETIMEOUT, STOPRX, DMA_RX_STOP)
+  nhw_UARTE_signal_EVENTS_FRAMETIMEOUT_noshort(inst);
+}
+#endif
 
 NHW_SIDEEFFECTS_INTSET(UARTE, NRF_UARTE_regs[inst]., NRF_UARTE_regs[inst].INTEN)
 NHW_SIDEEFFECTS_INTCLR(UARTE, NRF_UARTE_regs[inst]., NRF_UARTE_regs[inst].INTEN)

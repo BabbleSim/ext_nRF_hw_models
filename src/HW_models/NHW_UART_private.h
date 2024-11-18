@@ -30,6 +30,7 @@ enum uart_rx_status {Rx_Off = 0, Rx_turning_off /* Waiting for RX TO */, Rx_On};
 struct uarte_status {
   bs_time_t Rx_TO_timer;
   bs_time_t Tx_byte_done_timer;
+  bs_time_t frametimeout_timer;
 
   uint inst;
 
