@@ -13,6 +13,8 @@ and [nRF54L15](https://www.nordicsemi.com/Products/nRF54L15)
 [nRF52 series devices](https://infocenter.nordicsemi.com/index.jsp?topic=%2Fstruct_nrf52%2Fstruct%2Fnrf52.html&cp=5)
 , so even if you are developing for another variant in that series these models may be enough for
 you.<br>
+Similarly, as the nRF54L15, L10 and L05 only differ in the amount of available RAM and RRAM either
+can be simulated using the nRF54L15 models variant.<br>
 It is the intention that models of other Nordic SOCs will be included in the future.
 
 These models library is intended to be used as an extension to the
