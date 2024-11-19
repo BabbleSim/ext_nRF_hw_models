@@ -31,6 +31,16 @@ void nrf_uarte_task_trigger(NRF_UARTE_Type * p_reg, nrf_uarte_task_t task)
     CASE_TASK(STARTTX);
     CASE_TASK(STOPTX);
     CASE_TASK(FLUSHRX);
+#if 0 /*NHW_UARTE_HAS_MATCH*/ /* Not yet supported by nrf HAL, task name is a guess */
+    case NRF_UARTE_TASK_DMA_RX_ENABLEMATCH_0: nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_ENABLEMATCH(i, 0); break;
+    case NRF_UARTE_TASK_DMA_RX_ENABLEMATCH_1: nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_ENABLEMATCH(i, 1); break;
+    case NRF_UARTE_TASK_DMA_RX_ENABLEMATCH_2: nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_ENABLEMATCH(i, 2); break;
+    case NRF_UARTE_TASK_DMA_RX_ENABLEMATCH_3: nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_ENABLEMATCH(i, 3); break;
+    case NRF_UARTE_TASK_DMA_RX_DISABLEMATCH_0: nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_DISABLEMATCH(i, 0); break;
+    case NRF_UARTE_TASK_DMA_RX_DISABLEMATCH_1: nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_DISABLEMATCH(i, 1); break;
+    case NRF_UARTE_TASK_DMA_RX_DISABLEMATCH_2: nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_DISABLEMATCH(i, 2); break;
+    case NRF_UARTE_TASK_DMA_RX_DISABLEMATCH_3: nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_DISABLEMATCH(i, 3); break;
+#endif
     default:
       bs_trace_error_line_time("Not supported task started in nrf_clock, %d\n", task);
       break;
@@ -113,6 +123,16 @@ static void nrf_uarte_subscribe_common(NRF_UARTE_Type * p_reg,
     CASE_TASK(STARTTX);
     CASE_TASK(STOPTX);
     CASE_TASK(FLUSHRX);
+#if 0 /*NHW_UARTE_HAS_MATCH*/ /* Not yet supported by nrf HAL, task name is a guess */
+    case NRF_UARTE_TASK_DMA_RX_ENABLEMATCH_0: nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_ENABLEMATCH(i, 0); break;
+    case NRF_UARTE_TASK_DMA_RX_ENABLEMATCH_1: nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_ENABLEMATCH(i, 1); break;
+    case NRF_UARTE_TASK_DMA_RX_ENABLEMATCH_2: nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_ENABLEMATCH(i, 2); break;
+    case NRF_UARTE_TASK_DMA_RX_ENABLEMATCH_3: nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_ENABLEMATCH(i, 3); break;
+    case NRF_UARTE_TASK_DMA_RX_DISABLEMATCH_0: nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_DISABLEMATCH(i, 0); break;
+    case NRF_UARTE_TASK_DMA_RX_DISABLEMATCH_1: nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_DISABLEMATCH(i, 1); break;
+    case NRF_UARTE_TASK_DMA_RX_DISABLEMATCH_2: nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_DISABLEMATCH(i, 2); break;
+    case NRF_UARTE_TASK_DMA_RX_DISABLEMATCH_3: nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_DISABLEMATCH(i, 3); break;
+#endif
     default:
       bs_trace_error_line_time("Attempted to subscribe to a not-supported task in the nrf_uart(%i)\n",
                                 task);

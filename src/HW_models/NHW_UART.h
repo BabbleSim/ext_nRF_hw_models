@@ -27,6 +27,10 @@ void nhw_UARTE_regw_sideeffects_TASKS_STARTTX(uint i);
 void nhw_UARTE_regw_sideeffects_TASKS_STOPTX(uint i);
 void nhw_UARTE_regw_sideeffects_TASKS_SUSPEND(uint i);
 void nhw_UARTE_regw_sideeffects_TASKS_FLUSHRX(uint i);
+#if NHW_UARTE_HAS_MATCH
+void nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_ENABLEMATCH(uint inst, uint i);
+void nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_DISABLEMATCH(uint inst, uint i);
+#endif
 
 void nhw_UARTE_regw_sideeffects_INTENSET(uint i);
 void nhw_UARTE_regw_sideeffects_INTENCLR(uint i);
@@ -39,6 +43,10 @@ void nhw_UARTE_regw_sideeffects_SUBSCRIBE_STOPRX(uint i);
 void nhw_UARTE_regw_sideeffects_SUBSCRIBE_STARTTX(uint i);
 void nhw_UARTE_regw_sideeffects_SUBSCRIBE_STOPTX(uint i);
 void nhw_UARTE_regw_sideeffects_SUBSCRIBE_FLUSHRX(uint i);
+#if NHW_UARTE_HAS_MATCH
+void nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_ENABLEMATCH(uint inst, uint i);
+void nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_DISABLEMATCH(uint inst, uint i);
+#endif
 
 uint32_t nhw_UARTE_regr_sideeffects_ERRORSRC(unsigned int inst);
 void nhw_UARTE_regw_sideeffects_ERRORSRC(unsigned int inst);

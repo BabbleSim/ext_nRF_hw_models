@@ -41,6 +41,9 @@ struct uarte_status {
 #if (NHW_HAS_DPPI)
   /* Mapping of peripheral instance to DPPI instance */
   uint dppi_map;
+
+  struct nhw_subsc_mem *DMA_RX_ENABLEMATCH_subscribed;
+  struct nhw_subsc_mem *DMA_RX_DISABLEMATCH_subscribed;
 #endif
 
   enum uart_tx_status tx_status;
@@ -69,6 +72,9 @@ struct uarte_status {
   uint32_t RXD_MAXCNT;
   uint32_t RXD_AMOUNT;
   enum uarte_dma_status rx_dma_status;
+
+  int n_match; /* Number of match registers this instance has */
+  uint32_t *MATCH_CANDIDATE; /* Shadow copy of DMA.RX.MATCH.CANDIDATE */
 
   struct backend_if backend;
 

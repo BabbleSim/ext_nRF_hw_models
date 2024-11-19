@@ -65,6 +65,12 @@
  *   * DMA_{RX,TX}.TERMINATEONBUSERROR is ignored EVENTS_DMA.{RX,TX}.BUSERROR is never generated
  *     and BUSERRORADDRESS is never set
  *
+ *   * From the spec is unclear when DMA.RX.MATCH.CANDIDATE[n] is copied into the internal shadow
+ *     register. It would seem it will happen when either TASKS_DMA.RX.START is triggered,
+ *     or EVENTS_MATCH[n] happens. This is what the model does.
+ *
+ *   * MATCH functionality is untested in this model
+ *
  * Implementation notes:
  *
  */
@@ -114,6 +120,9 @@ static void nhw_UARTE_signal_EVENTS_ENDRX(unsigned int inst);
 #if (NHW_UARTE_HAS_FRAMETIMEOUT)
 static void nhw_UARTE_signal_EVENTS_FRAMETIMEOUT(unsigned int inst);
 #endif
+#if (NHW_UARTE_HAS_MATCH)
+static void nhw_UARTE_signal_EVENTS_DMA_RX_MATCH(unsigned int inst, unsigned int i);
+#endif
 static void nhw_UARTE_Tx_send_byte(unsigned int inst, struct uarte_status *u_el);
 static void nhw_UART_Tx_queue_byte(uint inst, struct uarte_status *u_el, uint8_t byte);
 static void nhw_UARTE_Rx_DMA_attempt(uint inst, struct uarte_status *u_el);
@@ -122,6 +131,9 @@ static void raise_RTS_R(uint inst, struct uarte_status *u_el);
 static void nhw_uarte_init(void) {
 #if (NHW_HAS_DPPI)
   static uint nhw_UARTE_dppi_map[NHW_UARTE_TOTAL_INST] = NHW_UARTE_DPPI_MAP;
+#endif
+#if NHW_UARTE_HAS_MATCH
+  int n_match[] = NHW_UARTE_N_MATCH;
 #endif
 
   memset(NRF_UARTE_regs, 0, sizeof(NRF_UARTE_regs));
@@ -146,6 +158,13 @@ static void nhw_uarte_init(void) {
     NRF_UARTE_regs[i].PSEL.CTS = 0xFFFFFFFF;
     NRF_UARTE_regs[i].PSEL.RXD = 0xFFFFFFFF;
     NRF_UARTE_regs[i].BAUDRATE = 0x04000000;
+
+#if NHW_UARTE_HAS_MATCH
+    u_el->n_match = n_match[i];
+    u_el->MATCH_CANDIDATE = bs_calloc(n_match[i], sizeof(uint32_t));
+    u_el->DMA_RX_ENABLEMATCH_subscribed = bs_calloc(n_match[i], sizeof(struct nhw_subsc_mem));
+    u_el->DMA_RX_DISABLEMATCH_subscribed = bs_calloc(n_match[i], sizeof(struct nhw_subsc_mem));
+#endif
 
 #if (NHW_HAS_DPPI)
     u_el->dppi_map = nhw_UARTE_dppi_map[i];
@@ -179,6 +198,20 @@ static void nhw_uarte_cleanup(void) {
       fclose(u_el->Rx_log_file);
       u_el->Rx_log_file = NULL;
     }
+    if (u_el->MATCH_CANDIDATE) {
+      free(u_el->MATCH_CANDIDATE);
+      u_el->MATCH_CANDIDATE = NULL;
+    }
+#if (NHW_HAS_DPPI)
+    if (u_el->DMA_RX_ENABLEMATCH_subscribed) {
+      free(u_el->DMA_RX_ENABLEMATCH_subscribed);
+      u_el->DMA_RX_ENABLEMATCH_subscribed = NULL;
+    }
+    if (u_el->DMA_RX_DISABLEMATCH_subscribed) {
+      free(u_el->DMA_RX_DISABLEMATCH_subscribed);
+      u_el->DMA_RX_DISABLEMATCH_subscribed = NULL;
+    }
+#endif
   }
 }
 
@@ -441,6 +474,25 @@ static void nhw_UARTE_Rx_DMA_end(uint inst, struct uarte_status * u_el) {
   nhw_UARTE_signal_EVENTS_ENDRX(inst);
 }
 
+static void nhw_UARTE_Rx_match_check(uint inst, struct uarte_status * u_el, uint32_t value) {
+#if (NHW_UARTE_HAS_MATCH)
+  for (int i = 0; i < u_el->n_match; i++) {
+    uint32_t enable_mask = (UARTE_DMA_RX_MATCH_CONFIG_ENABLE0_Msk << i);
+    if ((NRF_UARTE_regs[inst].DMA.RX.MATCH.CONFIG & enable_mask)
+        && (NRF_UARTE_regs[inst].DMA.RX.MATCH.CANDIDATE[i] == value)) {
+      NRF_UARTE_regs[inst].DMA.RX.AMOUNT = u_el->RXD_AMOUNT;
+      NRF_UARTE_regs[inst].DMA.TX.AMOUNT = u_el->TXD_AMOUNT;
+      nhw_uarte_st[inst].MATCH_CANDIDATE[i] = NRF_UARTE_regs[i].DMA.RX.MATCH.CANDIDATE[i];
+
+      if (NRF_UARTE_regs[inst].DMA.RX.MATCH.CONFIG & (UARTE_DMA_RX_MATCH_CONFIG_ONESHOT0_Msk << i)) {
+        NRF_UARTE_regs[inst].DMA.RX.MATCH.CONFIG &= ~enable_mask;
+      }
+      nhw_UARTE_signal_EVENTS_DMA_RX_MATCH(inst, i);
+    }
+  }
+#endif
+}
+
 static void nhw_UARTE_Rx_DMA_attempt(uint inst, struct uarte_status * u_el) {
   if (u_el->rx_dma_status != DMAing) {
     return;
@@ -452,6 +504,7 @@ static void nhw_UARTE_Rx_DMA_attempt(uint inst, struct uarte_status * u_el) {
     uint8_t value = Rx_FIFO_pop(inst, u_el);
     *p++ = value;
     u_el->RXD_AMOUNT++;
+    nhw_UARTE_Rx_match_check(inst, u_el, value);
   }
   if (u_el->RXD_AMOUNT >= u_el->RXD_MAXCNT) {
     nhw_UARTE_Rx_DMA_end(inst, u_el);
@@ -611,6 +664,14 @@ static void nhw_UARTE_eval_interrupt(uint inst) {
 #if defined(UARTE_INTENSET_FRAMETIMEOUT_Msk)
     NHW_CHECK_INTERRUPT(UARTE, NRF_UARTE_regs[inst]., FRAMETIMEOUT, inten)
 #endif
+#if NHW_UARTE_HAS_MATCH
+    for (int i = 0; i < nhw_uarte_st[inst].n_match; i++) {
+      if (NRF_UARTE_regs[inst].EVENTS_DMA.RX.MATCH[i] &&
+          (inten & (UARTE_INTEN_DMARXMATCH0_Msk << i))) {
+        new_int_line = true;
+      }
+    }
+#endif
   }
 
   hw_irq_ctrl_toggle_level_irq_line_if(&uart_int_line[inst],
@@ -629,12 +690,17 @@ static void nhw_UARTE_RxDMA_start(int inst) {
 #endif
   u_el->RXD_AMOUNT = 0;
   u_el->rx_dma_status = DMAing;
+#if NHW_UARTE_HAS_MATCH
+    for (int i = 0; i < u_el->n_match; i++) {
+      u_el->MATCH_CANDIDATE[i] = NRF_UARTE_regs[i].DMA.RX.MATCH.CANDIDATE[i];
+    }
+#endif
   nhw_UARTE_signal_EVENTS_RXSTARTED(inst); /* Instantaneously ready */
 
   nhw_UARTE_Rx_DMA_attempt(inst, u_el);
 }
 
-void nhw_UARTE_TASK_STARTRX(int inst)
+void nhw_UARTE_TASK_STARTRX(uint inst)
 {
   struct uarte_status *u_el = &nhw_uarte_st[inst];
 
@@ -679,7 +745,7 @@ void nhw_UARTE_TASK_STARTRX(int inst)
   }
 }
 
-void nhw_UARTE_TASK_STOPRX(int inst)
+void nhw_UARTE_TASK_STOPRX(uint inst)
 {
   /*
    * If in UART mode (at least) raise RTS/R
@@ -706,6 +772,15 @@ void nhw_UARTE_TASK_STOPRX(int inst)
   nhw_uarte_update_timer();
 }
 
+#if (NHW_UARTE_HAS_MATCH)
+void nhw_UARTE_TASK_DMA_RX_ENABLEMATCH(uint inst, uint i) {
+  NRF_UARTE_regs[inst].DMA.RX.MATCH.CONFIG |= UARTE_DMA_RX_MATCH_CONFIG_ENABLE0_Msk<<i;
+}
+void nhw_UARTE_TASK_DMA_RX_DISABLEMATCH(uint inst, uint i) {
+  NRF_UARTE_regs[inst].DMA.RX.MATCH.CONFIG &= ~(UARTE_DMA_RX_MATCH_CONFIG_ENABLE0_Msk<<i);
+}
+#endif
+
 static void nHW_UARTE_Tx_DMA_end(int inst, struct uarte_status * u_el) {
   u_el->tx_dma_status = DMA_Off;
 #if !NHW_UARTE_54NAMING
@@ -723,7 +798,7 @@ static void nHW_UARTE_Tx_DMA_byte(int inst, struct uarte_status *u_el)
   nhw_UART_Tx_queue_byte(inst, u_el, *ptr);
 }
 
-void nhw_UARTE_TASK_STARTTX(int inst)
+void nhw_UARTE_TASK_STARTTX(uint inst)
 {
   struct uarte_status *u_el = &nhw_uarte_st[inst];
 
@@ -782,7 +857,7 @@ static void nhw_UARTE_tx_final_stop(int inst, struct uarte_status *u_el) {
   }
 }
 
-void nhw_UARTE_TASK_STOPTX(int inst)
+void nhw_UARTE_TASK_STOPTX(uint inst)
 {
   struct uarte_status * u_el = &nhw_uarte_st[inst];
 
@@ -972,7 +1047,7 @@ static void nhw_uart_timer_common_triggered(void)
 
 NSI_HW_EVENT(Timer_UART_common, nhw_uart_timer_common_triggered, 50);
 
-void nhw_UARTE_TASK_FLUSHRX(int inst) {
+void nhw_UARTE_TASK_FLUSHRX(uint inst) {
   if (!uarte_enabled(inst)) {
     bs_trace_warning_time_line("TASK_FLUSHRX for UART%i while it is not enabled in UARTE mode\n",
                                inst);
@@ -992,7 +1067,7 @@ void nhw_UARTE_TASK_FLUSHRX(int inst) {
 }
 
 #if (NHW_UARTE_HAS_UART)
-void nhw_UARTE_TASK_SUSPEND(int inst) {
+void nhw_UARTE_TASK_SUSPEND(uint inst) {
   /* UART(not-E) only task */
   nhw_UARTE_TASK_STOPTX(inst);
   nhw_UARTE_TASK_STOPRX(inst);
@@ -1221,6 +1296,22 @@ static void nhw_UARTE_signal_EVENTS_FRAMETIMEOUT(unsigned int inst) {
 }
 #endif
 
+#if (NHW_UARTE_HAS_MATCH)
+static void nhw_UARTE_signal_EVENTS_DMA_RX_MATCH(unsigned int inst, unsigned int i) {
+  if (NRF_UARTE_regs[inst].SHORTS & (UARTE_SHORTS_DMA_RX_MATCH0_DMA_RX_ENABLEMATCH1_Msk << i)) {
+    nhw_UARTE_TASK_DMA_RX_ENABLEMATCH(inst, (i+1) % nhw_uarte_st[inst].n_match);
+  }
+  if (NRF_UARTE_regs[inst].SHORTS & (UARTE_SHORTS_DMA_RX_MATCH0_DMA_RX_DISABLEMATCH0_Msk << i)) {
+    nhw_UARTE_TASK_DMA_RX_ENABLEMATCH(inst, i);
+  }
+
+  NRF_UARTE_regs[inst].EVENTS_DMA.RX.MATCH[i] = 1;
+  nhw_UARTE_eval_interrupt(inst);
+  nhw_dppi_event_signal_if(nhw_uarte_st[inst].dppi_map,
+                           NRF_UARTE_regs[inst].PUBLISH_DMA.RX.MATCH[i]);
+}
+#endif
+
 NHW_SIDEEFFECTS_INTSET(UARTE, NRF_UARTE_regs[inst]., NRF_UARTE_regs[inst].INTEN)
 NHW_SIDEEFFECTS_INTCLR(UARTE, NRF_UARTE_regs[inst]., NRF_UARTE_regs[inst].INTEN)
 NHW_SIDEEFFECTS_INTEN(UARTE, NRF_UARTE_regs[inst]., NRF_UARTE_regs[inst].INTEN)
@@ -1237,6 +1328,21 @@ NHW_SIDEEFFECTS_TASKS_ST(UARTE, NRF_UARTE_regs[inst]., STARTRX, DMA.RX.START)
 NHW_SIDEEFFECTS_TASKS_ST(UARTE, NRF_UARTE_regs[inst]., STOPRX, DMA.RX.STOP)
 NHW_SIDEEFFECTS_TASKS_ST(UARTE, NRF_UARTE_regs[inst]., STARTTX, DMA.TX.START)
 NHW_SIDEEFFECTS_TASKS_ST(UARTE, NRF_UARTE_regs[inst]., STOPTX, DMA.TX.STOP)
+#endif
+#if NHW_UARTE_HAS_MATCH
+void nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_ENABLEMATCH(uint inst, uint i) {
+  if (NRF_UARTE_regs[inst].TASKS_DMA.RX.ENABLEMATCH[i]) {
+    NRF_UARTE_regs[inst].TASKS_DMA.RX.ENABLEMATCH[i] = 0;
+    nhw_UARTE_TASK_DMA_RX_ENABLEMATCH(inst, i);
+  }
+}
+
+void nhw_UARTE_regw_sideeffects_TASKS_DMA_RX_DISABLEMATCH(uint inst, uint i) {
+  if (NRF_UARTE_regs[inst].TASKS_DMA.RX.DISABLEMATCH[i]) {
+    NRF_UARTE_regs[inst].TASKS_DMA.RX.DISABLEMATCH[i] = 0;
+    nhw_UARTE_TASK_DMA_RX_DISABLEMATCH(inst, i);
+  }
+}
 #endif
 
 NHW_SIDEEFFECTS_TASKS(UARTE, NRF_UARTE_regs[inst]., FLUSHRX)
@@ -1282,6 +1388,45 @@ NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STARTTX, DMA.TX.START)
 NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(STOPTX, DMA.TX.STOP)
 #endif
 NHW_UARTE_REGW_SIDEFFECTS_SUBSCRIBE(FLUSHRX, FLUSHRX)
+#if NHW_UARTE_HAS_MATCH
+static void nhw_UARTE_TASK_nhw_UARTE_TASK_DMA_RX_ENABLEMATCH_wrap(void* param)
+{
+  uint inst = (intptr_t)param >> 8;
+  uint i = (intptr_t)param & 0xFF;
+  nhw_UARTE_TASK_DMA_RX_ENABLEMATCH(inst, i);
+}
+
+void nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_ENABLEMATCH(uint inst, uint i)
+{
+   struct uarte_status *this = &nhw_uarte_st[inst];
+   uint param = (inst << 8 || (i & 0xFF));
+
+   nhw_dppi_common_subscribe_sideeffect(this->dppi_map,
+                                        this->UARTE_regs[inst]->SUBSCRIBE_DMA.RX.ENABLEMATCH[i],
+                                        &this->DMA_RX_ENABLEMATCH_subscribed[i],
+                                        nhw_UARTE_TASK_nhw_UARTE_TASK_DMA_RX_ENABLEMATCH_wrap,
+                                        (void*) param);
+}
+
+static void nhw_UARTE_TASK_nhw_UARTE_TASK_DMA_RX_DISABLEMATCH_wrap(void* param)
+{
+  uint inst = (intptr_t)param >> 8;
+  uint i = (intptr_t)param & 0xFF;
+  nhw_UARTE_TASK_DMA_RX_DISABLEMATCH(inst, i);
+}
+
+void nhw_UARTE_regw_sideeffects_SUBSCRIBE_DMA_RX_DISABLEMATCH(uint inst, uint i)
+{
+   struct uarte_status *this = &nhw_uarte_st[inst];
+   uint param = (inst << 8 || (i & 0xFF));
+
+   nhw_dppi_common_subscribe_sideeffect(this->dppi_map,
+                                        this->UARTE_regs[inst]->SUBSCRIBE_DMA.RX.DISABLEMATCH[i],
+                                        &this->DMA_RX_DISABLEMATCH_subscribed[i],
+                                        nhw_UARTE_TASK_nhw_UARTE_TASK_DMA_RX_DISABLEMATCH_wrap,
+                                        (void*) param);
+}
+#endif
 #endif /* NHW_HAS_DPPI */
 
 #if (NHW_HAS_PPI)
