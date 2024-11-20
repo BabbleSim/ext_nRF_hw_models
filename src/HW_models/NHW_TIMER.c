@@ -291,6 +291,7 @@ void nhw_timer_TASK_STOP(int t) {
 }
 
 void nhw_timer_TASK_SHUTDOWN(int t) {
+#if defined(TIMER_TASKS_SHUTDOWN_TASKS_SHUTDOWN_Msk)
   struct timer_status *this = &nhw_timer_st[t];
 
   /*
@@ -308,6 +309,7 @@ void nhw_timer_TASK_SHUTDOWN(int t) {
     this->CC_timers[cc] = TIME_NEVER;
   }
   update_master_timer();
+#endif
 }
 
 void nhw_timer_TASK_CAPTURE(int t, int cc_n) {
@@ -424,10 +426,12 @@ void nhw_timer_regw_sideeffects_TASKS_STOP(uint t) {
 }
 
 void nhw_timer_regw_sideeffects_TASKS_SHUTDOWN(uint t) {
+#if defined(TIMER_TASKS_SHUTDOWN_TASKS_SHUTDOWN_Msk)
   if (NRF_TIMER_regs[t].TASKS_SHUTDOWN) {
     NRF_TIMER_regs[t].TASKS_SHUTDOWN = 0;
     nhw_timer_TASK_SHUTDOWN(t);
   }
+#endif
 }
 
 void nhw_timer_regw_sideeffects_TASKS_CAPTURE(uint t, uint cc_n){
@@ -490,7 +494,9 @@ NHW_TIMER_REGW_SIDEFFECTS_SUBSCRIBE(START)
 NHW_TIMER_REGW_SIDEFFECTS_SUBSCRIBE(STOP)
 NHW_TIMER_REGW_SIDEFFECTS_SUBSCRIBE(COUNT)
 NHW_TIMER_REGW_SIDEFFECTS_SUBSCRIBE(CLEAR)
+#if defined(TIMER_TASKS_SHUTDOWN_TASKS_SHUTDOWN_Msk)
 NHW_TIMER_REGW_SIDEFFECTS_SUBSCRIBE(SHUTDOWN)
+#endif
 
 #endif /* NHW_HAS_DPPI */
 

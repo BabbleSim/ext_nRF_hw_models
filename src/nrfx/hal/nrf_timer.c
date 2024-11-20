@@ -41,8 +41,10 @@ void nrf_timer_task_trigger(NRF_TIMER_Type * p_reg,
     nhw_timer_regw_sideeffects_TASKS_COUNT(i);
   } else if (task == NRF_TIMER_TASK_CLEAR) {
     nhw_timer_regw_sideeffects_TASKS_CLEAR(i);
+#if defined(TIMER_TASKS_SHUTDOWN_TASKS_SHUTDOWN_Msk)
   } else if (task == NRF_TIMER_TASK_SHUTDOWN) {
     nhw_timer_regw_sideeffects_TASKS_SHUTDOWN(i);
+#endif
   } else if (task >= NRF_TIMER_TASK_CAPTURE0) {
     int task_nbr = (task - NRF_TIMER_TASK_CAPTURE0)/sizeof(uint32_t);
     nhw_timer_regw_sideeffects_TASKS_CAPTURE(i, task_nbr);
@@ -91,8 +93,10 @@ static void nrf_timer_subscribe_common(NRF_TIMER_Type * p_reg,
     nhw_timer_regw_sideeffects_SUBSCRIBE_COUNT(i);
   } else if (task == NRF_TIMER_TASK_CLEAR) {
     nhw_timer_regw_sideeffects_SUBSCRIBE_CLEAR(i);
+#if defined(TIMER_TASKS_SHUTDOWN_TASKS_SHUTDOWN_Msk)
   } else if (task == NRF_TIMER_TASK_SHUTDOWN) {
     nhw_timer_regw_sideeffects_SUBSCRIBE_SHUTDOWN(i);
+#endif
   } else if (task >= NRF_TIMER_TASK_CAPTURE0) {
     int task_nbr = (task - NRF_TIMER_TASK_CAPTURE0)/sizeof(uint32_t);
     nhw_timer_regw_sideeffects_SUBSCRIBE_CAPTURE(i, task_nbr);
