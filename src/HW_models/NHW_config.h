@@ -200,6 +200,7 @@
 #define NHW_UARTE_NAMES {"UATE0", \
                          "UATE1"}
 #define NHW_UARTE_54NAMING 0
+#define NHW_UARTE_FLUSH_AMOUNT_BUG 0
 
 #define NHW_BSTICKER_TOTAL_INST 1
 #define NHW_BSTICKER_TIMER_INT_MAP {{0 , 0}} /*Only core, -*/
@@ -508,6 +509,7 @@
                          "App UATE3", \
                          "Net UATE0"}
 #define NHW_UARTE_54NAMING 0
+#define NHW_UARTE_FLUSH_AMOUNT_BUG 0
 
 #define NHW_FAKE_TIMER_TOTAL_INST 2
 #define NHW_FAKE_TIMER_INT_MAP {{0 , 0}, \
@@ -875,6 +877,7 @@
                          "UARTE2", \
                          "UARTE30"}
 #define NHW_UARTE_54NAMING 1
+#define NHW_UARTE_FLUSH_AMOUNT_BUG 0
 
 #define NHW_FAKE_TIMER_TOTAL_INST 2
 #define NHW_FAKE_TIMER_INT_MAP {{0 , 0}, \

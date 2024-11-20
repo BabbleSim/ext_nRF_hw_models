@@ -618,6 +618,22 @@ static void nhw_UARTE_eval_interrupt(uint inst) {
                                        &nhw_uart_irq_map[inst]);
 }
 
+static void nhw_UARTE_RxDMA_start(int inst) {
+  struct uarte_status * u_el = &nhw_uarte_st[inst];
+#if !NHW_UARTE_54NAMING
+  u_el->RXD_PTR = NRF_UARTE_regs[inst].RXD.PTR;
+  u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].RXD.MAXCNT;
+#else
+  u_el->RXD_PTR = NRF_UARTE_regs[inst].DMA.RX.PTR;
+  u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].DMA.RX.MAXCNT;
+#endif
+  u_el->RXD_AMOUNT = 0;
+  u_el->rx_dma_status = DMAing;
+  nhw_UARTE_signal_EVENTS_RXSTARTED(inst); /* Instantaneously ready */
+
+  nhw_UARTE_Rx_DMA_attempt(inst, u_el);
+}
+
 void nhw_UARTE_TASK_STARTRX(int inst)
 {
   struct uarte_status *u_el = &nhw_uarte_st[inst];
@@ -649,17 +665,7 @@ void nhw_UARTE_TASK_STARTRX(int inst)
   }
 
   if (uarte_enabled(inst)) {
-#if !NHW_UARTE_54NAMING
-    u_el->RXD_PTR = NRF_UARTE_regs[inst].RXD.PTR;
-    u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].RXD.MAXCNT;
-#else
-    u_el->RXD_PTR = NRF_UARTE_regs[inst].DMA.RX.PTR;
-    u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].DMA.RX.MAXCNT;
-#endif
-    u_el->RXD_AMOUNT = 0;
-    u_el->rx_dma_status = DMAing;
-    nhw_UARTE_signal_EVENTS_RXSTARTED(inst); /* Instantaneously ready */
-    nhw_UARTE_Rx_DMA_attempt(inst, u_el);
+    nhw_UARTE_RxDMA_start(inst);
   }
 
   if (u_el->rx_status == Rx_Off) {
@@ -975,16 +981,11 @@ void nhw_UARTE_TASK_FLUSHRX(int inst) {
 
   struct uarte_status * u_el = &nhw_uarte_st[inst];
 
-#if !(NHW_UARTE_54NAMING)
-  u_el->RXD_PTR = NRF_UARTE_regs[inst].RXD.PTR;
-  u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].RXD.MAXCNT;
-#else
-  u_el->RXD_PTR = NRF_UARTE_regs[inst].DMA.RX.PTR;
-  u_el->RXD_MAXCNT = NRF_UARTE_regs[inst].DMA.RX.MAXCNT;
-#endif
-  u_el->RXD_AMOUNT = 0;
   u_el->rx_dma_status = DMAing;
-  nhw_UARTE_Rx_DMA_attempt(inst, u_el);
+  if (!NHW_UARTE_FLUSH_AMOUNT_BUG || (u_el->Rx_FIFO_cnt > 0)) {
+    nhw_UARTE_RxDMA_start(inst);
+  }
+
   if (u_el->rx_dma_status == DMAing) {
     nhw_UARTE_Rx_DMA_end(inst, u_el);
   }
