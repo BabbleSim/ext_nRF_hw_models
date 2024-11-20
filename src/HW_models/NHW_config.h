@@ -543,7 +543,7 @@
 #define NHW_CLKPWR_TOTAL_INST 1
 #define NHW_CLKPWR_0 0
 #define NHW_CLKPWR_DPPI_MAP {0} /* Global */
-#define NHW_CLKPWR_INT_MAP {{0, 270}} /* {App, CLOCK_POWER_IRQn} */
+#define NHW_CLKPWR_INT_MAP {{0, 261}} /* {App, CLOCK_POWER_IRQn} */
 
 #define NHW_DPPI_TOTAL_INST 4
 #define NHW_DPPI_00 0 /* Global */
