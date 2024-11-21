@@ -21,6 +21,7 @@ void hw_irq_ctrl_reeval_level_irq(unsigned int inst, unsigned int irq);
 void nhw_irq_controller_set_irq_mask(unsigned int inst, uint64_t mask);
 void hw_irq_ctrl_enable_irq(unsigned int inst, unsigned int irq);
 void hw_irq_ctrl_disable_irq(unsigned int inst, unsigned int irq);
+int hw_irq_ctrl_set_wake_even_if_lock(unsigned int inst, int value);
 int hw_irq_ctrl_is_irq_enabled(unsigned int inst, unsigned int irq);
 int hw_irq_ctrl_is_irq_pending(unsigned int inst, unsigned int irq);
 void hw_irq_ctrl_raise_im(unsigned int inst, uint32_t irq);

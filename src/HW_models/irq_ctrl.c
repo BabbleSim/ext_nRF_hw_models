@@ -75,6 +75,7 @@ struct intctrl_status {
    * irq_status != 0 an interrupt will be raised immediately
    */
   bool irqs_locked;
+  bool wake_even_if_lock; /* Equivalent to SCB.SCR SEVONPEND */
   bool lock_ignore; /*For the hard fake IRQ, temporarily ignore lock*/
 
   bool awaking_CPU; /* Is this instance raising an interrupt to the CPU in a delta cycle */
@@ -310,6 +311,16 @@ void hw_irq_ctrl_enable_irq(unsigned int inst, unsigned int irq)
   }
 }
 
+/**
+ * If an interrupt comes, wake the processor even if interrupts were locked.
+ */
+int hw_irq_ctrl_set_wake_even_if_lock(unsigned int inst, int value)
+{
+  int current =  nhw_intctrl_st[inst].wake_even_if_lock;
+  nhw_intctrl_st[inst].wake_even_if_lock = (value!=0);
+  return current;
+}
+
 static inline void hw_irq_ctrl_irq_raise_prefix(unsigned int inst, unsigned int irq)
 {
   struct intctrl_status *this = &nhw_intctrl_st[inst];
@@ -344,7 +355,7 @@ void hw_irq_ctrl_set_irq(unsigned int inst, unsigned int irq)
   struct intctrl_status *this = &nhw_intctrl_st[inst];
 
   hw_irq_ctrl_irq_raise_prefix(inst, irq);
-  if ((this->irqs_locked == false) || (this->lock_ignore)) {
+  if ((this->irqs_locked == false) || (this->lock_ignore) || (this->wake_even_if_lock)) {
     /*
      * Awake CPU in 1 delta
      * Note that we awake the CPU even if the IRQ is disabled
@@ -417,7 +428,7 @@ static void irq_raising_from_hw_now(unsigned int inst)
    * but not if irqs are locked unless this is due to a
    * PHONY_HARD_IRQ
    */
-  if ((this->irqs_locked == false) || (this->lock_ignore)) {
+  if ((this->irqs_locked == false) || (this->lock_ignore) || (this->wake_even_if_lock)) {
     this->lock_ignore = false;
     nsif_cpun_irq_raised(inst);
   }
@@ -447,7 +458,9 @@ void hw_irq_ctrl_raise_im_from_sw(unsigned int inst, unsigned int irq)
 {
   hw_irq_ctrl_irq_raise_prefix(inst, irq);
 
-  if (nhw_intctrl_st[inst].irqs_locked == false) {
+  struct intctrl_status *this = &nhw_intctrl_st[inst];
+
+  if ((this->irqs_locked == false) || (this->wake_even_if_lock)) {
     nsif_cpun_irq_raised_from_sw(inst);
   }
 }
