@@ -66,6 +66,12 @@ static bs_time_t Timer_UFIFO = TIME_NEVER;
  */
 #define TX_MIN_DELTA_RATIO 1
 
+/* Relevant bits in CONFIG register from the frame format POV
+ * HWFC does not matter
+ * Neither FRAMETIMEOUT or ENDIAN for 54
+ */
+#define CONFIG_RELEVANT_MASK 0x3FFE
+
 struct line_params {
   uint32_t config;
   uint32_t baud;
@@ -175,7 +181,7 @@ static void tx_set_next_tx_timer(uint inst, struct ufifo_st_t *u_el, bs_time_t l
 }
 
 static void tx_sync_line_params(uint inst, struct ufifo_st_t *u_el) {
-  u_el->tx_line_params.config = NRF_UARTE_regs[inst].CONFIG;
+  u_el->tx_line_params.config = NRF_UARTE_regs[inst].CONFIG & CONFIG_RELEVANT_MASK;
   u_el->tx_line_params.baud = NRF_UARTE_regs[inst].BAUDRATE;
 
   struct ufifo_msg_mode_change msg;
@@ -215,7 +221,7 @@ static void nhw_ufifo_tx_byte(uint inst, uint8_t data) {
     bs_trace_error_time_line("Progamming error\n");
   }
 
-  if ((NRF_UARTE_regs[inst].CONFIG != u_el->tx_line_params.config)
+  if (((NRF_UARTE_regs[inst].CONFIG & CONFIG_RELEVANT_MASK) != u_el->tx_line_params.config)
       || (NRF_UARTE_regs[inst].BAUDRATE != u_el->tx_line_params.baud)) {
     tx_sync_line_params(inst, u_el);
   }
@@ -385,8 +391,8 @@ static void uf_rx_process_last_msg_pre(uint inst, struct ufifo_st_t *u_el) {
 }
 
 static void uf_rx_check_config_match(uint inst, struct ufifo_st_t *u_el) {
-  if (( (NRF_UARTE_regs[inst].CONFIG & ~UARTE_CONFIG_HWFC_Msk)
-        != (u_el->rx_line_params.config & ~UARTE_CONFIG_HWFC_Msk)
+  if (( (NRF_UARTE_regs[inst].CONFIG & CONFIG_RELEVANT_MASK)
+        != (u_el->rx_line_params.config & CONFIG_RELEVANT_MASK)
       )
       || (NRF_UARTE_regs[inst].BAUDRATE != u_el->rx_line_params.baud)) {
     bs_trace_warning_time_line("UART%i: Receiving a byte with mismatched configuration. "
