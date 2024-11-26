@@ -102,7 +102,7 @@ struct ufifo_st_t {
 
   struct line_params rx_line_params;
   bool cts; /* CTS signal we are getting from other device (starts high => not clear) */
-  char rx_byte;
+  uint16_t rx_byte;
 };
 
 struct ufifo_st_t ufifo_st[NHW_UARTE_TOTAL_INST];
@@ -112,7 +112,7 @@ static double uf_mdt;
 
 static void nhw_ufifo_update_timer(void);
 static void nhw_ufifo_create_fifos(uint inst, struct ufifo_st_t *u_el);
-static void nhw_ufifo_tx_byte(uint inst, uint8_t data);
+static void nhw_ufifo_tx_byte(uint inst, uint16_t data);
 static void nhw_ufifo_RTS_pin_toggle(uint inst, bool new_level);
 static void nhw_ufifo_enable_notify(uint inst, uint8_t tx_enabled, uint8_t rx_enabled);
 static void uf_Rx_handle_old_input(uint inst, struct ufifo_st_t *u_el);
@@ -214,7 +214,7 @@ static void tx_disconnect(uint inst, struct ufifo_st_t *u_el) {
   write_to_tx_fifo(u_el, (void *)&msg, sizeof(msg));
 }
 
-static void nhw_ufifo_tx_byte(uint inst, uint8_t data) {
+static void nhw_ufifo_tx_byte(uint inst, uint16_t data) {
   struct ufifo_st_t *u_el = &ufifo_st[inst];
 
   if (!u_el->enabled) {
@@ -348,7 +348,7 @@ static int uf_rx_get_one_msg(uint inst, struct ufifo_st_t *u_el) {
       break;
     case ufifo_TX_BYTE:
       uf_rx_lowlevel_read(u_el, (char *)buf + UFIFO_MSG_HEADER_SIZE, UFIFO_MSG_TXL_BODY_SIZE);
-      u_el->rx_byte = ((struct ufifo_msg_tx *)buf)->data;;
+      u_el->rx_byte = ((struct ufifo_msg_tx *)buf)->data;
       break;
     case ufifo_NOP:
       break;

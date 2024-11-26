@@ -78,7 +78,7 @@ extern NRF_UARTE_Type NRF_UARTE_regs[];
 extern NRF_UART_Type *NRF_UART_regs[];
 #endif
 
-typedef void (*uart_rtxb_cb_f)(uint inst, uint8_t *data);
+typedef void (*uart_rtxb_cb_f)(uint inst, uint16_t *data);
 /*
  * (Test interface) Register a callback which will be called
  * each time a byte is transmitted or received.

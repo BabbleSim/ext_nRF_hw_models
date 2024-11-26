@@ -55,7 +55,7 @@ struct uarte_status {
   uint8_t Rx_FIFO[RX_FIFO_SIZE];
   int Rx_FIFO_cnt;
 
-  uint8_t Tx_byte;
+  uint16_t Tx_byte;
 
   bool RTSR; /* Logical level of RTS/R (false/lowered => Ready to receive)
                 (this value is internal, and toggles even if the flow-control is disabled) */
@@ -75,6 +75,8 @@ struct uarte_status {
 
   int n_match; /* Number of match registers this instance has */
   uint32_t *MATCH_CANDIDATE; /* Shadow copy of DMA.RX.MATCH.CANDIDATE */
+
+  bool rx_addr_filter_matched;
 
   struct backend_if backend;
 

@@ -49,7 +49,7 @@ struct ufifo_msg_header {
 
 struct ufifo_msg_tx {
   struct ufifo_msg_header header;
-  uint8_t data;
+  uint16_t data;
 } __attribute__ ((packed));
 
 struct ufifo_msg_rts_cts {

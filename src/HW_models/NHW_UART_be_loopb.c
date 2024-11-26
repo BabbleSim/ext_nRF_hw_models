@@ -26,12 +26,12 @@ struct ublb_st_t {
   bool enabled;
   bs_time_t Timer;
 
-  char rx_byte;
+  uint16_t rx_byte;
 } ublb_st[NHW_UARTE_TOTAL_INST];
 
 void nhw_uarte_update_common_timer(void);
 
-static void nhw_ublb_tx_byte(uint inst, uint8_t data);
+static void nhw_ublb_tx_byte(uint inst, uint16_t data);
 static void nhw_ublb_RTS_pin_toggle(uint inst, bool new_level);
 
 static void nhw_ublb_init(void) {
@@ -88,7 +88,7 @@ static void nhw_ublb_update_timer(void) {
   nhw_uarte_update_common_timer();
 }
 
-static void nhw_ublb_tx_byte(uint inst, uint8_t data) {
+static void nhw_ublb_tx_byte(uint inst, uint16_t data) {
   if (ublb_st[inst].Timer != TIME_NEVER) {
     bs_trace_error_time_line("%s: Unexpected error\n", __func__);
   }

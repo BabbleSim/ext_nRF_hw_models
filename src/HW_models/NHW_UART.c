@@ -71,8 +71,11 @@
  *
  *   * MATCH functionality is untested in this model
  *
- * Implementation notes:
+ *   * FRAMESIZE != 8 and ADDRESS functionality is untested in this model
  *
+ * Implementation notes:
+ *   * As for the 54 the data in the line can be a configurable amount between 4 and 9bits (due to address bit),
+ *     the "byte" parameters were increased to 16bits. But the naming was kept in most of them as "byte".
  */
 
 #include <stdbool.h>
@@ -124,7 +127,7 @@ static void nhw_UARTE_signal_EVENTS_FRAMETIMEOUT(unsigned int inst);
 static void nhw_UARTE_signal_EVENTS_DMA_RX_MATCH(unsigned int inst, unsigned int i);
 #endif
 static void nhw_UARTE_Tx_send_byte(unsigned int inst, struct uarte_status *u_el);
-static void nhw_UART_Tx_queue_byte(uint inst, struct uarte_status *u_el, uint8_t byte);
+static void nhw_UART_Tx_queue_byte(uint inst, struct uarte_status *u_el, uint16_t byte);
 static void nhw_UARTE_Rx_DMA_attempt(uint inst, struct uarte_status *u_el);
 static void raise_RTS_R(uint inst, struct uarte_status *u_el);
 
@@ -403,14 +406,28 @@ static bs_time_t nhw_uarte_nbits_time(uint inst, uint nbits) {
   return duration;
 }
 
+static int nhw_uarte_get_frame_size(uint inst) {
+  uint frame_size = 8;
+#if defined(UARTE_CONFIG_FRAMESIZE_Msk)
+  frame_size = (NRF_UARTE_regs[inst].CONFIG & UARTE_CONFIG_FRAMESIZE_Msk) >> UARTE_CONFIG_FRAMESIZE_Pos;
+  if (frame_size < 4 || frame_size > 9) {
+    bs_trace_info_time_line(3, "UART%i: Illegal CONFIG.FRAMESIZE (4<=%i<=9)\n", inst, frame_size);
+    frame_size = 8;
+  }
+#endif
+  return frame_size;
+}
+
 /**
  * Return the time in microseconds it takes for one byte to be Tx or Rx
  * including start, parity and stop bits.
  * Accounting for the UART configuration and baud rate
  */
 bs_time_t nhw_uarte_one_byte_time(uint inst) {
-  bs_time_t duration = 1 + 8 + 1; /* Start bit, byte, and at least 1 stop bit */
+  bs_time_t duration = 1 + 1; /* Start bit, and at least 1 stop bit */
   uint32_t CONFIG = NRF_UARTE_regs[inst].CONFIG;
+
+  duration += nhw_uarte_get_frame_size(inst); /* data byte itself */
 
   if (CONFIG & UARTE_CONFIG_PARITY_Msk) {
     duration +=1;
@@ -551,11 +568,44 @@ static void notify_backend_TxOnOff(uint inst, struct uarte_status *u_el, bool On
   }
 }
 
+/*
+ * Process the receive frame (up to 9 bits including address)
+ * which may be to shift the data up (if it was less than 4 bits and ENDIAN was set)
+ *
+ * Returns true if the frame should be dropped (due to address filtering)
+ * False otherwise
+ */
+static bool nhw_UARTE_process_Rx_byte(uint inst, struct uarte_status *u_el, uint16_t *byte) {
+#if defined(UARTE_CONFIG_FRAMESIZE_Msk)
+  uint frame_size = nhw_uarte_get_frame_size(inst);
+
+  if (frame_size == 8) {
+    /* Let's handle the typical case fast */
+  } else if (frame_size < 8) {
+    if (NRF_UARTE_regs[inst].CONFIG & UARTE_CONFIG_ENDIAN_Msk) { //Cut from LSB
+      uint shift = (8 - frame_size);
+      *byte = *byte << shift;
+    }
+  } else if (frame_size == 9) { //9 bits
+    if (*byte & 0x100) { //It's an address
+      if ((*byte & 0xFF) == NRF_UARTE_regs[inst].ADDRESS) {
+        u_el->rx_addr_filter_matched = true;
+      } else {
+        u_el->rx_addr_filter_matched = false;
+      }
+      return true; /* Address is always dropped */
+    }
+    return !u_el->rx_addr_filter_matched;
+  }
+#endif
+  return false;
+}
+
 /**
  * Process a byte incoming to the UART from a backend
  * This call should be done in the last micros when the byte frame is finishing in the line
  */
-void nhw_UARTE_digest_Rx_byte(uint inst, uint8_t byte) {
+void nhw_UARTE_digest_Rx_byte(uint inst, uint16_t byte) {
   struct uarte_status *u_el = &nhw_uarte_st[inst];
   bs_time_t frame_start, now;
 
@@ -580,11 +630,16 @@ void nhw_UARTE_digest_Rx_byte(uint inst, uint8_t byte) {
     return;
   }
 
+  if (u_el->Rx_log_file) {
+    fprintf(u_el->Rx_log_file, "%"PRItime",0x%02X\n", now, byte);
+  }
+
   if (u_el->trx_callbacks[1]) {
     u_el->trx_callbacks[1](inst, &byte);
   }
-  if (u_el->Rx_log_file) {
-    fprintf(u_el->Rx_log_file, "%"PRItime",0x%02X\n", now, byte);
+
+  if (nhw_UARTE_process_Rx_byte(inst, u_el, &byte)) {
+    return;
   }
 
   Rx_FIFO_push(inst, u_el, byte);
@@ -791,11 +846,38 @@ static void nHW_UARTE_Tx_DMA_end(int inst, struct uarte_status * u_el) {
   nhw_UARTE_signal_EVENTS_ENDTX(inst);
 }
 
+static uint16_t nhw_UART_prep_Tx_data(uint inst, struct uarte_status *u_el, uint16_t byte) {
+#if defined(UARTE_CONFIG_FRAMESIZE_Msk)
+  uint frame_size = nhw_uarte_get_frame_size(inst);
+
+  if (frame_size == 8) {
+    return byte;
+  } else if (frame_size < 8) {
+    uint shift = (8 - frame_size);
+    if (NRF_UARTE_regs[inst].CONFIG & UARTE_CONFIG_ENDIAN_Msk) { //Cut from LSB
+      return byte >> shift;
+    } else {
+      return byte & (0xFF >> shift);
+    }
+  } else { //9 bits => adding address bit
+    if (u_el->TXD_AMOUNT == 0) {
+      return byte | 0x100;
+    } else {
+      return byte;
+    }
+  }
+#else
+  return byte;
+#endif
+}
+
 static void nHW_UARTE_Tx_DMA_byte(int inst, struct uarte_status *u_el)
 {
   uint8_t *ptr = (uint8_t *)(u_el->TXD_PTR + u_el->TXD_AMOUNT);
 
-  nhw_UART_Tx_queue_byte(inst, u_el, *ptr);
+  uint16_t data = nhw_UART_prep_Tx_data(inst, u_el, *ptr);
+
+  nhw_UART_Tx_queue_byte(inst, u_el, data);
 }
 
 void nhw_UARTE_TASK_STARTTX(uint inst)
@@ -894,7 +976,7 @@ void nhw_UARTE_TASK_STOPTX(uint inst)
 /*
  * Queue a byte for transmission right away in the backends
  */
-static void nhw_UARTE_Tx_byte(unsigned int inst, struct uarte_status *u_el, uint8_t data) {
+static void nhw_UARTE_Tx_byte(unsigned int inst, struct uarte_status *u_el, uint16_t data) {
   if (u_el->trx_callbacks[0]) {
     u_el->trx_callbacks[0](inst, &data);
   }
@@ -926,7 +1008,7 @@ static void nhw_UARTE_Tx_send_byte(unsigned int inst, struct uarte_status *u_el)
 /*
  * Queue a byte to Tx'ed as soon as possible
  */
-static void nhw_UART_Tx_queue_byte(uint inst, struct uarte_status *u_el, uint8_t byte)
+static void nhw_UART_Tx_queue_byte(uint inst, struct uarte_status *u_el, uint16_t byte)
 {
   if (u_el->tx_status != Tx_Idle) {
     bs_trace_error_time_line("Attempted to queue a byte for Tx but a transmission is currently ongoing. "
@@ -1119,6 +1201,11 @@ void nhw_UARTE_regw_sideeffects_ENABLE(unsigned int inst) {
 }
 
 void nhw_UARTE_regw_sideeffects_CONFIG(unsigned int inst) {
+#if defined(UARTE_CONFIG_FRAMESIZE_Msk)
+  uint frame_size = nhw_uarte_get_frame_size(inst);
+  NRF_UARTE_regs[inst].CONFIG &= ~UARTE_CONFIG_FRAMESIZE_Msk;
+  NRF_UARTE_regs[inst].CONFIG |= frame_size << UARTE_CONFIG_FRAMESIZE_Pos;
+#endif
   if (NRF_UARTE_regs[inst].ENABLE != 0) {
     struct uarte_status *u_el = &nhw_uarte_st[inst];
     propagate_RTS_R(inst, u_el);

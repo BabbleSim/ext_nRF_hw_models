@@ -17,7 +17,7 @@ extern "C"{
 
 /* Interface backends export to main UART module */
 
-typedef void (*tx_byte_ft)(uint inst, uint8_t data);
+typedef void (*tx_byte_ft)(uint inst, uint16_t data);
 typedef void (*RTS_pin_toggle_ft)(uint inst, bool new_level);
 typedef void (*uart_enable_notify_ft)(uint inst, uint8_t tx_enabled, uint8_t rx_enabled);
 
@@ -28,7 +28,7 @@ struct backend_if {
 };
 
 /* Interface UART module exposes to backends */
-void nhw_UARTE_digest_Rx_byte(uint inst, uint8_t byte);
+void nhw_UARTE_digest_Rx_byte(uint inst, uint16_t byte);
 bs_time_t nhw_uarte_one_byte_time(uint inst);
 void nhw_UARTE_CTS_lowered(uint inst);
 void nhw_UARTE_CTS_raised(uint inst);
