@@ -218,7 +218,7 @@ static void nhw_ufifo_tx_byte(uint inst, uint16_t data) {
   struct ufifo_st_t *u_el = &ufifo_st[inst];
 
   if (!u_el->enabled) {
-    bs_trace_error_time_line("Progamming error\n");
+    bs_trace_error_time_line("Programming error\n");
   }
 
   if (((NRF_UARTE_regs[inst].CONFIG & CONFIG_RELEVANT_MASK) != u_el->tx_line_params.config)
@@ -258,7 +258,7 @@ static void nhw_ufifo_enable_notify(uint inst, uint8_t tx_enabled, uint8_t rx_en
   struct ufifo_st_t *u_el = &ufifo_st[inst];
 
   if (!u_el->enabled) {
-    bs_trace_error_time_line("Progamming error\n");
+    bs_trace_error_time_line("Programming error\n");
   }
 
   u_el->tx_on = tx_enabled;

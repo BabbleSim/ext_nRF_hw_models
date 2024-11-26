@@ -29,7 +29,7 @@ extern "C"{
  *          (note the time stamp is ignored, as only the next Tx is affected by the rate change)
  *
  *    <uint64_t time> TX_BYTE <msg_size>
- *          <uint8_t data >
+ *          <uint16_t data >
  *          (note time is when the frame ends)
  *
  *    <uint64_t time> RTS_CTS_TOGGLE <msg_size>

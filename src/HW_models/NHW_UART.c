@@ -673,7 +673,7 @@ void nhw_UARTE_CTS_lowered(uint inst) {
 }
 
 /**
- * Propagate internally the CTS pin having been lowered
+ * Propagate internally the CTS pin having been raised
  */
 void nhw_UARTE_CTS_raised(uint inst) {
   if (nhw_uarte_st[inst].CTS_blocking == true) {
