@@ -74,7 +74,7 @@
 
 #define IS_PERIPHERAL_REG(p, per, nbr, post) \
     (p >= PERIPHERAL_REG_BASE(per, nbr, post)) && \
-    ((intptr_t)p < (intptr_t)PERIPHERAL_REG_BASE(per, nbr, post) + sizeof(NRF_##per##_Type))
+    ((uintptr_t)p < (uintptr_t)PERIPHERAL_REG_BASE(per, nbr, post) + sizeof(NRF_##per##_Type))
 
 typedef void (*subscribe_set_f)(void *, int , uint8_t);
 typedef void (*subscribe_clear_f)(void *, int);
@@ -345,7 +345,7 @@ void nrf_dppi_hack_subscribe_set(void *sub_reg, unsigned int channel)
   subscribe_clear_f clear_f;
   task_trigger_f task_trigger_f;
 
-  intptr_t task_reg_pr = (intptr_t)sub_reg - NRF_SUBSCRIBE_PUBLISH_OFFSET((intptr_t)sub_reg);
+  intptr_t task_reg_pr = (intptr_t)sub_reg - NRF_SUBSCRIBE_PUBLISH_OFFSET((uintptr_t)sub_reg);
 
   nrf_hack_get_task_from_ptr((void *)task_reg_pr, &p_reg, &set_f, &clear_f, &task_trigger_f, &task);
   if (nrf_hack_is_task(task)) {
@@ -372,7 +372,7 @@ void nrf_dppi_hack_subscribe_clear(void *sub_reg)
   subscribe_clear_f clear_f;
   task_trigger_f trigger_f;
 
-  intptr_t task_reg_pr = (intptr_t)sub_reg - NRF_SUBSCRIBE_PUBLISH_OFFSET((intptr_t)sub_reg);
+  intptr_t task_reg_pr = (intptr_t)sub_reg - NRF_SUBSCRIBE_PUBLISH_OFFSET((uintptr_t)sub_reg);
 
   nrf_hack_get_task_from_ptr((void *)task_reg_pr, &p_reg, &set_f, &clear_f, &trigger_f, &task);
   if (nrf_hack_is_task(task)) {

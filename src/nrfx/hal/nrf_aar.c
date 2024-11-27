@@ -45,6 +45,7 @@ void nrf_aar_event_clear(NRF_AAR_Type * p_reg, nrf_aar_event_t event)
 static void nrf_aar_subscribe_common(NRF_AAR_Type * p_reg,
                                      nrf_aar_task_t task)
 {
+  (void) p_reg;
   if (task == NRF_AAR_TASK_START) {
       nhw_AAR_regw_sideeffects_SUBSCRIBE_START(0);
   } else if ( task == NRF_AAR_TASK_STOP ) {

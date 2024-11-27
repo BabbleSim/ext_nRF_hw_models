@@ -26,12 +26,14 @@ void nrf_rng_task_trigger(NRF_RNG_Type * p_reg, nrf_rng_task_t rng_task)
 
 void nrf_rng_int_enable(NRF_RNG_Type * p_reg, uint32_t mask)
 {
+  (void) p_reg;
   NRF_RNG_regs.INTENSET = mask;
   nhw_RNG_regw_sideeffects_INTENSET();
 }
 
 void nrf_rng_int_disable(NRF_RNG_Type * p_reg, uint32_t mask)
 {
+  (void) p_reg;
   NRF_RNG_regs.INTENCLR = mask;
   nhw_RNG_regw_sideeffects_INTENCLR();
 }
@@ -47,6 +49,7 @@ void nrf_rng_event_clear(NRF_RNG_Type * p_reg, nrf_rng_event_t rng_event)
 static void nrf_rng_subscribe_common(NRF_RNG_Type * p_reg,
                                      nrf_rng_task_t task)
 {
+  (void) p_reg;
   if (task == NRF_RNG_TASK_START) {
       nhw_RNG_regw_sideeffects_SUBSCRIBE_START(0);
   } else if ( task == NRF_RNG_TASK_STOP ) {

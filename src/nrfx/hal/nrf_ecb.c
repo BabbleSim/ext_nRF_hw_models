@@ -45,6 +45,7 @@ void nrf_ecb_event_clear(NRF_ECB_Type * p_reg, nrf_ecb_event_t event)
 static void nrf_ecb_subscribe_common(NRF_ECB_Type * p_reg,
                                      nrf_ecb_task_t task)
 {
+  (void) p_reg;
   if (task == NRF_ECB_TASK_STARTECB) {
       nhw_ECB_regw_sideeffects_SUBSCRIBE_STARTECB(0);
   } else if ( task == NRF_ECB_TASK_STOPECB ) {

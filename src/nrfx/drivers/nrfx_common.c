@@ -14,7 +14,7 @@
 
 #define IS_PERIPHERAL_REG(p, per, nbr, post) \
     (p >= PERIPHERAL_REG_BASE(per, nbr, post)) && \
-    ((intptr_t)p < (intptr_t)PERIPHERAL_REG_BASE(per, nbr, post) + sizeof(NRF_##per##_Type))
+    ((uintptr_t)p < (uintptr_t)PERIPHERAL_REG_BASE(per, nbr, post) + sizeof(NRF_##per##_Type))
 
 IRQn_Type nrfx_get_irq_number(void const * p_reg){
 

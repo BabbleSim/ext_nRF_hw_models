@@ -24,12 +24,14 @@ void nrf_temp_task_trigger(NRF_TEMP_Type * p_reg, nrf_temp_task_t temp_task)
 
 void nrf_temp_int_enable(NRF_TEMP_Type * p_reg, uint32_t mask)
 {
+  (void) p_reg;
   NRF_TEMP_regs.INTENSET = mask;
   nhw_TEMP_regw_sideeffects_INTENSET();
 }
 
 void nrf_temp_int_disable(NRF_TEMP_Type * p_reg, uint32_t mask)
 {
+  (void) p_reg;
   NRF_TEMP_regs.INTENCLR = mask;
   nhw_TEMP_regw_sideeffects_INTENCLR();
 }
@@ -45,6 +47,7 @@ void nrf_temp_event_clear(NRF_TEMP_Type * p_reg, nrf_temp_event_t event)
 static void nrf_temp_subscribe_common(NRF_TEMP_Type * p_reg,
                                      nrf_temp_task_t task)
 {
+  (void) p_reg;
   if (task == NRF_TEMP_TASK_START) {
       nhw_TEMP_regw_sideeffects_SUBSCRIBE_START(0);
   } else if ( task == NRF_TEMP_TASK_STOP ) {

@@ -120,6 +120,7 @@ void nrf_grtc_event_clear(NRF_GRTC_Type * p_reg, nrf_grtc_event_t event)
 
 uint32_t nrf_grtc_sys_counter_low_get(NRF_GRTC_Type const * p_reg)
 {
+    (void) p_reg;
 #if NRF_GRTC_HAS_SYSCOUNTER_ARRAY
     return nhw_GRTC_regr_sideeffects_SYSCOUNTERL(0, NRF_GRTC_DOMAIN_INDEX);
 #else
@@ -130,6 +131,7 @@ uint32_t nrf_grtc_sys_counter_low_get(NRF_GRTC_Type const * p_reg)
 
 uint32_t nrf_grtc_sys_counter_high_get(NRF_GRTC_Type const * p_reg)
 {
+    (void) p_reg;
 #if NRF_GRTC_HAS_SYSCOUNTER_ARRAY
     return nhw_GRTC_regr_sideeffects_SYSCOUNTERH(0, NRF_GRTC_DOMAIN_INDEX);
 #else

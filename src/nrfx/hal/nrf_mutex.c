@@ -11,10 +11,12 @@
 
 bool nrf_mutex_lock(NRF_MUTEX_Type * p_reg, uint8_t mutex)
 {
+    (void) p_reg;
     return (nhw_MUTEX_regr_sideeffects_MUTEX(mutex) == MUTEX_MUTEX_MUTEX_Unlocked);
 }
 
 void nrf_mutex_unlock(NRF_MUTEX_Type * p_reg, uint8_t mutex)
 {
+    (void) p_reg;
     nhw_MUTEX_regw_sideeffects_MUTEX(mutex);
 }

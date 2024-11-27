@@ -48,6 +48,7 @@ void nrf_ccm_event_clear(NRF_CCM_Type * p_reg, nrf_ccm_event_t event)
 static void nrf_ccm_subscribe_common(NRF_CCM_Type * p_reg,
                                      nrf_ccm_task_t task)
 {
+  (void) p_reg;
   if (task == NRF_CCM_TASK_KSGEN) {
       nhw_CCM_regw_sideeffects_SUBSCRIBE_KSGEN(0);
   } else if ( task == offsetof(NRF_CCM_Type, TASKS_CRYPT) ) {

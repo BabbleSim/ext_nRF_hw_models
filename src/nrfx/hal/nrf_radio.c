@@ -91,6 +91,7 @@ void nrf_radio_event_clear(NRF_RADIO_Type * p_reg, nrf_radio_event_t event)
 static void nrf_radio_subscribe_common(NRF_RADIO_Type * p_reg,
                                        nrf_radio_task_t task)
 {
+  (void) p_reg;
 
 #define CASE_CALL_SIDEEFFECT(x) \
   case NRF_RADIO_TASK_##x :\
