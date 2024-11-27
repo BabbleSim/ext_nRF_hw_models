@@ -881,7 +881,7 @@
 #define NHW_UARTE_NAMES {"UARTE00", \
                          "UARTE20", \
                          "UARTE21", \
-                         "UARTE2", \
+                         "UARTE22", \
                          "UARTE30"}
 #define NHW_UARTE_54NAMING 1
 #define NHW_UARTE_FLUSH_AMOUNT_BUG 0
