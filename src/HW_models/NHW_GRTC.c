@@ -194,7 +194,7 @@ bs_time_t nhw_GRTC_counter_to_time(uint inst, uint64_t value) {
 static void nhw_GRTC_update_master_timer(void) {
   Timer_GRTC = TIME_NEVER;
 
-  for (int cc = 0 ; cc < nhw_grtc_st.n_cc ; cc++) {
+  for (uint cc = 0 ; cc < nhw_grtc_st.n_cc ; cc++) {
     if (nhw_grtc_st.CC_timers[cc] < Timer_GRTC) {
       Timer_GRTC = nhw_grtc_st.CC_timers[cc];
     }
@@ -220,7 +220,7 @@ static void nhw_GRTC_update_cc_timer(uint inst, int cc) {
 }
 
 static void nhw_GRTC_update_all_cc_timers(uint inst) {
-  for (int cc = 0 ; cc < nhw_grtc_st.n_cc; cc++) {
+  for (uint cc = 0 ; cc < nhw_grtc_st.n_cc; cc++) {
     nhw_GRTC_update_cc_timer(inst, cc);
   }
 }
@@ -237,13 +237,13 @@ static void nhw_GRTC_eval_interrupt(uint inst)
   uint32_t *INTEN;
   uint32_t *INTPEND;
 
-  for (int irql = 0; irql < this->n_int; irql++) {
+  for (uint irql = 0; irql < this->n_int; irql++) {
     uint32_t event_bitmask = 0;
     bool new_line_level;
     INTEN =  (uint32_t *)((uintptr_t)&NRF_GRTC_regs.INTEN0 + irql*grtc_int_pdiff);
     INTPEND= (uint32_t *)((uintptr_t)&NRF_GRTC_regs.INTPEND0 + irql*grtc_int_pdiff);
 
-    for (int i = 0; i < this->n_cc; i++) {
+    for (uint i = 0; i < this->n_cc; i++) {
       if (NRF_GRTC_regs.EVENTS_COMPARE[i]) {
         event_bitmask |= 1<<i;
       }
@@ -281,6 +281,8 @@ static void nhw_GRTC_signal_EVENTS_SYSCOUNTERVALID(uint inst) {
   NRF_GRTC_regs.EVENTS_SYSCOUNTERVALID = 1;
   nhw_GRTC_eval_interrupt(inst);
   /* Not connected to DPPI */
+#else
+  (void) inst;
 #endif
 }
 
@@ -428,10 +430,12 @@ void nhw_GRTC_regw_sideeffects_INTENCLR(uint inst, uint n) {
 NHW_SIDEEFFECTS_EVENTS(GRTC)
 
 static void nhw_GRTC_update_SYSCOUNTER(uint inst) {
+  (void) inst;
   nhw_grtc_st.SYSCOUNTER = nsi_hws_get_time() - nhw_grtc_st.GRTC_start_time;
 }
 
 static void nhw_GRTC_check_syscounter_en(uint inst, const char *msg) {
+  (void) inst;
   if (!nhw_grtc_st.rt_counter_running) {
     bs_trace_warning_time_line("The RT counter was not started while trying to %s\n", msg);
     return;

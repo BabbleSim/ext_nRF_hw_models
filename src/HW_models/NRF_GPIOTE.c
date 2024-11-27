@@ -166,7 +166,7 @@ static void nrf_gpiote_eval_interrupt(unsigned int inst) {
   for (int line= 0; line < NHW_GPIOTE_N_INT; line ++) {
     new_int_line = false;
 
-    for (int i = 0; i < st->n_channels; i++) {
+    for (uint i = 0; i < st->n_channels; i++) {
       mask = (st->GPIOTE_ITEN[line] >> i) & 0x1;
       if (NRF_GPIOTE_regs[inst].EVENTS_IN[i] && mask) {
         new_int_line = true;
@@ -237,6 +237,7 @@ static void nhw_GPIOTE_signal_EVENTS_PORT(unsigned int inst) {
  */
 static void nrf_gpiote_input_change_ntf(unsigned int port, unsigned int pin_n, bool value, void *cb_data)
 {
+  (void)port;
   (void)pin_n; /* Unused */
   uint inst = (intptr_t)cb_data >> 8;
   int ch_n = (intptr_t)cb_data & 0xFF;
@@ -300,6 +301,7 @@ void nrf_gpiote_regw_sideeffects_TASKS_CLR(unsigned int inst, unsigned int n) {
 }
 
 void nrf_gpiote_regw_sideeffects_EVENTS_IN(unsigned int inst, unsigned int n) {
+  (void) n;
   nrf_gpiote_eval_interrupt(inst);
 }
 

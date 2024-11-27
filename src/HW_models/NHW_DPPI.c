@@ -247,7 +247,7 @@ void nhw_dppi_channel_subscribe(unsigned int dppi_inst,
   struct dppi_status *this = &nhw_dppi_st[dppi_inst];
   struct dppi_registry_el *ch_reg = this->registry[ch_n];
 
-  for (int i = 0; i < this->reg_used[ch_n]; i++) {
+  for (uint i = 0; i < this->reg_used[ch_n]; i++) {
     if ((ch_reg[i].callback == callback) /* LCOV_EXCL_START */
         && (ch_reg[i].param == param)) {
       bs_trace_error_time_line("%s: Programming error: Attempted to subscribe "
@@ -299,7 +299,7 @@ void nhw_dppi_channel_unsubscribe(unsigned int dppi_inst,
   struct dppi_status *this = &nhw_dppi_st[dppi_inst];
   struct dppi_registry_el *ch_reg = this->registry[ch_n];
 
-  for (int i = 0; i < this->reg_used[ch_n]; i++) {
+  for (uint i = 0; i < this->reg_used[ch_n]; i++) {
     if ((ch_reg[i].callback == callback)
         && (ch_reg[i].param == param)) {
       nhw_dppi_shift_registration(ch_reg, i, this->reg_used[ch_n]);
@@ -331,7 +331,7 @@ void nhw_dppi_event_signal(uint dppi_inst, uint ch_n)
 
   struct dppi_registry_el *ch_reg = this->registry[ch_n];
 
-  for (int i = 0; i < this->reg_used[ch_n]; i++) {
+  for (uint i = 0; i < this->reg_used[ch_n]; i++) {
     if (ch_reg[i].callback) { /* LCOV_EXCL_BR_LINE */
       if (ch_reg[i].param != (void*)DPPI_CB_NO_PARAM) {
         ch_reg[i].callback(ch_reg[i].param);

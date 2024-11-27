@@ -36,7 +36,9 @@ void xo_model_set_toffset(double t_off) {
 static double tmp_xo_drift;
 
 static void arg_xo_drift_found(char * argv, int offset) {
-	xo_drift = tmp_xo_drift;
+  (void) argv;
+  (void) offset;
+  xo_drift = tmp_xo_drift;
 }
 
 static void trivial_xo_register_cmd_args(void) {

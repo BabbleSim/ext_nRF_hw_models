@@ -99,7 +99,7 @@ static void nhw_egu_eval_interrupt(uint inst)
   NRF_EGU_Type *EGU_regs = this->NRF_EGU_regs;
   bool new_egu_int_line = false;
 
-  for (int i = 0; i < this->n_events; i++) {
+  for (uint i = 0; i < this->n_events; i++) {
     int int_mask = (EGU_regs->INTEN >> i) & 1;
     if (int_mask && EGU_regs->EVENTS_TRIGGERED[i]) {
       new_egu_int_line = true;

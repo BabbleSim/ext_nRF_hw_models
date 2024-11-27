@@ -155,7 +155,7 @@ static inline uint32_t read_3_bytes_value(const uint8_t *ptr) {
  * or to -1 if none did.
  */
 static int nhw_aar_resolve(int *good_irk) {
-  int i;
+  uint i;
   uint8_t prand_buf[16];
   uint8_t hash_check_buf[16];
   uint32_t hash, hash_check;

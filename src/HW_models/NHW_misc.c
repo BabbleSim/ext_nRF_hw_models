@@ -45,6 +45,7 @@ bool nhw_convert_RAM_addr(void **addr)
      return true;
   }
 #else
+  (void) addr;
   bs_trace_warning_time_line("%s not supported yet in this device\n", __func__);
 #endif
   return false;
@@ -519,7 +520,7 @@ void *nhw_convert_periph_base_addr(void *hw_addr) {
 #endif
   };
 
-  for (int i = 0; i < sizeof(conv_table)/sizeof(conv_table[0]); i++) {
+  for (unsigned int i = 0; i < sizeof(conv_table)/sizeof(conv_table[0]); i++) {
     if (conv_table[i].real_add == (uint32_t)hw_addr) {
       return conv_table[i].simu_addr;
     }

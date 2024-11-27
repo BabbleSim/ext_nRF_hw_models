@@ -659,7 +659,7 @@ static void set_fixed_channel_routes(void) {
  * We do this to filter out duplicate tasks caused by the same event,
  * as this is a use case
  */
-volatile static struct {
+static volatile struct {
   dest_f_t* q;
   uint used;
   uint size;
@@ -694,7 +694,7 @@ static void nrf_ppi_clean_up(void) {
 NSI_TASK(nrf_ppi_clean_up, ON_EXIT_PRE, 50);
 
 static void nrf_ppi_enqueue_task(dest_f_t task) {
-  int i;
+  uint i;
   for (i = 0; i < tasks_queue.used; i++){
     if (tasks_queue.q[i] == task){ //We ignore dups
       return;
@@ -709,7 +709,7 @@ static void nrf_ppi_enqueue_task(dest_f_t task) {
 }
 
 static void nrf_ppi_dequeue_all_tasks(void) {
-  int i;
+  uint i;
   for (i = 0; i < tasks_queue.used; i++) {
     if (tasks_queue.q[i]) {
       dest_f_t f = tasks_queue.q[i];

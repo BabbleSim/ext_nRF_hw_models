@@ -9,7 +9,7 @@
 
 void hwu_reverse_byte_order(const unsigned char *in_data, unsigned char *out_data, size_t len)
 {
-    int i;
+    unsigned int i;
     in_data += len - 1;
     for (i = 0; i < len; i++)
     {

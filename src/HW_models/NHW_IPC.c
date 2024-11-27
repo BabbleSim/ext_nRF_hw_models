@@ -88,7 +88,7 @@ static void nhw_IPC_eval_interrupt(uint inst) {
 
   uint32_t event_m = 0;
 
-  for (int i = 0; i < this->n_ch; i++) {
+  for (uint i = 0; i < this->n_ch; i++) {
     if (IPC_regs->EVENTS_RECEIVE[i]) {
       event_m |= 1<<i;
     }
@@ -124,7 +124,7 @@ static void nhw_IPC_signal_EVENT(uint inst, uint ch) {
 static void nhw_IPC_notify_ipc_ch(uint ch) {
   for (uint inst = 0; inst < NHW_IPC_TOTAL_INST; inst++) {
     uint ch_mask = 1 << ch;
-    for (int i = 0; i < nhw_ipc_st[inst].n_ch; i++) {
+    for (uint i = 0; i < nhw_ipc_st[inst].n_ch; i++) {
       if (NRF_IPC_regs[inst].RECEIVE_CNF[i] & ch_mask) {
         nhw_IPC_signal_EVENT(inst, i);
       }

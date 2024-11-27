@@ -163,7 +163,7 @@ NSI_TASK(nhw_ufifo_backend_init, HW_INIT, 100); /* this must be before the uart 
 static void write_to_tx_fifo(struct ufifo_st_t *u_el, void *ptr, size_t size) {
   int res = write(u_el->fifo_tx, ptr, size);
 
-  if (res != size) {
+  if (res != (int)size) {
     u_el->disconnected = true;
     if ((res == -1) && (errno == EPIPE)) {
       /* The other side disconnected unexpectedly, let's terminate */
@@ -175,7 +175,7 @@ static void write_to_tx_fifo(struct ufifo_st_t *u_el, void *ptr, size_t size) {
   }
 }
 
-static void tx_set_next_tx_timer(uint inst, struct ufifo_st_t *u_el, bs_time_t last_act) {
+static void tx_set_next_tx_timer(struct ufifo_st_t *u_el, bs_time_t last_act) {
   u_el->Tx_timer = BS_MAX(last_act, u_el->Tx_timer);
   nhw_ufifo_update_timer();
 }
@@ -192,20 +192,20 @@ static void tx_sync_line_params(uint inst, struct ufifo_st_t *u_el) {
   msg.baudrate = u_el->tx_line_params.baud;
 
   write_to_tx_fifo(u_el, (void *)&msg, sizeof(msg));
-  tx_set_next_tx_timer(inst, u_el, msg.header.time);
+  tx_set_next_tx_timer(u_el, msg.header.time);
 }
 
-static void tx_nop(uint inst, struct ufifo_st_t *u_el, bs_time_t t) {
+static void tx_nop(struct ufifo_st_t *u_el, bs_time_t t) {
   struct ufifo_msg_header msg;
   msg.time = t;
   msg.size = sizeof(msg);
   msg.msg_type = ufifo_NOP;
 
   write_to_tx_fifo(u_el, (void *)&msg, sizeof(msg));
-  tx_set_next_tx_timer(inst, u_el, msg.time);
+  tx_set_next_tx_timer(u_el, msg.time);
 }
 
-static void tx_disconnect(uint inst, struct ufifo_st_t *u_el) {
+static void tx_disconnect(struct ufifo_st_t *u_el) {
   struct ufifo_msg_header msg;
   msg.time = 0;
   msg.size = sizeof(msg);
@@ -233,7 +233,7 @@ static void nhw_ufifo_tx_byte(uint inst, uint16_t data) {
   msg.data = data;
 
   write_to_tx_fifo(u_el, (void *)&msg, sizeof(msg));
-  tx_set_next_tx_timer(inst, u_el, msg.header.time);
+  tx_set_next_tx_timer(u_el, msg.header.time);
 }
 
 static void nhw_ufifo_RTS_pin_toggle(uint inst, bool new_level) {
@@ -251,7 +251,7 @@ static void nhw_ufifo_RTS_pin_toggle(uint inst, bool new_level) {
   msg.level = new_level;
 
   write_to_tx_fifo(u_el, (void *)&msg, sizeof(msg));
-  tx_set_next_tx_timer(inst, u_el, msg.header.time);
+  tx_set_next_tx_timer(u_el, msg.header.time);
 }
 
 static void nhw_ufifo_enable_notify(uint inst, uint8_t tx_enabled, uint8_t rx_enabled) {
@@ -295,7 +295,7 @@ static void uf_propage_cts(uint inst, struct ufifo_st_t *u_el) {
 
 static int uf_rx_lowlevel_read(struct ufifo_st_t *u_el, void *buf, size_t size) {
   int ret = read(u_el->fifo_rx, buf, size);
-  if (ret != size) {
+  if (ret != (int)size) {
     u_el->disconnected = true;
     if (ret == 0) {
       bs_trace_error_time_line("UART: Other end disconnected unexpectedly\n");
@@ -367,7 +367,7 @@ static int uf_rx_get_one_msg(uint inst, struct ufifo_st_t *u_el) {
  * Process the last received msg
  * (Which may result in a pended call to nhw_ufifo_handle_RxTimer() )
  */
-static void uf_rx_process_last_msg_pre(uint inst, struct ufifo_st_t *u_el) {
+static void uf_rx_process_last_msg_pre(struct ufifo_st_t *u_el) {
   struct ufifo_msg_header *buf = (struct ufifo_msg_header *)u_el->last_rx_msg;
   switch (buf->msg_type) {
     case ufifo_DISCONNECT:
@@ -479,7 +479,7 @@ static void uf_Rx_handle_old_input(uint inst, struct ufifo_st_t *u_el) {
     }
   } while (true);
 
-  uf_rx_process_last_msg_pre(inst, u_el);
+  uf_rx_process_last_msg_pre(u_el);
 }
 
 static void nhw_ufifo_handle_RxTimer(int inst, struct ufifo_st_t *u_el) {
@@ -500,7 +500,7 @@ static void nhw_ufifo_handle_RxTimer(int inst, struct ufifo_st_t *u_el) {
 
   if (u_el->tx_on || u_el->rx_on) {
     uf_rx_get_one_msg(inst, u_el);
-    uf_rx_process_last_msg_pre(inst, u_el);
+    uf_rx_process_last_msg_pre(u_el);
   } else {
     /* Low duty cycle (2):
      * If the Tx and Rx are off, we go into low duty cycle mode:
@@ -523,7 +523,7 @@ static void nhw_ufifo_handle_TxTimer(int inst, struct ufifo_st_t *u_el) {
   t = nsi_hws_get_next_event_time() + nhw_uarte_one_byte_time(inst)/TX_MIN_DELTA_RATIO;
   u_el->Tx_timer = t;
 
-  tx_nop(inst, u_el, t);
+  tx_nop(u_el, t);
 }
 
 static void nhw_ufifo_timer_triggered(void) {
@@ -543,6 +543,7 @@ static void nhw_ufifo_timer_triggered(void) {
 NSI_HW_EVENT(Timer_UFIFO, nhw_ufifo_timer_triggered, 900); /* Let's let as many timers as possible evaluate before this one */
 
 static void uf_parse_mdt(char *argv, int offset) {
+  (void) offset;
   if (uf_mdt < 1 || uf_mdt > 1e6) {
     bs_trace_error_line("uart_fifob_mdt must be set to a value between 1 and 1e6 (%s)\n", argv);
   }
@@ -680,7 +681,7 @@ static void nhw_ufifo_backend_cleanup(void) {
     struct ufifo_st_t *u_el = &ufifo_st[i];
     if ((u_el->fifo_Tx_path) && (u_el->fifo_tx != -1)) {
       if (!u_el->disconnected) {
-        tx_disconnect(i, u_el);
+        tx_disconnect(u_el);
       }
       (void)close(u_el->fifo_tx);
       u_el->fifo_tx = -1;

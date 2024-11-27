@@ -639,7 +639,7 @@ uint nhwra_get_payload_length(uint8_t *buf){
   }
 
   if (NRF_RADIO_regs.PCNF0 & RADIO_PCNF0_CRCINC_Msk) {
-    int crc_len = nhwra_get_crc_length();
+    uint crc_len = nhwra_get_crc_length();
     if (payload_len >= crc_len) {
       payload_len -= crc_len;
     } else {
@@ -697,7 +697,7 @@ uint nhwra_tx_copy_payload(uint8_t *tx_buf){
   int LFLenb, S1LenAirb;
   int i;
   uint payload_len;
-  int maxlen;
+  uint maxlen;
 
   S0Len = (NRF_RADIO_regs.PCNF0 &  RADIO_PCNF0_S0LEN_Msk) >> RADIO_PCNF0_S0LEN_Pos;
 

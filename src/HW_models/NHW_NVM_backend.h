@@ -85,9 +85,13 @@ void nhw_nvm_init_storage(nvm_storage_state_t *st, struct nhw_nvm_st_args_t *arg
 
 #define NVM_BACKEND_PARAMS_CALLBACS(x, args) \
 static void arg_##x##_file_found(char *argv, int offset){ \
+  (void) argv; \
+  (void) offset; \
   nvmc_args. args .in_ram = false; \
 } \
 static void arg_##x##_in_ram_found(char *argv, int offset){ \
+  (void) argv; \
+  (void) offset; \
   nvmc_args. args .in_ram = true; \
 }
 

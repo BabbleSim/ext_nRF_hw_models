@@ -168,7 +168,7 @@ static void nhw_nvmc_uicr_init(void)
     memset(this->page_erased, true, this->flash_n_pages * sizeof(bool));
 
     if (nvmc_args.flash_erase_warnings) {
-      for (int i = 0; i < this->flash_size; i+=4) {
+      for (uint i = 0; i < this->flash_size; i+=4) {
         if (*(uint32_t*)(this->flash_st.storage + i) != 0) {
           int page_size = this->flash_page_size;
           this->page_erased[i/page_size] = false;

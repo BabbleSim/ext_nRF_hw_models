@@ -201,7 +201,7 @@ bool nrf_gpio_get_pin_level(unsigned int port, unsigned int n) {
 }
 
 #define CHECK_PIN_EXISTS(port, n, dir) \
-		if (port >= NHW_GPIO_TOTAL_INST || n >= gpio_st[port].nbr_pins) { \
+		if (port >= NHW_GPIO_TOTAL_INST || (uint)n >= (uint)gpio_st[port].nbr_pins) { \
 			bs_trace_error_time_line("%s: Error, attempted to toggle "dir" for nonexistent " \
 					"GPIO port %i, pin %i\n", \
 					__func__, port, n); \
@@ -253,7 +253,7 @@ void nrf_gpio_peri_pin_control(unsigned int port, unsigned int n,
 
   struct gpio_status *st = &gpio_st[port];
 
-  if (port >= NHW_GPIO_TOTAL_INST || n >= st->nbr_pins) { /* LCOV_EXCL_BR_LINE */
+  if (port >= NHW_GPIO_TOTAL_INST || (int)n >= st->nbr_pins) { /* LCOV_EXCL_BR_LINE */
     bs_trace_error_time_line("Programming error\n"); /* LCOV_EXCL_LINE */
   }
 
@@ -627,7 +627,7 @@ void nrf_gpio_regw_sideeffects_PIN_CNF(unsigned int port, unsigned int n) {
   bool need_input_eval = false;
   bool need_sense_eval = false;
 
-  int dir = NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_DIR_Msk;
+  uint dir = NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_DIR_Msk;
 
   if (dir != ((NRF_GPIO_regs[port].DIR >> n) & 0x1)) {
     NRF_GPIO_regs[port].DIR ^= 1 << n;
@@ -642,7 +642,7 @@ void nrf_gpio_regw_sideeffects_PIN_CNF(unsigned int port, unsigned int n) {
 					>> GPIO_PIN_CNF_DRIVE_Pos;
    */
 
-  int input = (NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_INPUT_Msk)
+  uint input = (NRF_GPIO_regs[port].PIN_CNF[n] & GPIO_PIN_CNF_INPUT_Msk)
 			    >> GPIO_PIN_CNF_INPUT_Pos;
   if (input != ((st->INPUT_mask >> n) & 0x1)) {
     st->INPUT_mask ^= 1 << n;

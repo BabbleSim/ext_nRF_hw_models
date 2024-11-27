@@ -48,7 +48,7 @@
 struct timer_status {
   NRF_TIMER_Type *NRF_TIMER_regs;
 
-  int n_CCs;  //Number of compare/capture registers in this timer instance
+  unsigned int n_CCs;  //Number of compare/capture registers in this timer instance
   int base_freq; //Base frequency (in MHz) of the timer input clock
 
   bs_time_t *CC_timers; //[n_CCs] In timer mode: When each compare match is expected to happen
@@ -82,7 +82,7 @@ static void nhw_timer_init(void) {
   /* Mapping of peripheral instance to DPPI instance */
   uint nhw_timer_dppi_map[NHW_TIMER_TOTAL_INST] = NHW_TIMER_DPPI_MAP;
 #endif
-  int Timer_n_CCs[N_TIMERS] = NHW_TIMER_N_CC;
+  unsigned int Timer_n_CCs[N_TIMERS] = NHW_TIMER_N_CC;
   int Timer_freqs[N_TIMERS] = NHW_TIMER_FREQ;
 
   memset(NRF_TIMER_regs, 0, sizeof(NRF_TIMER_regs));
@@ -102,7 +102,7 @@ static void nhw_timer_init(void) {
     t_st->CC_timers = (bs_time_t *)bs_malloc(sizeof(bs_time_t)*Timer_n_CCs[t]);
     t_st->oneshot_flag = (bool *)bs_calloc(Timer_n_CCs[t], sizeof(bool));
 
-    for (int cc = 0; cc < t_st->n_CCs ; cc++) {
+    for (unsigned int cc = 0; cc < t_st->n_CCs ; cc++) {
       t_st->CC_timers[cc] = TIME_NEVER;
     }
 
@@ -197,7 +197,7 @@ static void update_master_timer(void) {
     struct timer_status *t_st = &nhw_timer_st[t];
 
     if ((t_st->is_running == true) && (NRF_TIMER_regs[t].MODE == 0)) {
-      for (int cc = 0 ; cc < t_st->n_CCs ; cc++) {
+      for (unsigned int cc = 0 ; cc < t_st->n_CCs ; cc++) {
         if (t_st->CC_timers[cc] < Timer_TIMERs) {
           Timer_TIMERs = t_st->CC_timers[cc];
         }
@@ -227,7 +227,7 @@ static void update_cc_timer(int t, int cc) {
 }
 
 static void update_all_cc_timers(int t) {
-  for (int cc = 0 ; cc < nhw_timer_st[t].n_CCs; cc++) {
+  for (unsigned int cc = 0 ; cc < nhw_timer_st[t].n_CCs; cc++) {
     update_cc_timer(t, cc);
   }
 }
@@ -240,7 +240,7 @@ static void nhw_timer_eval_interrupts(int t) {
   struct timer_status *this = &nhw_timer_st[t];
   bool new_int_line = false;
 
-  for (int cc = 0; cc < this->n_CCs; cc++) {
+  for (unsigned int cc = 0; cc < this->n_CCs; cc++) {
     int mask = this->INTEN & (TIMER_INTENSET_COMPARE0_Msk << cc);
     if (NRF_TIMER_regs[t].EVENTS_COMPARE[cc] && mask) {
       new_int_line = true;
@@ -283,7 +283,7 @@ void nhw_timer_TASK_STOP(int t) {
     if (NRF_TIMER_regs[t].MODE == 0) { //Timer mode
       this->Counter = time_to_counter(nsi_hws_get_time() - this->start_t, t); //we save the value when the counter was stoped in case it is started again without clearing it
     }
-    for (int cc = 0 ; cc < this->n_CCs ; cc++) {
+    for (unsigned int cc = 0 ; cc < this->n_CCs ; cc++) {
       this->CC_timers[cc] = TIME_NEVER;
     }
     update_master_timer();
@@ -305,14 +305,16 @@ void nhw_timer_TASK_SHUTDOWN(int t) {
   this->is_running = false;
   this->Counter = 0;
   this->start_t = TIME_NEVER;
-  for (int cc = 0 ; cc < this->n_CCs ; cc++){
+  for (uint cc = 0 ; cc < this->n_CCs ; cc++){
     this->CC_timers[cc] = TIME_NEVER;
   }
   update_master_timer();
+#else
+  (void) t;
 #endif
 }
 
-void nhw_timer_TASK_CAPTURE(int t, int cc_n) {
+void nhw_timer_TASK_CAPTURE(int t, unsigned int cc_n) {
   struct timer_status *this = &nhw_timer_st[t];
 
   if (cc_n >= this->n_CCs) {
@@ -403,7 +405,7 @@ void nhw_timer_TASK_COUNT(uint t) {
   if ((NRF_TIMER_regs[t].MODE != 0 /* Count mode */) && (this->is_running == true)) {
     this->Counter = (this->Counter + 1) & mask_from_bitmode(t);
 
-    for (int cc_n = 0; cc_n < this->n_CCs; cc_n++) {
+    for (unsigned int cc_n = 0; cc_n < this->n_CCs; cc_n++) {
       if (this->Counter == (NRF_TIMER_regs[t].CC[cc_n] & mask_from_bitmode(t))){
         nhw_timer_signal_COMPARE_if(t, cc_n);
       }
@@ -431,6 +433,8 @@ void nhw_timer_regw_sideeffects_TASKS_SHUTDOWN(uint t) {
     NRF_TIMER_regs[t].TASKS_SHUTDOWN = 0;
     nhw_timer_TASK_SHUTDOWN(t);
   }
+#else
+  (void) t;
 #endif
 }
 

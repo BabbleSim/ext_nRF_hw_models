@@ -121,6 +121,7 @@ static void nhw_CLOCK_init(void) {
 NSI_TASK(nhw_CLOCK_init, HW_INIT, 100);
 
 static void nhw_CLOCK_eval_interrupt(uint inst) {
+  (void) inst;
   static struct nhw_irq_mapping nhw_CLOCK_irq_map[] = NHW_CLKPWR_INT_MAP;
   static bool clock_int_line; /* Is the CLOCK currently driving its interrupt line high */
   bool new_int_line = false;
@@ -147,6 +148,7 @@ static void nhw_CLOCK_eval_interrupt(uint inst) {
 }
 
 static void nhw_CLOCK_TASK_XOSTART(uint inst) {
+  (void) inst;
   if ((nhw_clkpwr_st.XO_state == Stopped ) || (nhw_clkpwr_st.XO_state == Stopping)) {
     nhw_clkpwr_st.XO_state = Starting;
     NRF_CLOCK_regs[0]->XO.RUN = CLOCK_XO_RUN_STATUS_Msk;
@@ -156,6 +158,7 @@ static void nhw_CLOCK_TASK_XOSTART(uint inst) {
 }
 
 static void nhw_CLOCK_TASK_XOSTOP(uint inst) {
+  (void) inst;
   if ((nhw_clkpwr_st.XO_state == Started) || (nhw_clkpwr_st.XO_state == Starting)) {
     nhw_clkpwr_st.XO_state = Stopping;
     NRF_CLOCK_regs[0]->XO.RUN = 0;
@@ -165,6 +168,7 @@ static void nhw_CLOCK_TASK_XOSTOP(uint inst) {
 }
 
 static void nhw_CLOCK_TASK_PLLSTART(uint inst) {
+  (void) inst;
   if ((nhw_clkpwr_st.PLL_state == Stopped ) || (nhw_clkpwr_st.PLL_state == Stopping)) {
     nhw_clkpwr_st.PLL_state = Starting;
     NRF_CLOCK_regs[0]->PLL.RUN = CLOCK_PLL_RUN_STATUS_Msk;
@@ -174,6 +178,7 @@ static void nhw_CLOCK_TASK_PLLSTART(uint inst) {
 }
 
 static void nhw_CLOCK_TASK_PLLSTOP(uint inst) {
+  (void) inst;
   if ((nhw_clkpwr_st.PLL_state == Started) || (nhw_clkpwr_st.PLL_state == Starting)) {
     nhw_clkpwr_st.PLL_state = Stopping;
     NRF_CLOCK_regs[0]->PLL.RUN = 0;
@@ -183,6 +188,7 @@ static void nhw_CLOCK_TASK_PLLSTOP(uint inst) {
 }
 
 static void nhw_CLOCK_TASK_LFCLKSTART(uint inst) {
+  (void) inst;
   if ((nhw_clkpwr_st.LFCLK_state == Stopped ) || (nhw_clkpwr_st.LFCLK_state == Stopping)) {
     nhw_clkpwr_st.LFCLK_state = Starting;
     NRF_CLOCK_regs[0]->LFCLK.RUN = CLOCK_LFCLK_RUN_STATUS_Msk;
@@ -193,6 +199,7 @@ static void nhw_CLOCK_TASK_LFCLKSTART(uint inst) {
 }
 
 static void nhw_CLOCK_TASK_LFCLKSTOP(uint inst) {
+  (void) inst;
   if ((nhw_clkpwr_st.LFCLK_state == Started) || (nhw_clkpwr_st.LFCLK_state == Starting)) {
     nhw_clkpwr_st.LFCLK_state = Stopping;
     NRF_CLOCK_regs[0]->LFCLK.RUN = 0;
@@ -202,6 +209,7 @@ static void nhw_CLOCK_TASK_LFCLKSTOP(uint inst) {
 }
 
 static void nhw_CLOCK_TASK_CAL(uint inst) {
+  (void) inst;
   if (nhw_clkpwr_st.XO_state != Started) { /* LCOV_EXCL_START */
     bs_trace_warning_line("%s: Triggered RC oscillator calibration with the HFXO CLK stopped "
                           "(the model does not have a problem with this, but this is against "
@@ -216,6 +224,7 @@ static void nhw_CLOCK_TASK_CAL(uint inst) {
 }
 
 static void nhw_CLOCK_TASK_XOTUNE(uint inst) {
+  (void) inst;
   if ((nhw_clkpwr_st.XOTUNE_state == Stopped ) || (nhw_clkpwr_st.XOTUNE_state == Stopping)) {
     nhw_clkpwr_st.XOTUNE_state = Starting;
     nhw_clkpwr_st.Timer_XOTUNE = nsi_hws_get_time();
@@ -224,6 +233,7 @@ static void nhw_CLOCK_TASK_XOTUNE(uint inst) {
 }
 
 static void nhw_CLOCK_TASK_XOTUNEABORT(uint inst) {
+  (void) inst;
   /* Deliberately empty by now */
 }
 
@@ -256,13 +266,16 @@ NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XOTUNE)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XOTUNEABORT)
 
 #define NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(task) \
+  static void nhw_CLOCK_TASK_##task##_wrap(void *param) { \
+    nhw_CLOCK_TASK_##task((int) param); \
+  } \
   void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_##task(unsigned int inst) { \
     static struct nhw_subsc_mem task##_subscribed[NHW_CLKPWR_TOTAL_INST]; \
     nhw_dppi_common_subscribe_sideeffect(nhw_CLOCK_dppi_map[inst], \
         NRF_CLOCK_regs[0]->SUBSCRIBE_##task, \
         &task##_subscribed[inst], \
-        (dppi_callback_t)nhw_CLOCK_TASK_##task, \
-        DPPI_CB_NO_PARAM); \
+        nhw_CLOCK_TASK_##task##_wrap, \
+        (void*) inst); \
   }
 
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOSTART)

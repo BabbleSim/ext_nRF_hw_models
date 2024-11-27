@@ -626,11 +626,13 @@ static void nhw_CCM_TASK_START_inner(uint inst) {
 }
 
 static void nhw_CCM_TASK_STOP_inner(uint inst) {
+  (void) inst;
   /* Note [CCM1]. The encryption is always instantaneous in the model,
    * so FW should not catch it running */
 }
 
 static void nhw_CCM_TASK_RATEOVERRIDE(uint inst) {
+  (void) inst;
   /* Note [CCM3]. The encryption is always instantaneous in the model,
    * so we do not need to do anything here */
 }

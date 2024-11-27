@@ -261,6 +261,7 @@ static bool uart_enabled(uint inst) {
 #if (NHW_UARTE_HAS_UART)
   return NRF_UARTE_regs[inst].ENABLE == 4;
 #else
+  (void) inst;
   return false;
 #endif
 }
@@ -414,6 +415,8 @@ static int nhw_uarte_get_frame_size(uint inst) {
     bs_trace_info_time_line(3, "UART%i: Illegal CONFIG.FRAMESIZE (4<=%i<=9)\n", inst, frame_size);
     frame_size = 8;
   }
+#else
+  (void) inst;
 #endif
   return frame_size;
 }
@@ -507,6 +510,10 @@ static void nhw_UARTE_Rx_match_check(uint inst, struct uarte_status * u_el, uint
       nhw_UARTE_signal_EVENTS_DMA_RX_MATCH(inst, i);
     }
   }
+#else
+  (void) inst;
+  (void) u_el;
+  (void) value;
 #endif
 }
 
@@ -597,6 +604,10 @@ static bool nhw_UARTE_process_Rx_byte(uint inst, struct uarte_status *u_el, uint
     }
     return !u_el->rx_addr_filter_matched;
   }
+#else
+  (void) inst;
+  (void) u_el;
+  (void) byte;
 #endif
   return false;
 }
@@ -867,6 +878,8 @@ static uint16_t nhw_UART_prep_Tx_data(uint inst, struct uarte_status *u_el, uint
     }
   }
 #else
+  (void) inst;
+  (void) u_el;
   return byte;
 #endif
 }
@@ -1533,6 +1546,8 @@ void nhw_uarte1_TASKS_FLUSHRX(void) { nhw_UARTE_TASK_FLUSHRX(1); }
 #endif /* (NHW_HAS_PPI) */
 
 static void uart_list(char *argv, int offset) {
+  (void) argv;
+  (void) offset;
   char *uart_names[NHW_UARTE_TOTAL_INST] = NHW_UARTE_NAMES;
   printf("UART #: UART name\n");
   for (int i = 0; i < NHW_UARTE_TOTAL_INST; i++) {
