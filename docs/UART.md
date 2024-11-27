@@ -73,7 +73,7 @@ If there is a miss-configuration between the devices (bit rate, parity or number
 the backend will print a warning for each received byte, but the ERRORSRC register in the UART
 peripheral won't be set due to frame, or parity errors, or break conditions.
 
-#### Loopback
+##### Loopback
 
 It is possible to connect a UART instance Tx directly to its Rx (or to another instance Rx),
 and have the RTR propagated to the CTS.
@@ -89,3 +89,12 @@ and have the same result with lower overhead, and no files created on disk.
   likelihood, and if it does not deadlock it will slow down the simulation considerably.
   You can still provide the sim_id and an unused device number to the other device, but
   in that case, launch it with the `-nosim` option.
+
+#### The PTY backend
+
+With this backend you can connect a UART to a Linux pseudoterminal. A new pseudoterminal will be
+created for each UART for which this backend is enabled.<br>
+Check the command line options with `-help`.
+Between others you can select if a terminal should be automatically attached to each UART,
+if data should be held while RTS is high, if the simulation should be held until a terminal has been
+attached to the pty, and the Rx data polling period.
