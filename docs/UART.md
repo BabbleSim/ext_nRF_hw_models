@@ -33,9 +33,10 @@ bytes into the UART peripheral like if they arrived through the Rx line.
 
 ### Backends:
 
-Today there are 2 backends to choose from:
+Today there are 3 backends to choose from:
  * The loopback backend
  * The FIFO backend
+ * The PTY backend
 
 #### The Loopback backend
 
