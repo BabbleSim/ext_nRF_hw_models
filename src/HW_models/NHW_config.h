@@ -551,6 +551,13 @@
 #define NHW_CLKPWR_DPPI_MAP {0} /* Global */
 #define NHW_CLKPWR_INT_MAP {{0, 261}} /* {App, CLOCK_POWER_IRQn} */
 
+#define NHW_CRACEN_TOTAL_INST 1
+/* #define NHW_CRACEN_DDPI_MAP no PPI events from CRACEN */
+#define NHW_CRACEN_INT_MAP {{0, 72}} /* {App, CRACEN_IRQn} */
+#define NHW_CRACEN_RNG_G_log2fifodepth 4 /* log2 of the FIFO depth in 32bit words */
+#define NHW_CRACEN_FREQ_MHZ 128
+#define NHW_CRACEN_STARTUPTEST_DUR 4 /*In microseconds duration of the startup tests and other start overhead */
+
 #define NHW_DPPI_TOTAL_INST 4
 #define NHW_DPPI_00 0 /* Global */
 #define NHW_DPPI_10 1 /* Radio */
