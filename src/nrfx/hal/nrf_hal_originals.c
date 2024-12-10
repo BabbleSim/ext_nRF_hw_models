@@ -56,6 +56,11 @@
 #include "hal/nrf_cracen.h"
 #endif
 
+/* Provisional ifdef until this file is released */
+#ifdef CRACEN_RNG_PRESENT /*|| (defined(NRFX_RELEASE_VER_AT_LEAST) && NRFX_RELEASE_VER_AT_LEAST(3,10,0))*/
+#include "hal/nrf_cracen_rng.h"
+#endif
+
 #ifdef NRF_DCNF_NS
 #include "hal/nrf_dcnf.h"
 #endif
