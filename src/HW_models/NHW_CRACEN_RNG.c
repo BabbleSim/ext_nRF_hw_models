@@ -34,8 +34,8 @@
  *
  *  * The model does not properly support changing configuration on the fly (you should disable the peripheral first)
  *
- *  * The model timing is a bit faster than the real HW (~10%), and when conditioning is on it pushed to the FIFO
- *    4 words at a time, while the real HW pushes one at a time in bunches.
+ *  * The model timing is a bit faster than the real HW (up to 25% faster depending on configuration),
+ *    and when conditioning is on, it pushes to the FIFO 4 words at a time, while the real HW pushes one at a time in sets of 4.
  *
  *  * Regarding FIFOLEVEL, writing to this register (in HW or the model) only clears the full status flag.
  *    The register content itself remains untouched. note that if the level is still full while writing to this
