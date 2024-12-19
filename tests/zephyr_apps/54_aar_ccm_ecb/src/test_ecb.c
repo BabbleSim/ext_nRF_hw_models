@@ -250,14 +250,14 @@ ZTEST(nrf_ecb_tests, test_ecb_1)
 	zassert_false(error, "Error in ECB encryption process!\n");
 	printf("\nEncryption successful!\n");
 
-	printf("\nStarting fourth job with faulty input\n"); //TODO: clarify, this is not an error
+	printf("\nStarting fourth job with faulty input\n");
 	uint32_t len_error = sizeof(CLRTXT_SAMPLE_1_1);
 	job_t encrypt_in_jobs_error[] = {{(uint8_t *)&CLRTXT_SAMPLE_1_1[0], len_error, ECB_JOB_ATTRIB}, {0x0, 0x0, 0x0}};
 	nrf_ecb_in_ptr_set(ECB, (nrf_vdma_job_t const *)encrypt_in_jobs_error);
 
 	start_ecb_and_wait();
 
-	//zassert_true(ECB->EVENTS_ERROR, "Did not successfully trigger error in ECB encryption!\n"); //TODO: clarify, this is not an error
+	zassert_true(ECB->EVENTS_ERROR, "Did not successfully trigger error in ECB encryption!\n");
 }
 
 ZTEST(nrf_ecb_tests, test_ecb_ble_example)

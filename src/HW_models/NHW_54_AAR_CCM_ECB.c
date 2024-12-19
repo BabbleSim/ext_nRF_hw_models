@@ -49,6 +49,9 @@
  *    The model does this also.
  *    And similarly to [AAR4], the event ERROR EVENT is generated only if the block was indeed running and stopped with a STOP task.
  *
+ *  * [ECB4]: Even that the spec says "A premature end of the input job list is padded to 16 bytes with zeros."
+ *    It is actually not ok to do that an an error event is generated in real HW and the model.
+ *
  *  * [CCM1]: The CCM model (unlike the real HW) is instantaneous.
  *    During encryption the RADIO model needs the whole packet at the preamble start,
  *    so we cannot have the model be "as slow" as the real HW.
@@ -759,7 +762,7 @@ static void nhw_ECB_logic(uint inst) {
   ret = nhw_EVDMA_access(&in_evdma, NHW_EVDMA_READ,
                          input, 16,
                          &n_access, NHW_EVDMA_NEWJOB);
-  if (n_access ==  0) { //It is ok to have a job for less than 16 bytes, just not to have none.
+  if (ret < 0) { //Note [ECB4]
     NRF_ECB_regs[inst].ERRORSTATUS = ECB_ERRORSTATUS_ERRORSTATUS_PrematureInptrEnd;
     nhw_ECB_stop(inst);
     nhw_ECB_signal_EVENTS_ERROR(inst);
