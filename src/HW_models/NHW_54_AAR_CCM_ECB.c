@@ -23,31 +23,31 @@
  *    The spec tells that SW should ensure the configuration is cleared in one side before using
  *    the other. So SW which does this should not see a difference.
  *
- *  * [AAR2]: It is unclear what the real AAR peripheral will do if TASK_START is triggered while the
- *    AAR is already running. The model will do nothing but warn.
+ *  * [AAR2]: In real HW a TASK_START being triggered while the AAR is already running does nothing.
+ *    The model will also do nothing but warn.
  *
- *  * [AAR3][CCM3]: It is unclear how the AAR & CCM peripherals will behave if ENABLE is changed while
- *    either is operating. The model will just warn.
+ *  * [AAR3][CCM3]: For the AAR & CCM peripherals, if ENABLE is changed while either is operating things
+ *    will fail badly in real HW. The model will warn about this.
  *
  *  * [AAR4]: For EVENTS_ERROR, the spec says "Operation aborted because of a STOP task or due to an error"
- *    But it is unclear if a STOP will always cause the EVENT, even if the block was not running.
- *    The model does only generate a warning in this later case, and only generated a EVENTS_ERROR if the
- *    block was indeed stopped with a STOP task.
+ *    Although it may appear that a STOP will always cause the EVENT, even if the block was not running,
+ *    the HW only generates it if it was running.
+ *    The model does also only generate an EVENTS_ERROR if the block was indeed running and stopped with a STOP task.
  *
  *  * [ECB1]: How long t_ECB is, is just a guess at this point (1 micros)
  *
  *  * [ECB2]: About TASK_START the spec states that
  *    "If a crypto operation is already running in the AES core, the START task will
  *    not start a new encryption and an ERROR event will be triggered"
- *    It is unclear if ERRORSTATUS is changed though, and if there is a difference
- *    between, say, it being busy by another ECB operation or an AAR/CCM operation.
- *    The model does not modify ERRORSTATUS if another ECB was running,
- *    but sets it to 3(Aborted) if the AAR or CCM were.
+ *    Although from that it is unclear if ERRORSTATUS is changed though, it seems the HW
+ *    will set ERRORSTATUS to aborted in any case.
+ *    The model sets ERRORSTATUS to 3(Aborted) as the HW does.
  *
  *  * [ECB3]: About TASK_STOP: The spec states:
  *    "If a running ECB operation is aborted by STOP, the ERROR event is triggered."
- *    It is unclear if ERRORSTATUS is changed though. The model does not.
- *    And similarly to [AAR4], the event ERROR EVENT is only generated if it was running and stopped by the task.
+ *    Although from that it is unclear if ERRORSTATUS is changed, the HW does set it to Aborted.
+ *    The model does this also.
+ *    And similarly to [AAR4], the event ERROR EVENT is generated only if the block was indeed running and stopped with a STOP task.
  *
  *  * [CCM1]: The CCM model (unlike the real HW) is instantaneous.
  *    During encryption the RADIO model needs the whole packet at the preamble start,
@@ -379,7 +379,7 @@ static void nhw_AAR_resolve_logic(uint inst) {
 static void nhw_AAR_TASK_START_inner(uint inst) {
   if (nhw_aar_st[inst].Running) {
     bs_trace_warning_time_line("%s called while AAR was already Running enabled => ignored\n", __func__);
-    //Note [AAR2]: It is unclear what the real AAR peripheral will do in this case
+    //Note [AAR2]
     return;
   }
   nhw_ECB_possible_abort(inst);
@@ -733,7 +733,7 @@ static void nhw_ECB_stop(uint inst) {
 static bool nhw_ECB_possible_abort(uint inst) {
   if ((nhw_aar_st[inst].Running) || (nhw_ccm_st[inst].Running)) {
     nhw_ECB_stop(inst);
-    NRF_ECB_regs[inst].ERRORSTATUS = 3; /* Aborted (Once the MDK is updated use the name) */
+    NRF_ECB_regs[inst].ERRORSTATUS = ECB_ERRORSTATUS_ERRORSTATUS_Aborted;
     nhw_ECB_signal_EVENTS_ERROR(inst);
     return true;
   }
@@ -793,6 +793,7 @@ static void nhw_ECB_TASK_START(uint inst) {
   //Note [ECB2]
   if (nhw_ecb_st[inst].Running) {
     bs_trace_warning_time_line("%s called while ECB was already running => error event\n", __func__);
+    NRF_ECB_regs[inst].ERRORSTATUS = ECB_ERRORSTATUS_ERRORSTATUS_Aborted;
     nhw_ECB_signal_EVENTS_ERROR(inst);
     return;
   }
@@ -808,6 +809,7 @@ static void nhw_ECB_TASK_STOP(uint inst) {
   int was_running = nhw_ecb_st[inst].Running;
   nhw_ECB_stop(inst);
   if (was_running) {
+    NRF_ECB_regs[inst].ERRORSTATUS = ECB_ERRORSTATUS_ERRORSTATUS_Aborted;
     nhw_ECB_signal_EVENTS_ERROR(inst);
     //Note [ECB3]
   } else {

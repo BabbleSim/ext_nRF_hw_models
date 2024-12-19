@@ -544,7 +544,7 @@
 #define NHW_ECB_INTMAP {{0, 71}}
                         /* ECB00_IRQn */
 #define NHW_AARCCMECB_CLOCK {128} /* MHz */
-#define NHW_ECB_t_ECB {1} /* In micros */ //TODO: check
+#define NHW_ECB_t_ECB {1} /* In micros (~73cc/128MHz in real HW)*/
 
 #define NHW_CLKPWR_TOTAL_INST 1
 #define NHW_CLKPWR_0 0
