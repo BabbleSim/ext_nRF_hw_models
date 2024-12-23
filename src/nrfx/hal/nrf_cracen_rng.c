@@ -7,6 +7,8 @@
  */
 
 #include <stdint.h>
+#include <nrfx.h>
+#if (CRACEN_RNG_PRESENT || (defined(NRFX_RELEASE_VER_AT_LEAST) && NRFX_RELEASE_VER_AT_LEAST(3,10,0)))
 #include "hal/nrf_cracen_rng.h"
 #include "bs_tracing.h"
 #include "NHW_CRACEN_RNG.h"
@@ -31,3 +33,5 @@ uint32_t nrf_cracen_rng_fifo_get(NRF_CRACENCORE_Type const * p_reg)
     nhw_CRACEN_RNG_regr_sideeffects_FIFO();
     return p_reg->RNGCONTROL.FIFO[0];
 }
+
+#endif

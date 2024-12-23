@@ -5,6 +5,8 @@ src/nrfx/hal/nrf_54_ecb.c
 src/nrfx/hal/nrf_clock.c
 src/nrfx/hal/nrf_common.c
 src/nrfx/hal/nrf_cracen.c
+src/nrfx/hal/nrf_cracen_cm.c
+src/nrfx/hal/nrf_cracen_rng.c
 src/nrfx/hal/nrf_dppi.c
 src/nrfx/hal/nrf_egu.c
 src/nrfx/hal/nrf_gpio.c

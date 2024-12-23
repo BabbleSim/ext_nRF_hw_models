@@ -7,6 +7,8 @@
  */
 
 #include <stdint.h>
+#include <nrfx.h>
+#if (CRACEN_RNG_PRESENT || (defined(NRFX_RELEASE_VER_AT_LEAST) && NRFX_RELEASE_VER_AT_LEAST(3,10,0)))
 #include "hal/nrf_cracen_cm.h"
 #include "bs_tracing.h"
 #include "NHW_CRACEN_CM.h"
@@ -50,3 +52,5 @@ void nrf_cracen_cm_int_clear(NRF_CRACENCORE_Type * p_reg, uint32_t mask)
     p_reg->CRYPTMSTRDMA.INTSTATCLR = mask;
     nhw_CRACEN_CM_regw_sideeffects_INTSTARTCLR(0);
 }
+
+#endif
