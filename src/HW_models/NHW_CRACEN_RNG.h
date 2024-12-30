@@ -17,7 +17,7 @@ void nhw_CRACEN_RNG_init(void);
 void nhw_CRACEN_RNG_regw_sideeffects_CONTROL(void);
 void nhw_CRACEN_RNG_regw_sideeffects_FIFOLEVEL(void);
 uint32_t nhw_CRACEN_RNG_regr_sideeffects_FIFO(void);
-
+void nhw_CRACEN_RNG_timer_triggered(void);
 
 #define CRACEN_RNG_FAKE_AIS31_NOISE_ERROR 0x1
 #define CRACEN_RNG_FAKE_AIS31_PRENOISE_ERROR 0x2

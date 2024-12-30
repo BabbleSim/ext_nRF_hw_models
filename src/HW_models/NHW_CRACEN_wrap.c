@@ -26,12 +26,16 @@
 #include "NHW_templates.h"
 #include "NHW_xPPI.h"
 #include "NHW_CRACEN_RNG.h"
+#include "NHW_CRACEN_CM.h"
 #include "irq_ctrl.h"
 #include "nsi_tasks.h"
 #include "nsi_hws_models_if.h"
+#include "bs_utils.h"
 
 NRF_CRACEN_Type NRF_CRACEN_regs;
 NRF_CRACENCORE_Type NRF_CRACENCORE_regs;
+
+static bs_time_t Timer_CRACEN = TIME_NEVER;
 
 static struct cracen_wrap_status {
   bool CRYPTOMASTER_int_line;
@@ -48,6 +52,7 @@ static void nhw_CRACEN_init(void) {
   memset(&cracen_w_st, 0, sizeof(cracen_w_st));
 
   nhw_CRACEN_RNG_init();
+  nhw_CRACEN_CM_init();
 }
 
 NSI_TASK(nhw_CRACEN_init, HW_INIT, 100);
@@ -105,3 +110,27 @@ NHW_CRACEN_EVENT_LOGIC(PKEIKG)
 NHW_SIDEEFFECTS_INTEN(CRACEN, NRF_CRACEN_regs., NRF_CRACEN_regs.INTEN)
 NHW_SIDEEFFECTS_INTSET(CRACEN, NRF_CRACEN_regs., NRF_CRACEN_regs.INTEN)
 NHW_SIDEEFFECTS_INTCLR(CRACEN, NRF_CRACEN_regs., NRF_CRACEN_regs.INTEN)
+
+extern bs_time_t Timer_CRACEN_NDRNG;
+extern bs_time_t Timer_CRACEN_CM;
+
+void nhw_CRACEN_update_timer(void) {
+
+  bs_time_t new_t = BS_MIN(Timer_CRACEN_NDRNG, Timer_CRACEN_CM);
+  if (Timer_CRACEN != new_t) {
+    Timer_CRACEN = new_t;
+    nsi_hws_find_next_event();
+  }
+}
+
+static void nhw_CRACEN_timer_triggered(void) {
+  bs_time_t timer = Timer_CRACEN;
+  if (timer == Timer_CRACEN_NDRNG) {
+    nhw_CRACEN_RNG_timer_triggered();
+  }
+  if (timer == Timer_CRACEN_CM) {
+    nhw_CRACEN_CM_timer_triggered();
+  }
+}
+
+NSI_HW_EVENT(Timer_CRACEN, nhw_CRACEN_timer_triggered, 50);

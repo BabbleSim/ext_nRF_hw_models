@@ -23,6 +23,7 @@ void nhw_CRACEN_regw_sideeffects_INTENCLR(unsigned int inst);
 void nhw_CRACEN_toggle_CRYPTOMASTER_intline(bool level);
 void nhw_CRACEN_toggle_RNG_intline(bool level);
 void nhw_CRACEN_toggle_PKEIKG_intline(bool level);
+void nhw_CRACEN_update_timer(void);
 
 #ifdef __cplusplus
 }

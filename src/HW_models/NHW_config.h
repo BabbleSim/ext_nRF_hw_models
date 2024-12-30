@@ -557,6 +557,8 @@
 #define NHW_CRACEN_RNG_G_log2fifodepth 4 /* log2 of the FIFO depth in 32bit words */
 #define NHW_CRACEN_FREQ_MHZ 128
 #define NHW_CRACEN_STARTUPTEST_DUR 4 /*In microseconds duration of the startup tests and other start overhead */
+#define NHW_CRACEN_CM_AES_t_ECB {1, 1, 1} /* In microseconds time it takes for key size of 128, 192 and 256 */
+                                          /* The real time would be < ~0.25 micros for the ECB itself and another so much for the DMA */
 
 #define NHW_DPPI_TOTAL_INST 4
 #define NHW_DPPI_00 0 /* Global */

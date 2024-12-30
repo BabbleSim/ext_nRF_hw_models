@@ -66,7 +66,7 @@ extern NRF_CRACENCORE_Type NRF_CRACENCORE_regs;
 
 static NRF_CRACENCORE_RNGCONTROL_Type *RNG_regs;
 
-static bs_time_t Timer_NDRNG = TIME_NEVER;
+bs_time_t Timer_CRACEN_NDRNG;
 static uint Timer_rem_clocks;
 
 static struct rng_status {
@@ -139,6 +139,8 @@ void nhw_CRACEN_RNG_init(void) {
 
   rng_st.fifo_size = 1 << NHW_CRACEN_RNG_G_log2fifodepth;
 
+  Timer_CRACEN_NDRNG = TIME_NEVER;
+
   nhw_CRACEN_soft_reset();
 }
 
@@ -203,8 +205,8 @@ void check_errors(void) {
   if (error) {
     rng_st.status = rng_error;
     update_state(CRACENCORE_RNGCONTROL_STATUS_STATE_ERROR);
-    Timer_NDRNG = TIME_NEVER;
-    nsi_hws_find_next_event();
+    Timer_CRACEN_NDRNG = TIME_NEVER;
+    nhw_CRACEN_update_timer();
     check_interrupts();
   }
 }
@@ -265,20 +267,20 @@ static void generate_more_data(void) {
   }
 
   clocks_next+=Timer_rem_clocks;
-  Timer_NDRNG = clocks_next/NHW_CRACEN_FREQ_MHZ;
-  Timer_rem_clocks = clocks_next - (Timer_NDRNG*NHW_CRACEN_FREQ_MHZ);
-  Timer_NDRNG += nsi_hws_get_time();
-  nsi_hws_find_next_event();
+  Timer_CRACEN_NDRNG = clocks_next/NHW_CRACEN_FREQ_MHZ;
+  Timer_rem_clocks = clocks_next - (Timer_CRACEN_NDRNG*NHW_CRACEN_FREQ_MHZ);
+  Timer_CRACEN_NDRNG += nsi_hws_get_time();
+  nhw_CRACEN_update_timer();
   check_errors();
 }
 
-static void nhw_CRACEN_RNG_timer_triggered(void) {
+void nhw_CRACEN_RNG_timer_triggered(void) {
 
   if (rng_st.status == rng_idle_ron) {
     rng_st.status = rng_idle_roff;
     update_state(CRACENCORE_RNGCONTROL_STATUS_STATE_IDLEROFF);
-    Timer_NDRNG = TIME_NEVER;
-    nsi_hws_find_next_event();
+    Timer_CRACEN_NDRNG = TIME_NEVER;
+    nhw_CRACEN_update_timer();
     return;
 
   } else if ((rng_st.status == rng_filling)) {
@@ -294,19 +296,17 @@ static void nhw_CRACEN_RNG_timer_triggered(void) {
   } else {
     rng_st.status = rng_idle_ron;
     update_state(CRACENCORE_RNGCONTROL_STATUS_STATE_IDLERON);
-    Timer_NDRNG = nsi_hws_get_time() + RNG_regs->SWOFFTMRVAL/NHW_CRACEN_FREQ_MHZ;
-    nsi_hws_find_next_event();
+    Timer_CRACEN_NDRNG = nsi_hws_get_time() + RNG_regs->SWOFFTMRVAL/NHW_CRACEN_FREQ_MHZ;
+    nhw_CRACEN_update_timer();
   }
 }
-
-NSI_HW_EVENT(Timer_NDRNG, nhw_CRACEN_RNG_timer_triggered, 50);
 
 static void startup(void) {
   rng_st.status = rng_startup;
   update_state(CRACENCORE_RNGCONTROL_STATUS_STATE_STARTUP);
 
-  Timer_NDRNG = nsi_hws_get_time() + RNG_regs->INITWAITVAL/NHW_CRACEN_FREQ_MHZ + NHW_CRACEN_STARTUPTEST_DUR; //TODO: do start up tests add any delay?
-  nsi_hws_find_next_event();
+  Timer_CRACEN_NDRNG = nsi_hws_get_time() + RNG_regs->INITWAITVAL/NHW_CRACEN_FREQ_MHZ + NHW_CRACEN_STARTUPTEST_DUR; //TODO: do start up tests add any delay?
+  nhw_CRACEN_update_timer();
   check_errors();
 }
 
@@ -320,8 +320,8 @@ void nhw_CRACEN_RNG_regw_sideeffects_CONTROL(void) {
 
   if (!enabled) {
     rng_st.enabled = false;
-    Timer_NDRNG = TIME_NEVER;
-    nsi_hws_find_next_event();
+    Timer_CRACEN_NDRNG = TIME_NEVER;
+    nhw_CRACEN_update_timer();
     rng_st.status = rng_reset;
     update_state(CRACENCORE_RNGCONTROL_STATUS_STATE_RESET);
     return;

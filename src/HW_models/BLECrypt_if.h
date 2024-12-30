@@ -52,6 +52,14 @@ void BLECrypt_if_aes_128(
     // Outputs (the pointers themselves are inputs and must point to large enough areas)
     uint8_t *encrypted_data_be);                    // Plaintext data (KEY_LEN bytes, big-endian)
 
+void BLECrypt_if_aes_ecb(
+    // Inputs
+    const uint8_t *key_be,            // Key (KEY_LEN bytes, big-endian)
+    size_t key_size,                  // Key size in bits
+    const uint8_t *plaintext_data_be, // Plaintext data (128bits/16Bytes, big-endian)
+    // Outputs (the pointers themselves are inputs and must point to large enough areas)
+    uint8_t *encrypted_data_be);
+
 void BLECrypt_if_encrypt_packet_v3(uint8_t *adata,
     int alen,
     int mlen,

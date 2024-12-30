@@ -26,7 +26,7 @@
 #include "bs_dynargs.h"
 #include "nsi_tasks.h"
 
-static bool latest_if = true;
+static bool latest_ccm_if = true;
 
 static bool Real_encryption_enabled = false;
 static void *LibCryptoHandle = NULL;
@@ -84,11 +84,20 @@ typedef void (*blecrypt_aes_128_f)(
     // Outputs (the pointers themselves are inputs and must point to large enough areas)
     uint8_t *encrypted_data_be);      // Plaintext data (KEY_LEN bytes, big-endian)
 
+typedef void (*blecrypt_aes_ecb_f)(
+    // Inputs
+    const uint8_t *key_be,            // Key (KEY_LEN bytes, big-endian)
+    size_t key_size,                  // Key size in bits
+    const uint8_t *plaintext_data_be, // Plaintext data (128bits/16Bytes, big-endian)
+    // Outputs (the pointers themselves are inputs and must point to large enough areas)
+    uint8_t *encrypted_data_be);      // Plaintext data (KEY_LEN bytes, big-endian)
+
 static blecrypt_packet_encrypt_f blecrypt_packet_encrypt;
 static blecrypt_packet_encrypt_v3_f blecrypt_packet_encrypt_v3;
 static blecrypt_packet_decrypt_f blecrypt_packet_decrypt;
 static blecrypt_packet_decrypt_v3_f blecrypt_packet_decrypt_v3;
 static blecrypt_aes_128_f        blecrypt_aes_128;
+static blecrypt_aes_ecb_f        blecrypt_aes_ecb;
 
 static bool BLECrypt_if_args_useRealAES;
 
@@ -145,10 +154,14 @@ static void BLECrypt_if_enable_real_encryption(void) {
     if ((error = dlerror()) != NULL) {
       bs_trace_error_line("%s\n",error);
     }
+    *(void **) (&blecrypt_aes_ecb) = dlsym(LibCryptoHandle, "blecrypt_aes_ecb");
+    if ((error = dlerror()) != NULL) {
+      //bs_trace_warning_line("Too old libCrypto library please update. 54L CRACEN CM AES model will just pass thru (%s)\n",error);
+    }
     *(void **) (&blecrypt_packet_encrypt_v3) = dlsym(LibCryptoHandle, "blecrypt_packet_encrypt_v3");
     if ((error = dlerror()) != NULL) {
       bs_trace_warning_line("%s\n",error);
-      latest_if = false;
+      latest_ccm_if = false;
       bs_trace_info_line(2, "Falling back to old libCrypto IF. 802.15.4 encryption will not work properly for 54 devices. "
                          "Please update your bsim installation\n",error);
     }
@@ -278,6 +291,30 @@ void BLECrypt_if_aes_128(
   }
 }
 
+void BLECrypt_if_aes_ecb(
+    // Inputs
+    const uint8_t *key_be,            // Key (KEY_LEN bytes, big-endian)
+    size_t key_size,                  // Key size in bits
+    const uint8_t *plaintext_data_be, // Plaintext data (128bits/16Bytes, big-endian)
+    // Outputs (the pointers themselves are inputs and must point to large enough areas)
+    uint8_t *encrypted_data_be)
+{
+  if (Real_encryption_enabled && (blecrypt_aes_ecb != NULL)) {
+    blecrypt_aes_ecb(key_be,
+        key_size,
+        plaintext_data_be,
+        encrypted_data_be);
+  } else {
+    static bool warned = false;
+    if (Real_encryption_enabled && (blecrypt_aes_ecb == NULL) && (warned == false)) {
+      warned = true;
+      bs_trace_warning_time_line("Too old libCrypto library please update. 54L CRACEN CM AES model will just pass thru\n");
+    }
+    /* we just copy the data */
+    memcpy(encrypted_data_be, plaintext_data_be, 16);
+  }
+}
+
 void BLECrypt_if_encrypt_packet_v3(uint8_t *adata, //Additional Authentication Data
     int alen,     // Length of adata
     int mlen,     // Unencrypted packet payload length (i.e. *not* including header and MAC/MIC)
@@ -292,7 +329,7 @@ void BLECrypt_if_encrypt_packet_v3(uint8_t *adata, //Additional Authentication D
   if (Real_encryption_enabled) {
     maclen = BS_MAX(maclen, 4);
     //this generates always the MIC at the end, but for MIC less cases we just wont transmit it
-    if (latest_if) {
+    if (latest_ccm_if) {
       blecrypt_packet_encrypt_v3(
           adata,
           alen,
@@ -344,7 +381,7 @@ int BLECrypt_if_decrypt_packet_v3(uint8_t *adata, //Additional Authentication Da
     uint8_t *decrypted_packet_payload) //Pointer to a buffer where the resulting decrypted payload will be stored
 {
   if (Real_encryption_enabled) {
-    if (latest_if) {
+    if (latest_ccm_if) {
       return blecrypt_packet_decrypt_v3(
               adata,
               alen,
