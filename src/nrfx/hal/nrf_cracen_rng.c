@@ -11,8 +11,8 @@
 #include "bs_tracing.h"
 #include "NHW_CRACEN_RNG.h"
 
-void nrf_cracen_rng_control_set(NRF_CRACENCORE_Type *      p_reg,
-                                nrf_cracen_rng_control_t * p_config)
+void nrf_cracen_rng_control_set(NRF_CRACENCORE_Type *            p_reg,
+                                nrf_cracen_rng_control_t const * p_config)
 {
     p_reg->RNGCONTROL.CONTROL =
           ((p_config->enable << CRACENCORE_RNGCONTROL_CONTROL_ENABLE_Pos)
