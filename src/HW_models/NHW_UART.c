@@ -412,7 +412,6 @@ static int nhw_uarte_get_frame_size(uint inst) {
 #if defined(UARTE_CONFIG_FRAMESIZE_Msk)
   frame_size = (NRF_UARTE_regs[inst].CONFIG & UARTE_CONFIG_FRAMESIZE_Msk) >> UARTE_CONFIG_FRAMESIZE_Pos;
   if (frame_size < 4 || frame_size > 9) {
-    bs_trace_info_time_line(3, "UART%i: Illegal CONFIG.FRAMESIZE (4<=%i<=9)\n", inst, frame_size);
     frame_size = 8;
   }
 #else
