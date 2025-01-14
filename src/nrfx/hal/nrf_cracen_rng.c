@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 #include <nrfx.h>
-#if ( (defined(NRFX_RELEASE_VER_AT_LEAST) && NRFX_RELEASE_VER_AT_LEAST(3,10,0)) )
+#if 1 //( (defined(NRFX_RELEASE_VER_AT_LEAST) && NRFX_RELEASE_VER_AT_LEAST(3,10,0)) )
 #include "hal/nrf_cracen_rng.h"
 #include "bs_tracing.h"
 #include "NHW_CRACEN_RNG.h"
