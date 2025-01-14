@@ -234,6 +234,48 @@ void nhw_RRAMC_write_word(uint32_t address, uint32_t value){
   *(uint32_t*)&backend->storage[offset] = value;
 }
 
+/*
+ * Write to a RRAM array (RRAM or UICR)
+ *
+ * Where address is an address in either a "hard" RRAM address
+ * (meaning in the 0x00..00 range)
+ * Or a "soft" address inside an UICR range (meaning an address gotten as an offset from
+ * NRF_UICR_*_BASE)
+ */
+void nhw_RRAMC_write_halfword(uint32_t address, uint16_t value){
+  if ((address & 1) != 0){
+    bs_trace_error_line_time("%s: write to non half-word aligned address %u, "
+            "this would have hard-faulted in real HW\n",
+            __func__, address);
+  }
+
+  int offset;
+  nvm_storage_state_t *backend;
+  uint inst;
+
+  nhw_RRAMC_address_location(address, &inst, &backend, &offset);
+
+  *(uint16_t*)&backend->storage[offset] = value;
+}
+
+/*
+ * Write to a RRAM array (RRAM or UICR)
+ *
+ * Where address is an address in either a "hard" RRAM address
+ * (meaning in the 0x00..00 range)
+ * Or a "soft" address inside an UICR range (meaning an address gotten as an offset from
+ * NRF_UICR_*_BASE)
+ */
+void nhw_RRAMC_write_byte(uint32_t address, uint8_t value){
+  int offset;
+  nvm_storage_state_t *backend;
+  uint inst;
+
+  nhw_RRAMC_address_location(address, &inst, &backend, &offset);
+
+  *(uint8_t*)&backend->storage[offset] = value;
+}
+
 /**
  * Read from the RRAM array (RRAM or UICR)
  *
@@ -272,6 +314,36 @@ uint8_t nhw_RRAMC_read_byte(uint32_t address) {
   nhw_RRAMC_address_location(address, &inst, &backend, &offset);
 
   return *(uint8_t*)&backend->storage[offset];
+}
+
+/**
+ * memcpy into RRAM/UICR array from <address> <size> bytes.
+ *
+ * Where address is an address in either a "hard" RRAM address
+ * (meaning in the 0x00..00 range)
+ * Or a "soft" address inside an UICR range (meaning an address gotten as an offset from
+ * NRF_UICR_*_BASE)
+ *
+ * This is a convenience function in the model.
+ * It can be used from DMA controller models or the like.
+ *
+ * This operation is instantaneous in simulation.
+ * In real HW it is as "fast" as all those AHB accesses
+ * can be dispatched by the interconnect and handled by
+ * the RRAMC peripheral
+ */
+void nhw_RRAMC_write_buffer(uint32_t address, void *src, size_t size) {
+  int offset;
+  nvm_storage_state_t *backend;
+  uint inst;
+
+  nhw_RRAMC_address_location(address, &inst, &backend, &offset);
+
+  if (offset + size >= backend->size) {
+    OUT_OF_RRAM_ERROR(address + size);
+  }
+
+  (void)memcpy(&backend->storage[offset], src, size);
 }
 
 /**
