@@ -197,8 +197,8 @@
                           {0 , 40}, \
                           } /* Only core, UARTE0_UART0_IRQn, UARTE1_IRQn */
 #define NHW_UARTE_HAS_UART 1
-#define NHW_UARTE_NAMES {"UATE0", \
-                         "UATE1"}
+#define NHW_UARTE_NAMES {"UARTE0", \
+                         "UARTE1"}
 #define NHW_UARTE_54NAMING 0
 #define NHW_UARTE_FLUSH_AMOUNT_BUG 0
 #define NHW_UARTE_HAS_FRAMETIMEOUT 0
@@ -505,11 +505,11 @@
                                Net core, SERIAL0_IRQn */
 #define NHW_UARTE_DPPI_MAP {0, 0, 0, 0, 1} /*4xApp core, 1xNetwork core*/
 #define NHW_UARTE_HAS_UART 0
-#define NHW_UARTE_NAMES {"App UATE0", \
-                         "App UATE1", \
-                         "App UATE2", \
-                         "App UATE3", \
-                         "Net UATE0"}
+#define NHW_UARTE_NAMES {"App UARTE0", \
+                         "App UARTE1", \
+                         "App UARTE2", \
+                         "App UARTE3", \
+                         "Net UARTE0"}
 #define NHW_UARTE_54NAMING 0
 #define NHW_UARTE_FLUSH_AMOUNT_BUG 0
 #define NHW_UARTE_HAS_FRAMETIMEOUT 0
