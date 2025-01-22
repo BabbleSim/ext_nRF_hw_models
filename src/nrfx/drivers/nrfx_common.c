@@ -235,8 +235,6 @@ IRQn_Type nrfx_get_irq_number(void const * p_reg){
     return SPU10_IRQn;
   } else if (IS_PERIPHERAL_REG(p_reg, TIMER, 10, _S)) {
     return TIMER10_IRQn;
-  } else if (IS_PERIPHERAL_REG(p_reg, RTC, 10, _S)) {
-    return RTC10_IRQn;
   } else if (IS_PERIPHERAL_REG(p_reg, EGU, 10, _S)) {
     return EGU10_IRQn;
   } else if (IS_PERIPHERAL_REG(p_reg, RADIO, , _S)) {
@@ -296,8 +294,6 @@ IRQn_Type nrfx_get_irq_number(void const * p_reg){
     return SPU30_IRQn;
   } else if (IS_PERIPHERAL_REG(p_reg, UARTE, 30, _S)) {
     return SERIAL30_IRQn;
-  } else if (IS_PERIPHERAL_REG(p_reg, RTC, 30, _S)) {
-    return RTC30_IRQn;
   } else if (IS_PERIPHERAL_REG(p_reg, COMP, , _S)) {
     return COMP_LPCOMP_IRQn;
   } else if (IS_PERIPHERAL_REG(p_reg, WDT, 30, _S)) {

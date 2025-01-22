@@ -647,7 +647,7 @@
 [85 ]="TIMER00",\
 [128]="SPU10",\
 [133]="TIMER10",\
-[134]="RTC10",\
+[134]="-",\
 [135]="EGU10",\
 [138]="RADIO_0",\
 [139]="RADIO_1",\
@@ -681,7 +681,7 @@
 [229]="GRTC_3",\
 [256]="SPU30",\
 [260]="SERIAL30",\
-[261]="RTC30",\
+[261]="CLOCK_POWER",\
 [262]="COMP_LPCOMP",\
 [264]="WDT30",\
 [265]="WDT31",\
@@ -733,7 +733,7 @@
 [85 ]="TIMER00",\
 [128]="SPU10",\
 [133]="TIMER10",\
-[134]="RTC10",\
+[134]="-",\
 [135]="EGU10",\
 [138]="RADIO_0",\
 [139]="RADIO_1",\
@@ -813,18 +813,6 @@
 #define NHW_RRAM_START_ADDR {0x00000000}
 #define NHW_RRAM_SIZE       {(1524*1024)}
 #define NHW_UICR_SIZE {2560 /*bytes*/}
-
-#define NHW_RTC_TOTAL_INST 2
-#define NHW_RTC_10 0
-#define NHW_RTC_30 1
-#define NHW_RTC_INT_MAP {{0 , 134}, \
-                         {0 , 261}, \
-                         } /*App core,RTC10_IRQn*/
-                           /*Net core,RTC30_IRQn*/
-#define NHW_RTC_DPPI_MAP {1, 3}
-#define NHW_RTC_HAS_CAPTURE 1
-#define NHW_RTC_HAS_SHORT_COMP_CLEAR 1
-#define NHW_RTC_N_CC {4, 4}
 
 #define NHW_SPU_TOTAL_INST 4
 #define NHW_SPU_00 0

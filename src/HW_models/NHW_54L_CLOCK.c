@@ -247,6 +247,16 @@ void nhw_pwrclk_regw_sideeffects_EVENTS_all(uint inst) {
   nhw_CLOCK_eval_interrupt(inst);
 }
 
+#if !defined(CLOCK_PUBLISH_XOSTARTED_ResetValue) /* no PUBLISH registers in MDK */
+#undef NHW_SIGNAL_EVENT
+#define NHW_SIGNAL_EVENT(peri, peri_regs, event) \
+  void nhw_##peri##_signal_EVENTS_##event(unsigned int inst) \
+  { \
+      peri_regs EVENTS_##event = 1; \
+      nhw_##peri##_eval_interrupt(inst); \
+  }
+#endif
+
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, XOSTARTED)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, PLLSTARTED)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTARTED)
@@ -285,8 +295,12 @@ NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(PLLSTOP)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(LFCLKSTART)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(LFCLKSTOP)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(CAL)
+#if defined(CLOCK_SUBSCRIBE_XOTUNE_EN_Msk)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOTUNE)
+#endif
+#if defined(CLOCK_SUBSCRIBE_XOTUNEABORT_EN_Msk)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOTUNEABORT)
+#endif
 
 static void nhw_CLOCK_XOTimer_triggered(void) {
   nhw_clkpwr_st.Timer_XO = TIME_NEVER;

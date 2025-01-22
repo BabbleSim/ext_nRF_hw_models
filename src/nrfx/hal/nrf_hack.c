@@ -61,7 +61,6 @@
 #include "hal/nrf_ppib.h"
 #include "hal/nrf_pwm.h"
 #include "hal/nrf_radio.h"
-#include "hal/nrf_rtc.h"
 #include "hal/nrf_timer.h"
 #include "hal/nrf_temp.h"
 #include "hal/nrf_uarte.h"
@@ -261,7 +260,6 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   //} else IF_PER(PPIB, 10, _S, ppib)
   //} else IF_PER(PPIB, 11, _S, ppib)
   } else IF_PER(TIMER, 10, _S, timer)
-  } else IF_PER(RTC, 10, _S, rtc)
   } else IF_PER(EGU, 10, _S, egu)
   } else IF_PER(RADIO, , _S, radio)
   //} else IF_PER(SPU, 20, _S, spu)
@@ -305,7 +303,6 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   //} else IF_PER(SPIM, 30, _S, spi)
   //} else IF_PER(TWIM, 30, _S, twi)
   } else IF_PER(UARTE, 30, _S, uarte)
-  } else IF_PER(RTC, 30, _S, rtc)
   //} else IF_PER(COMP, , _S, comp)
   //} else IF_PER(LPCOMP, , _S, lpcomp)
   //} else IF_PER(WDT, 30, _S, wdt)

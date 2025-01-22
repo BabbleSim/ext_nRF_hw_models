@@ -361,7 +361,7 @@ static void nhw_AAR_resolve_logic(uint inst) {
                              (uint8_t *)&n_iter, 2,
                              &n_access, NHW_EVDMA_CONTINUEJOB);
       if (ret < 0) {
-        NRF_AAR_regs[inst]->ERRORSTATUS = AAR_ERRORSTATUS_ERRORSTATUS_PrematureOutptrEnd;
+        NRF_AAR_regs[inst]->ERRORSTATUS = 0x2; //AAR_ERRORSTATUS_ERRORSTATUS_PrematureOutptrEnd;
         nhw_AAR_stop(inst);
         nhw_AAR_signal_EVENTS_ERROR(inst);
         return;
