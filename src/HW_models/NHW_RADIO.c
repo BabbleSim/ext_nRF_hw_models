@@ -728,7 +728,7 @@ static void nhw_radio_timer_triggered(void) {
       nhw_RADIO_signal_EVENTS_PAYLOAD(0);
     } else if ( radio_sub_state == RX_WAIT_FOR_CRC_END ) {
 #if !NHW_RADIO_IS_54
-      //TODO Reconnect as soon as the CCM model is in
+      //The 54 CCM is triggered through the DPPI like in reality
       nhw_ccm_radio_received_packet(!rx_status.CRC_OK);
 #endif
       radio_sub_state = SUB_STATE_INVALID;
@@ -1371,7 +1371,7 @@ static void Rx_Addr_received(void) {
     //We do what would correspond to Rx_handle_end_response() as it won't get called
     NRF_RADIO_regs.RXCRC = nhwra_get_rx_crc_value(rx_buf, rx_status.rx_resp.packet_size);
 #if !NHW_RADIO_IS_54
-      //TODO Reconnect as soon as the CCM model is in
+    //The 54 CCM is triggered through the DPPI like in reality
     nhw_ccm_radio_received_packet(!rx_status.CRC_OK);
 #endif
   }
