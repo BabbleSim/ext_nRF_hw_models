@@ -113,6 +113,9 @@ NRF_POWER_Type *NRF_POWER_regs[NHW_CLKPWR_TOTAL_INST];
 NRF_RESET_Type *NRF_RESET_regs[NHW_CLKPWR_TOTAL_INST];
 #endif /* (NHW_CLKPWR_HAS_RESET) */
 
+void nhw_clock_HFTimer_triggered(struct clkpwr_status *this);
+void nhw_clock_LFTimer_triggered(struct clkpwr_status *this);
+
 static void nhw_clock_update_master_timer(void) {
 
   Timer_PWRCLK = TIME_NEVER;
@@ -276,8 +279,8 @@ void nhw_clock_TASKS_LFCLKSTOP(uint inst) {
   if ((this->LF_Clock_state == Started) || (this->LF_Clock_state == Starting)) {
     NRF_CLOCK_regs[inst]->LFCLKRUN = 0;
     this->LF_Clock_state = Stopping;
-    this->Timer_CLOCK_LF = nsi_hws_get_time(); //we assume the clock is stopped in 1 delta
-    nhw_clock_update_master_timer();
+    /* Instantaneous stop */
+    nhw_clock_LFTimer_triggered(this);
   }
 }
 
@@ -298,8 +301,8 @@ void nhw_clock_TASKS_HFCLKSTOP(uint inst) {
   if ((this->HF_Clock_state == Started) || (this->HF_Clock_state == Starting)) {
     NRF_CLOCK_regs[inst]->HFCLKRUN = 0;
     this->HF_Clock_state = Stopping;
-    this->Timer_CLOCK_HF = nsi_hws_get_time(); //we assume the clock is stopped in 1 delta
-    nhw_clock_update_master_timer();
+    /* Instantaneous stop */
+    nhw_clock_HFTimer_triggered(this);
   }
 }
 
@@ -446,7 +449,7 @@ void nhw_clock_LFTimer_triggered(struct clkpwr_status *this) {
     nhw_rtc_notify_first_lf_tick();
   } else if (this->LF_Clock_state == Stopping) {
     this->LF_Clock_state = Stopped;
-    CLOCK_regs->LFCLKSTAT &= ~CLOCK_LFCLKSTAT_STATE_Msk;
+    CLOCK_regs->LFCLKSTAT = 0;
   }
 
   this->Timer_CLOCK_LF = TIME_NEVER;

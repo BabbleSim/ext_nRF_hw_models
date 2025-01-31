@@ -82,6 +82,10 @@ static bs_time_t Timer_PWRCLK = TIME_NEVER;
 static struct clkpwr_status nhw_clkpwr_st;
 static uint nhw_CLOCK_dppi_map[] = NHW_CLKPWR_DPPI_MAP;
 
+static void nhw_CLOCK_XOTimer_triggered(void);
+static void nhw_CLOCK_LFCLK_triggered(void);
+static void nhw_CLOCK_PLLTimer_triggered(void);
+
 static void nhw_CLOCK_update_master_timer(void) {
 
   Timer_PWRCLK = TIME_NEVER;
@@ -162,8 +166,8 @@ static void nhw_CLOCK_TASK_XOSTOP(uint inst) {
   if ((nhw_clkpwr_st.XO_state == Started) || (nhw_clkpwr_st.XO_state == Starting)) {
     nhw_clkpwr_st.XO_state = Stopping;
     NRF_CLOCK_regs[0]->XO.RUN = 0;
-    nhw_clkpwr_st.Timer_XO = nsi_hws_get_time(); //we assume the clock is stopped in 1 delta
-    nhw_CLOCK_update_master_timer();
+    /* Instantaneous stop */
+    nhw_CLOCK_XOTimer_triggered();
   }
 }
 
@@ -182,8 +186,8 @@ static void nhw_CLOCK_TASK_PLLSTOP(uint inst) {
   if ((nhw_clkpwr_st.PLL_state == Started) || (nhw_clkpwr_st.PLL_state == Starting)) {
     nhw_clkpwr_st.PLL_state = Stopping;
     NRF_CLOCK_regs[0]->PLL.RUN = 0;
-    nhw_clkpwr_st.Timer_PLL = nsi_hws_get_time();
-    nhw_CLOCK_update_master_timer();
+    /* Instantaneous stop */
+    nhw_CLOCK_PLLTimer_triggered();
   }
 }
 
@@ -203,8 +207,8 @@ static void nhw_CLOCK_TASK_LFCLKSTOP(uint inst) {
   if ((nhw_clkpwr_st.LFCLK_state == Started) || (nhw_clkpwr_st.LFCLK_state == Starting)) {
     nhw_clkpwr_st.LFCLK_state = Stopping;
     NRF_CLOCK_regs[0]->LFCLK.RUN = 0;
-    nhw_clkpwr_st.Timer_LFCLK = nsi_hws_get_time();
-    nhw_CLOCK_update_master_timer();
+    /* Instantaneous stop */
+    nhw_CLOCK_PLLTimer_triggered();
   }
 }
 
@@ -351,7 +355,7 @@ static void nhw_CLOCK_LFCLK_triggered(void) {
 
   } else if ( nhw_clkpwr_st.LFCLK_state == Stopping ){
     nhw_clkpwr_st.LFCLK_state = Stopped;
-    NRF_CLOCK_regs[0]->LFCLK.STAT &= ~CLOCK_LFCLK_STAT_STATE_Msk;
+    NRF_CLOCK_regs[0]->LFCLK.STAT = 0;
   }
 }
 
