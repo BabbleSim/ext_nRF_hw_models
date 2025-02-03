@@ -208,7 +208,7 @@ static void nhw_CLOCK_TASK_LFCLKSTOP(uint inst) {
     nhw_clkpwr_st.LFCLK_state = Stopping;
     NRF_CLOCK_regs[0]->LFCLK.RUN = 0;
     /* Instantaneous stop */
-    nhw_CLOCK_PLLTimer_triggered();
+    nhw_CLOCK_LFCLK_triggered();
   }
 }
 
