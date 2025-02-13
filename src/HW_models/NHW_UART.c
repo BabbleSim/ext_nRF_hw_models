@@ -141,10 +141,13 @@ static void nhw_uarte_init(void) {
 
   memset(NRF_UARTE_regs, 0, sizeof(NRF_UARTE_regs));
 
+  uint uart_clocks[] = NHW_UARTE_CLOCKS;
+
   for (int i = 0; i < NHW_UARTE_TOTAL_INST; i++) {
     struct uarte_status *u_el = &nhw_uarte_st[i];
 
     u_el->inst = i;
+    u_el->clock_f = uart_clocks[i];
 
 #if (NHW_UARTE_HAS_UART)
     NRF_UART_regs[i] = (NRF_UART_Type *)&NRF_UARTE_regs[i];
@@ -270,141 +273,23 @@ static bool uarte_enabled(uint inst) {
   return NRF_UARTE_regs[inst].ENABLE == 8;
 }
 
-/*
- * Return the duration of <nbits> bits in microseconds
+/**
+ * Return the duration of 1 bit in seconds, given the BAUDRATE register
+ * value and the clock_frequency in Hz.
+ *
+ * Note that the actual bit rate is just 1.0/{nhw_uarte_bit_dur_from_reg()}
  */
-static bs_time_t nhw_uarte_nbits_time(uint inst, uint nbits) {
-  bs_time_t duration = nbits;
-#if (NHW_UARTE_HAS_UART)
-  if (uart_enabled(inst)) {
-    /* We round to the nearest microsecond */
-    switch (NRF_UARTE_regs[inst].BAUDRATE)
-    {
-    case UART_BAUDRATE_BAUDRATE_Baud1M:
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud921600:
-      duration = (double)duration * 1e6 / 921600 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud460800:
-      duration = (double)duration * 1e6 / 460800 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud250000:
-      duration = duration * 4;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud230400:
-      duration = (double)duration * 1e6 / 230400 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud115200:
-      duration = (double)duration * 1e6 / 115200 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud76800:
-      duration = (double)duration * 1e6 / 76800 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud57600:
-      duration = (double)duration * 1e6 / 57600 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud56000:
-      duration = (double)duration * 1e6 / 56000 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud38400:
-      duration = (double)duration * 1e6 / 38400 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud31250:
-      duration = duration * 32;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud28800:
-      duration = (double)duration * 1e6 / 28800 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud19200:
-      duration = (double)duration * 1e6 / 19200 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud14400:
-      duration = (double)duration * 1e6 / 14400 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud9600:
-      duration = (double)duration * 1e6 / 9600 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud4800:
-      duration = (double)duration * 1e6 / 4800 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud2400:
-      duration = (double)duration * 1e6 / 2400 + 0.5;
-      break;
-    case UART_BAUDRATE_BAUDRATE_Baud1200:
-      duration = (double)duration * 1e6 / 1200 + 0.5;
-      break;
-    default:
-      bs_trace_error_time_line("NRF_UARTE_regs[%i]->BAUDRATE=%i no supported\n",
-          inst, NRF_UARTE_regs[inst].BAUDRATE);
-      break;
-    }
-  } else
-#endif
-  /* UARTE */ {
-    /* We round to the nearest microsecond */
-    switch (NRF_UARTE_regs[inst].BAUDRATE)
-    {
-    case UARTE_BAUDRATE_BAUDRATE_Baud1M:
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud921600:
-      duration = (double)duration * 1e6 / 921600 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud460800:
-      duration = (double)duration * 1e6 / 460800 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud250000:
-      duration = duration * 4;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud230400:
-      duration = (double)duration * 1e6 / 230400 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud115200:
-      duration = (double)duration * 1e6 / 115200 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud76800:
-      duration = (double)duration * 1e6 / 76800 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud57600:
-      duration = (double)duration * 1e6 / 57600 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud56000:
-      duration = (double)duration * 1e6 / 56000 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud38400:
-      duration = (double)duration * 1e6 / 38400 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud31250:
-      duration = duration * 32;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud28800:
-      duration = (double)duration * 1e6 / 28800 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud19200:
-      duration = (double)duration * 1e6 / 19200 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud14400:
-      duration = (double)duration * 1e6 / 14400 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud9600:
-      duration = (double)duration * 1e6 / 9600 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud4800:
-      duration = (double)duration * 1e6 / 4800 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud2400:
-      duration = (double)duration * 1e6 / 2400 + 0.5;
-      break;
-    case UARTE_BAUDRATE_BAUDRATE_Baud1200:
-      duration = (double)duration * 1e6 / 1200 + 0.5;
-      break;
-    default:
-      bs_trace_error_time_line("NRF_UARTE_regs[%i]->BAUDRATE=%i no supported\n",
-          inst, NRF_UARTE_regs[inst].BAUDRATE);
-      break;
-    }
-  }
+static inline double nhw_uarte_bit_dur_from_reg(uint32_t reg, int clock_freq) {
+	int cc_per_bit = ((uint64_t)1<<32) / reg;
+	return (double)cc_per_bit / clock_freq;
+}
 
-  return duration;
+/*
+ * Return the duration of <nbits> bits in *microseconds*
+ */
+static inline bs_time_t nhw_uarte_nbits_time(uint inst, uint nbits) {
+  //We provide the frequency in MHz, so we are already scaled in micros.
+  return nbits * nhw_uarte_bit_dur_from_reg(NRF_UARTE_regs[inst].BAUDRATE, nhw_uarte_st[inst].clock_f) + 0.5;
 }
 
 static int nhw_uarte_get_frame_size(uint inst) {

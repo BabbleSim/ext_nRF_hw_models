@@ -33,6 +33,7 @@ struct uarte_status {
   bs_time_t frametimeout_timer;
 
   uint inst;
+  uint clock_f; /* in MHz */
 
 #if (NHW_UARTE_HAS_UART)
   NRF_UART_Type *UART_regs[NHW_UARTE_TOTAL_INST];
