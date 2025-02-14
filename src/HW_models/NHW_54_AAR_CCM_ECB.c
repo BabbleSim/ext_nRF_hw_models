@@ -528,9 +528,11 @@ static void nhw_CCM_logic(uint inst) {
                          &n_access, NHW_EVDMA_NEWJOB);
   IF_NOT_READ_ERROR(ret);
 
-  uint8_t a_in[l_a];
-  uint8_t a_copy[l_a];
-  uint8_t mc_in[l_mc];
+  uint8_t a_in[l_a + 1];   /* We allocate these VLAs 1 byte larger than used to avoid them having size 0 in case the joblist configures a l_a or l_m as 0
+                            * A VLA with size 0 is in principle not C99 valid code and UBSAN complains about it
+                            * And for a_copy we unconditionally access byte 0, pressuming the joblist is not missconfigured */
+  uint8_t a_copy[l_a + 1];
+  uint8_t mc_in[l_mc + 1];
   uint8_t mc_out[l_mc + BS_MAX(mac_size,4)]; //We just make place for the MAC/MIC even if this is decrypting.
 
   //Read "a" (AAD)
