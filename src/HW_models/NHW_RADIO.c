@@ -283,6 +283,7 @@ static void radio_set_registers_defaults(void) {
 #else
   NRF_RADIO_regs.EDCTRL = 0x20000000;
   NRF_RADIO_regs.TXPOWER = 0x00000013;
+  NRF_RADIO_regs.TIMING = 1;
 #endif
 }
 
