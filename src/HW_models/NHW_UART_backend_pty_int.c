@@ -9,9 +9,6 @@
  */
 
 #undef _XOPEN_SOURCE
-/* Note: This is used only for interaction with the host C library, and is therefore exempt of
- * coding guidelines rule A.4&5 which applies to the embedded code using embedded libraries
- */
 #define _XOPEN_SOURCE 600
 
 #undef _POSIX_C_SOURCE
@@ -71,9 +68,7 @@ static int nhw_upty_slave_connected(int fd)
 
 /**
  * Attempt to connect a terminal emulator to the slave side of the pty
- * If -attach_uart_cmd=<cmd> is provided as a command line option, <cmd> will be
- * used. Otherwise, the default command,
- * CONFIG_NATIVE_UART_AUTOATTACH_DEFAULT_CMD, will be used instead
+ * Using whatever command is given in <auto_attach_cmd>
  */
 static void attach_to_tty(const char *slave_tty, const char *auto_attach_cmd)
 {
@@ -91,9 +86,10 @@ static void attach_to_tty(const char *slave_tty, const char *auto_attach_cmd)
 /**
  * Attempt to allocate and open a new pseudoterminal
  *
- * Returns the file descriptor of the master side
- * If auto_attach was set, it will also attempt to connect a new terminal
- * emulator to its slave side.
+ * Returns the file descriptor of the master side.
+ *
+ * If <do_auto_attach> is set, it will also attempt to connect a new terminal
+ * emulator to its slave side using <auto_attach_cmd>
  */
 int nhw_upty_open_ptty(const char *uart_name, const char *auto_attach_cmd,
           bool do_auto_attach, bool wait_pts)
