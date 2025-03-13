@@ -59,7 +59,9 @@
 union NRF_CLKPWR_Type NRF_CLKPWR_regs[NHW_CLKPWR_TOTAL_INST];
 
 NRF_CLOCK_Type *NRF_CLOCK_regs[NHW_CLKPWR_TOTAL_INST];
+#if (NHW_CLKPWR_HAS_POWER)
 NRF_POWER_Type *NRF_POWER_regs[NHW_CLKPWR_TOTAL_INST];
+#endif
 NRF_RESET_Type *NRF_RESET_regs[NHW_CLKPWR_TOTAL_INST];
 
 enum clock_states {Stopped = 0, Starting, Started, Stopping};
@@ -102,7 +104,9 @@ static void nhw_CLOCK_update_master_timer(void) {
 
 static void nhw_CLOCK_init(void) {
   NRF_CLOCK_regs[0] = (NRF_CLOCK_Type *)&NRF_CLKPWR_regs[0];
+#if (NHW_CLKPWR_HAS_POWER)
   NRF_POWER_regs[0] = (NRF_POWER_Type *)&NRF_CLKPWR_regs[0];
+#endif
   NRF_RESET_regs[0] = (NRF_RESET_Type *)&NRF_CLKPWR_regs[0];
 
   memset(NRF_CLKPWR_regs, 0, sizeof(NRF_CLKPWR_regs));

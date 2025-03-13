@@ -7,6 +7,7 @@
 #define _NRF_HW_MODEL_54L_CLOCK_H
 
 #include "bs_types.h"
+#include "NHW_config.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -38,7 +39,9 @@ void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_XOTUNEABORT(uint i);
 
 union NRF_CLKPWR_Type {
   NRF_CLOCK_Type CLK;
+#if (NHW_CLKPWR_HAS_POWER)
   NRF_POWER_Type PWR;
+#endif
   NRF_RESET_Type RST;
 };
 
