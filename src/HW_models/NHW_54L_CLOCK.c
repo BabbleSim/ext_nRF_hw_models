@@ -144,7 +144,9 @@ static void nhw_CLOCK_eval_interrupt(uint inst) {
 
   check_interrupt(XOSTARTED)
   check_interrupt(PLLSTARTED)
+#if (NHW_CLKPWR_HAS_LFCLK)
   check_interrupt(LFCLKSTARTED)
+#endif
   check_interrupt(DONE)
   check_interrupt(XOTUNED)
   check_interrupt(XOTUNEERROR)
@@ -195,6 +197,7 @@ static void nhw_CLOCK_TASK_PLLSTOP(uint inst) {
   }
 }
 
+#if (NHW_CLKPWR_HAS_LFCLK)
 static void nhw_CLOCK_TASK_LFCLKSTART(uint inst) {
   (void) inst;
   if ((nhw_clkpwr_st.LFCLK_state == Stopped ) || (nhw_clkpwr_st.LFCLK_state == Stopping)) {
@@ -215,6 +218,7 @@ static void nhw_CLOCK_TASK_LFCLKSTOP(uint inst) {
     nhw_CLOCK_LFCLK_triggered();
   }
 }
+#endif
 
 static void nhw_CLOCK_TASK_CAL(uint inst) {
   (void) inst;
@@ -267,7 +271,9 @@ void nhw_pwrclk_regw_sideeffects_EVENTS_all(uint inst) {
 
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, XOSTARTED)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, PLLSTARTED)
+#if (NHW_CLKPWR_HAS_LFCLK)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTARTED)
+#endif
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, DONE)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, XOTUNED)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, XOTUNEERROR)
@@ -277,8 +283,10 @@ NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XOSTART)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XOSTOP)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, PLLSTART)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, PLLSTOP)
+#if (NHW_CLKPWR_HAS_LFCLK)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTART)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTOP)
+#endif
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, CAL)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XOTUNE)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XOTUNEABORT)
@@ -300,8 +308,10 @@ NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOSTART)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOSTOP)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(PLLSTART)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(PLLSTOP)
+#if (NHW_CLKPWR_HAS_LFCLK)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(LFCLKSTART)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(LFCLKSTOP)
+#endif
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(CAL)
 #if defined(CLOCK_SUBSCRIBE_XOTUNE_EN_Msk)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOTUNE)
@@ -346,6 +356,7 @@ static void nhw_CLOCK_PLLTimer_triggered(void) {
 }
 
 static void nhw_CLOCK_LFCLK_triggered(void) {
+#if (NHW_CLKPWR_HAS_LFCLK)
   nhw_clkpwr_st.Timer_LFCLK = TIME_NEVER;
   nhw_CLOCK_update_master_timer();
 
@@ -361,6 +372,7 @@ static void nhw_CLOCK_LFCLK_triggered(void) {
     nhw_clkpwr_st.LFCLK_state = Stopped;
     NRF_CLOCK_regs[0]->LFCLK.STAT = 0;
   }
+#endif
 }
 
 static void nhw_CLOCK_CALtimer_triggered(void) {

@@ -59,8 +59,10 @@ void nrf_clock_task_trigger(NRF_CLOCK_Type * p_reg, nrf_clock_task_t task)
     CASE_TASK(PLLSTART)
     CASE_TASK(PLLSTOP)
 #endif
+#if NHW_CLKPWR_HAS_LFCLK
     CASE_TASK(LFCLKSTART)
     CASE_TASK(LFCLKSTOP)
+#endif
 #if NRF_CLOCK_HAS_CALIBRATION
     CASE_TASK(CAL)
 #endif
@@ -114,8 +116,10 @@ static void nrf_clock_subscribe_common(NRF_CLOCK_Type * p_reg,
     CASE_TASK(PLLSTART)
     CASE_TASK(PLLSTOP)
 #endif
+#if NHW_CLKPWR_HAS_LFCLK
     CASE_TASK(LFCLKSTART)
     CASE_TASK(LFCLKSTOP)
+#endif
 #if NRF_CLOCK_HAS_CALIBRATION
     CASE_TASK(CAL)
 #endif
