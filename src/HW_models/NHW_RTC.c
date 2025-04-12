@@ -611,13 +611,14 @@ static void nhw_rtc_signal_COMPARE(uint rtc, uint cc)
   }
 #endif /* NHW_RTC_HAS_SHORT_COMP_CLEAR */
 
+  /* Compare register can be set without any interrupts enabled. */
+  RTC_regs->EVENTS_COMPARE[cc] = 1;
+
   uint32_t mask = RTC_EVTEN_COMPARE0_Msk << cc;
 
   if (!((RTC_regs->EVTEN | this->INTEN) & mask)) {
     return;
   }
-
-  RTC_regs->EVENTS_COMPARE[cc] = 1;
 
   if (RTC_regs->EVTEN & mask) {
 #if (NHW_HAS_PPI)
