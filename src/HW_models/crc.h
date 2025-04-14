@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 void append_crc_ble(uint8_t* buf, unsigned int len, uint32_t crc_init); /* 24bit BLE CRC*/
+uint32_t calc_crc_ble24_b(uint8_t* buf, unsigned int len, uint32_t crc_init);
 void append_crc_ble32(uint8_t* buf, unsigned int len, uint32_t crc_init); /* 32bit BLE CRC */
 void append_crc_154(uint8_t* buf, unsigned int len, uint16_t crc_init);
 
