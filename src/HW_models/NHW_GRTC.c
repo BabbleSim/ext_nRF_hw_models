@@ -98,6 +98,7 @@ static void nhw_GRTC_update_SYSCOUNTER(uint inst);
 static void nhw_GRTC_update_master_timer(void);
 static void nhw_GRTC_update_cc_timer(uint inst, int cc);
 static void nhw_GRTC_update_all_cc_timers(uint inst);
+static void nhw_GRTC_possible_imm_run(void);
 
 /**
  * Initialize the GRTC model
@@ -500,6 +501,7 @@ void nhw_GRTC_regw_sideeffects_CC_CCADD(uint inst, uint cc) {
 
   nhw_GRTC_update_cc_timer(inst, cc);
   nhw_GRTC_update_master_timer();
+  nhw_GRTC_possible_imm_run();
 }
 
 void nhw_GRTC_regw_sideeffects_CC_CCEN(uint inst, uint cc) {
@@ -507,6 +509,7 @@ void nhw_GRTC_regw_sideeffects_CC_CCEN(uint inst, uint cc) {
 
   nhw_GRTC_update_cc_timer(inst, cc);
   nhw_GRTC_update_master_timer();
+  nhw_GRTC_possible_imm_run();
 }
 
 void nhw_GRTC_regw_sideeffects_CC_CCL(uint inst, uint cc) {
@@ -524,6 +527,7 @@ void nhw_GRTC_regw_sideeffects_CC_CCH(uint inst, uint cc) {
 
   nhw_GRTC_update_cc_timer(inst, cc);
   nhw_GRTC_update_master_timer();
+  nhw_GRTC_possible_imm_run();
 }
 
 static void nhw_GRTC_compare_reached(uint inst, uint cc) {
@@ -571,3 +575,14 @@ static void nhw_GRTC_timer_triggered(void) {
 }
 
 NSI_HW_EVENT(Timer_GRTC, nhw_GRTC_timer_triggered, 50);
+
+/*
+ * Some SW relies on writing a past value to a CC, and having that triger right away
+ * an interrupt that interrupts that SW itself. Without this, the interrupt would
+ * come in 1 delta cycle, which would be after the CPU went to sleep.
+ */
+static void nhw_GRTC_possible_imm_run(void) {
+  if (Timer_GRTC <= nsi_hws_get_time()) {
+    nhw_GRTC_timer_triggered();
+  }
+}
