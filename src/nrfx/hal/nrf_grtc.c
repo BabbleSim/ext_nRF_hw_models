@@ -64,7 +64,7 @@ void nrf_grtc_int_group_enable(NRF_GRTC_Type * p_reg,
                                uint8_t         group_idx,
                                uint32_t        mask)
 {
-  *(uint32_t*)((char*)p_reg->INTENSET0 + INTENGRPOFFSET*group_idx) = mask;
+  *(uint32_t*)((char*)&p_reg->INTENSET0 + INTENGRPOFFSET*group_idx) = mask;
   nhw_GRTC_regw_sideeffects_INTENSET(0, group_idx);
 }
 
@@ -72,7 +72,7 @@ void nrf_grtc_int_group_disable(NRF_GRTC_Type * p_reg,
                                                   uint8_t         group_idx,
                                                   uint32_t        mask)
 {
-  *(uint32_t*)((char*)p_reg->INTENCLR0 + INTENGRPOFFSET*group_idx) = mask;
+  *(uint32_t*)((char*)&p_reg->INTENCLR0 + INTENGRPOFFSET*group_idx) = mask;
   nhw_GRTC_regw_sideeffects_INTENCLR(0, group_idx);
 }
 
