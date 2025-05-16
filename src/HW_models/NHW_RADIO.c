@@ -244,7 +244,41 @@ static uint8_t *rx_pkt_buffer_ptr = (uint8_t*)&rx_buf;
 static bool radio_POWER = false;
 #endif
 
-static double cheat_rx_power_offset;
+static struct {
+  double rx_power_offset;
+  int64_t tx_disabled;
+  int64_t rx_dont_sync;
+  int64_t rx_fail_crc;
+} cheat_options;
+
+static bool is_cheat_tx_disabled(bool count) {
+  if (cheat_options.tx_disabled) {
+    if (count) {
+      cheat_options.tx_disabled--;
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+static bool is_cheat_rx_dont_sync(void) {
+  if (cheat_options.rx_dont_sync) {
+    cheat_options.rx_dont_sync--;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+static bool is_cheat_rx_fail_crc(void) {
+  if (cheat_options.rx_fail_crc) {
+    cheat_options.rx_fail_crc--;
+    return true;
+  } else {
+    return false;
+  }
+}
 
 static void start_Tx(void);
 static void start_Tx_FEC2(void);
@@ -578,7 +612,7 @@ void nhw_RADIO_TASK_RSSISTART(void) {
   /* See Note6 */
   NRF_RADIO_regs.RSSISAMPLE = nhwra_RSSI_value_to_modem_format(
                                 p2G4_RSSI_value_to_dBm(RSSI_value)
-                                + cheat_rx_power_offset
+                                + cheat_options.rx_power_offset
                               );
 #if !NHW_RADIO_IS_54
   nhw_RADIO_signal_EVENTS_RSSIEND(0);
@@ -976,21 +1010,26 @@ static void start_Tx(void) {
                         main_packet_start_time, main_packet_coding_rate);
   update_abort_struct(&tx_status.tx_req.abort, &next_recheck_time);
 
-  int ret;
-  if (tx_status.codedphy) {
-    //Request the FEC1 Tx from the Phy:
-    ret = p2G4_dev_req_txv2_nc_b(&tx_status.tx_req_fec1, &CI, &tx_status.tx_resp);
-  } else { /* not codedphy */
-    //Request the Tx from the Phy:
-    ret = p2G4_dev_req_txv2_nc_b(&tx_status.tx_req, tx_buf, &tx_status.tx_resp);
+  if (!is_cheat_tx_disabled(true)) {
+    int ret;
+    if (tx_status.codedphy) {
+      //Request the FEC1 Tx from the Phy:
+      ret = p2G4_dev_req_txv2_nc_b(&tx_status.tx_req_fec1, &CI, &tx_status.tx_resp);
+    } else { /* not codedphy */
+      //Request the Tx from the Phy:
+      ret = p2G4_dev_req_txv2_nc_b(&tx_status.tx_req, tx_buf, &tx_status.tx_resp);
+    }
+    handle_Tx_response(ret);
   }
-  handle_Tx_response(ret);
 
   radio_sub_state = TX_WAIT_FOR_ADDRESS_END;
   nhwra_set_Timer_RADIO(tx_status.ADDRESS_end_time);
 }
 
 static void start_Tx_FEC2(void) {
+  if (is_cheat_tx_disabled(false)) {
+    return;
+  }
   int ret;
   update_abort_struct(&tx_status.tx_req.abort, &next_recheck_time);
   tx_status.tx_req.phy_address = 0; /* An invalid address */
@@ -1037,8 +1076,8 @@ static void Rx_handle_end_response(bs_time_t end_time) {
     //packet lenght was received correctly, and just report a CRC error at the
     //end of the CRC
 
-    if ( rx_status.rx_resp.status == P2G4_RXSTATUS_OK ){
-      NRF_RADIO_regs.RXCRC = nhwra_get_rx_crc_value(rx_buf, rx_status.rx_resp.packet_size);
+    NRF_RADIO_regs.RXCRC = nhwra_get_rx_crc_value(rx_buf, rx_status.rx_resp.packet_size);
+    if ((rx_status.rx_resp.status == P2G4_RXSTATUS_OK) && !is_cheat_rx_fail_crc()) {
       rx_status.CRC_OK = 1;
       NRF_RADIO_regs.CRCSTATUS = 1;
     }
@@ -1123,7 +1162,7 @@ static void Rx_handle_address_end_response(bs_time_t address_time) {
   if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
     //The real HW only copies the LQI value after the payload in this mode
     //Note that doing it this early is a cheat
-    double RSSI = p2G4_RSSI_value_to_dBm(rx_status.rx_resp.rssi.RSSI) + cheat_rx_power_offset;
+    double RSSI = p2G4_RSSI_value_to_dBm(rx_status.rx_resp.rssi.RSSI) + cheat_options.rx_power_offset;
     uint8_t LQI = nhwra_dBm_to_modem_LQIformat(RSSI);
     //Eventually this should be generalized with the packet configuration:
     ((uint8_t*)NRF_RADIO_regs.PACKETPTR)[1 + rx_status.S1Offset + length] = LQI;
@@ -1279,6 +1318,10 @@ static void start_Rx(void) {
   }
   nhwra_prep_rx_request(&rx_status.rx_req, rx_addresses);
   update_abort_struct(&rx_status.rx_req.abort, &next_recheck_time);
+
+  if (is_cheat_rx_dont_sync()) {
+    rx_addresses[0] = 0xDEADBEAF;
+  }
 
   //attempt to receive
   int ret;
@@ -1448,7 +1491,7 @@ static void CCA_handle_end_response(void) {
           __func__, CCAMode);
     }
   } else { // Ending an ED procedure
-    double RSSI = p2G4_RSSI_value_to_dBm(cca_status.cca_resp.RSSI_max) + cheat_rx_power_offset;
+    double RSSI = p2G4_RSSI_value_to_dBm(cca_status.cca_resp.RSSI_max) + cheat_options.rx_power_offset;
     NRF_RADIO_regs.EDSAMPLE = nhwra_dBm_to_modem_LQIformat(RSSI);
   }
 }
@@ -1501,7 +1544,7 @@ static void start_CCA_ED(bool CCA_not_ED){
   cca_status.CCA_notED = CCA_not_ED;
   cca_status.is_busy = false;
 
-  nhwra_prep_cca_request(&cca_status.cca_req, CCA_not_ED, cheat_rx_power_offset);
+  nhwra_prep_cca_request(&cca_status.cca_req, CCA_not_ED, cheat_options.rx_power_offset);
 
   update_abort_struct(&cca_status.cca_req.abort, &next_recheck_time);
 
@@ -1515,5 +1558,14 @@ static void start_CCA_ED(bool CCA_not_ED){
 }
 
 void hw_radio_testcheat_set_rx_power_gain(double power_offset){
-  cheat_rx_power_offset = power_offset;
+  cheat_options.rx_power_offset = power_offset;
+}
+
+void hw_radio_testcheat_disable_tx(int64_t disable){
+  cheat_options.tx_disabled = disable;
+}
+
+void hw_radio_testcheat_disable_rx(int64_t dont_sync, int64_t fail_CRC){
+  cheat_options.rx_dont_sync = dont_sync;
+  cheat_options.rx_fail_crc = fail_CRC;
 }
