@@ -53,7 +53,7 @@ void hw_radio_testcheat_disable_tx(int64_t count);
  * If called with <count_dont_sync> set, the following <count_dont_sync> receptions will be
  * configured with a bogus address, and therefore nothing will be received.
  * If called with <count_fail_CRC> set, the following <count_fail_CRC> receptions which otherwise
- * would have had a correct CRC, will be have their CRC fail.
+ * would have had a correct CRC, will have their CRC fail.
  * Call it setting both to 0 to restore normal behavior.
  *
  * If you want it to keep failing until stopped, set the corresponding count_ to -1.
