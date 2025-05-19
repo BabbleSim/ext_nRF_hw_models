@@ -242,7 +242,6 @@ void nhw_CCM_TASK_CRYPT(void) {
 }
 
 void nhw_CCM_TASK_STOP(void) {
-  bs_trace_warning_line_time("CCM: TASK_STOP functionality is not implemented\n");
   decryption_ongoing = false;
 }
 
