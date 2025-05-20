@@ -23,6 +23,10 @@ void nrf_cracen_rng_control_set(NRF_CRACENCORE_Type *            p_reg,
             & CRACENCORE_RNGCONTROL_CONTROL_INTENFULL_Msk)
         | ((p_config->soft_reset << CRACENCORE_RNGCONTROL_CONTROL_SOFTRST_Pos)
             & CRACENCORE_RNGCONTROL_CONTROL_SOFTRST_Msk)
+#if (NRF_CRACEN_RNG_VERSION >= 2)
+        | ((p_config->blending_method << CRACENCORE_RNGCONTROL_CONTROL_BLENDINGMETHOD_Pos)
+            & CRACENCORE_RNGCONTROL_CONTROL_BLENDINGMETHOD_Msk)
+#endif
         | ((p_config->number_128_blocks << CRACENCORE_RNGCONTROL_CONTROL_NB128BITBLOCKS_Pos)
             & CRACENCORE_RNGCONTROL_CONTROL_NB128BITBLOCKS_Msk);
     nhw_CRACEN_RNG_regw_sideeffects_CONTROL();

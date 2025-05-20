@@ -305,7 +305,7 @@ static void radio_set_registers_defaults(void) {
     NRF_RADIO_regs.PSEL.DFEGPIO[i] = 0xFFFFFFFF;
   NRF_RADIO_regs.DFEPACKET.MAXCNT = 0x00001000;
 
-#if defined(NRF54L15) && !defined(RADIO_DATAWHITEIV_DATAWHITEIV_Msk)
+#if defined(RADIO_DATAWHITE_IV_Msk)
   NRF_RADIO_regs.DATAWHITE = 0x00890040;
 #else
   NRF_RADIO_regs.DATAWHITEIV = 0x00000040;

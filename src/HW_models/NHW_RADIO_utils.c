@@ -433,7 +433,7 @@ static double nhwra_tx_power_from_reg(void) {
   TxPower = (int8_t)( NRF_RADIO_regs.TXPOWER & RADIO_TXPOWER_TXPOWER_Msk); //the cast is to sign extend it
   //Note: For 5340, VREQCTRL effect not yet accounted for
 #else
-#if defined(NRF54L15)
+#if defined(NRF54L15) || defined(NRF54LM20)
   switch (NRF_RADIO_regs.TXPOWER) {
     case 0x3F : return 10;
     case 0x39 : return 9 ;

@@ -54,13 +54,22 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
         -DNRF5340
       )
     endif()
-  elseif(CONFIG_SOC_SERIES_BSIM_NRF54LX)
+  elseif(CONFIG_BOARD_NRF54L15BSIM)
     file(STRINGS make_inc/54L15_hw_files HW_MODEL_SRCS)
     file(STRINGS make_inc/54L15_app_hal_files HAL_SRCS)
     set(VARIANT_FLAGS
         -DNRF54L15_XXAA
         -DNRF_APPLICATION
         -DNRF54L15
+    )
+  elseif(CONFIG_BOARD_NRF54LM20BSIM)
+    file(STRINGS make_inc/54LM20_hw_files HW_MODEL_SRCS)
+    file(STRINGS make_inc/54LM20_app_hal_files HAL_SRCS)
+    set(VARIANT_FLAGS
+        -DNRF54LM20A_XXAA
+        -DNRF54LM20A_ENGA_XXAA
+        -DNRF_APPLICATION
+        -DNRF54LM20
     )
   endif()
 
