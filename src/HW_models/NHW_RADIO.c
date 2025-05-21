@@ -10,7 +10,7 @@
  * https://infocenter.nordicsemi.com/topic/ps_nrf52833/radio.html?cp=5_1_0_5_17
  * https://infocenter.nordicsemi.com/topic/ps_nrf52833/radio.html?cp=5_1_0_5_17
  *
- * Note: as of now, only 1&2Mbps BLE & 15.4 packet formats are supported, there is quite many notes around in the code
+ * Note: as of now, only BLE (1, 2Mbps & Coded) & 15.4 packet formats are supported, there is quite many notes around in the code
  * where changes would be required to support other formats. PCNF1.STATLEN is always assumed 0
  *
  * Note3: Only logical address 0 (in Tx or Rx) is supported
