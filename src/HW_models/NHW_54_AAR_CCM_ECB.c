@@ -817,8 +817,6 @@ static void nhw_ECB_TASK_STOP(uint inst) {
     NRF_ECB_regs[inst].ERRORSTATUS = ECB_ERRORSTATUS_ERRORSTATUS_Aborted;
     nhw_ECB_signal_EVENTS_ERROR(inst);
     //Note [ECB3]
-  } else {
-    bs_trace_info_time_line(3, "%s called while ECB was not running\n", __func__);
   }
 }
 
