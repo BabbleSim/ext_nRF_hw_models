@@ -45,6 +45,26 @@ void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_HFCLKAUDIOSTOP(uint i);
 void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_HFCLK192MSTART(uint i);
 void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_HFCLK192MSTOP(uint i);
 
+/*
+ * Set how long it will take for the clock to start after triggering its start task
+ * Where <inst> is 0.
+ * <clock> is one of NHW_CLKPWR_CLK_IDX_* (0 for the LFCLK and 1 for the HFCLK).
+ *   You can set it to -1 to set the start time for all clocks.
+ * <source> is the clock source for which that timings applies:
+ *   For the LFCLK this has the same definition as the values set in the LFCLKSRC.SRC field
+ *   For the HFCLK it is 0
+ *   You can set it to -1 to set the value for all sources
+ * <time> is the start time duration.
+ */
+void nhw_clock_cheat_set_start_time(uint inst, uint clock, uint source, bs_time_t time);
+
+/*
+ * Set how long it will take for the LF clock to calibrate after triggering its CAL task
+ * Where <inst> is 0
+ * <time> is the calibration duration in microseconds.
+ */
+void nhw_clock_cheat_set_calibrate_time(uint inst, bs_time_t time);
+
 #if (NHW_HAS_PPI)
 void nhw_clock0_TASKS_LFCLKSTART(void);
 void nhw_clock0_TASKS_LFCLKSTOP(void);

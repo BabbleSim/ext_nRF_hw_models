@@ -43,6 +43,16 @@
 #define NHW_CLKPWR_HAS_HFCLK192MCLK 0
 #define NHW_CLKPWR_HAS_HFCLK192MCLK_I  {0}
 #define NHW_CLKPWR_HAS_LFCLK 1
+#define NHW_CLKPWR_CLK_MAX_N_SRCS 3
+#define NHW_CLKPWR_N_CLKS 2
+#define NHW_CLKPWR_CLK_IDX_LF 0
+#define NHW_CLKPWR_CLK_IDX_HF 1
+#define NHW_CLKPWR_CLK_START_TIMES {\
+                                    {0, 0, 0},\
+                                    {0}}
+                                    /* LFCLK,
+                                       HFCLK*/
+#define NHW_CLKPWR_CLK_CAL_TIME 0
 
 #define NHW_ECB_TOTAL_INST 1
 #define NHW_ECB_0 0
@@ -253,6 +263,22 @@
 #define NHW_CLKPWR_HAS_HFCLK192MCLK 1
 #define NHW_CLKPWR_HAS_HFCLK192MCLK_I  {1, 0}
 #define NHW_CLKPWR_HAS_LFCLK 1
+#define NHW_CLKPWR_CLK_MAX_N_SRCS 3
+#define NHW_CLKPWR_N_CLKS 4
+#define NHW_CLKPWR_CLK_IDX_LF      0
+#define NHW_CLKPWR_CLK_IDX_HF      1
+#define NHW_CLKPWR_CLK_IDX_HFAUDIO 2
+#define NHW_CLKPWR_CLK_IDX_192     3
+#define NHW_CLKPWR_CLK_START_TIMES {\
+                                    {0, 0, 0},\
+                                    {0},\
+                                    {0},\
+                                    {0}}
+                                    /* LFCLK,
+                                       HFCLK,
+                                       HFAUDIO,
+                                       HF192*/
+#define NHW_CLKPWR_CLK_CAL_TIME 0
 
 #define NHW_ECB_TOTAL_INST 1
 #define NHW_ECB_NET0 0

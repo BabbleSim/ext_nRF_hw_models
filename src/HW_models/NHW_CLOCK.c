@@ -19,14 +19,15 @@
  * 1. The POWER and (nrf5340) RESET peripherals are just stubs with no functionality
  *
  * Note: CLOCK:
- * 1. The clocks are ready in 1 delta cycle (i.e. almost instantaneously),
- *    HFXODEBOUNCE and LFXODEBOUNCE are ignored together with the XTALs
- *    power up times
+ * 1. By default, the clocks are ready in 1 delta cycle (i.e. almost instantaneously),
+ *    but it is possible to cause them to take time by using the nhw_clock_cheat_* APIs.
+ *    HFXODEBOUNCE and LFXODEBOUNCE are ignored together with the XTALs power up times.
  *
  * 2. The models do not check the requirement of having the HFXO clock running to be
  *    able to run the radio. The radio models will run just fine without it.
  *
- * 3. The LFRC oscillator calibration TASK_CAL finishes in 1 delta cycle.
+ * 3. The LFRC oscillator calibration TASK_CAL finishes in 1 delta cycle by default,
+ *    but it can be configured with nhw_clock_cheat_set_calibrate_time() to take longer.
  *    The models do not do anything during the LFRC calibration (apart from
  *    generating the done event/interrupt).
  *
@@ -34,7 +35,8 @@
  *    This would only be the case if they had the same source or there was a tracking
  *    and adjustment loop of one based on the other.
  *
- * 5. LFCLKSRC is ignored (beyond copying LFCLKSRC.SRC to LFCLKSRCCOPY and LFCLKSTAT)
+ * 5. LFCLKSRC is mostly ignored (beyond copying LFCLKSRC.SRC to LFCLKSRCCOPY and LFCLKSTAT)
+ *    and optionally taking a different amount of time to start.
  *
  * 6. TRACECONFIG is ignored
  *
@@ -87,6 +89,9 @@ struct clkpwr_status {
   enum clock_states LF_Clock_state;
   enum clock_states LF_cal_state;
   enum clock_states caltimer_state;
+
+  bs_time_t CLOCK_start_times[NHW_CLKPWR_N_CLKS][NHW_CLKPWR_CLK_MAX_N_SRCS];
+  bs_time_t CAL_duration;
 
 #if (NHW_HAS_DPPI)
   uint dppi_map;   //To which DPPI instance are this CLOCK/POWER subscribe&publish ports connected to
@@ -173,6 +178,11 @@ static void nhw_clock_init(void) {
 #if defined(CLOCK_HFXODEBOUNCE_HFXODEBOUNCE_Pos)
     NRF_CLOCK_regs[i]->HFXODEBOUNCE = 0x00000010;
 #endif
+
+    bs_time_t nhw_clock_start_times[NHW_CLKPWR_N_CLKS][NHW_CLKPWR_CLK_MAX_N_SRCS] = NHW_CLKPWR_CLK_START_TIMES;
+    memcpy(c_el->CLOCK_start_times, nhw_clock_start_times, sizeof(nhw_clock_start_times));
+
+    c_el->CAL_duration = NHW_CLKPWR_CLK_CAL_TIME;
   }
 }
 
@@ -258,11 +268,12 @@ void nhw_clock_TASKS_LFCLKSTART(uint inst) {
   struct clkpwr_status *this = &nhw_clkpwr_st[inst];
   NRF_CLOCK_Type *CLOCK_regs = this->CLOCK_regs;
 
-  CLOCK_regs->LFCLKSRCCOPY = CLOCK_regs->LFCLKSRC & CLOCK_LFCLKSRC_SRC_Msk;
+  uint src = CLOCK_regs->LFCLKSRC & CLOCK_LFCLKSRC_SRC_Msk;
+  CLOCK_regs->LFCLKSRCCOPY = src;
   CLOCK_regs->LFCLKRUN = CLOCK_LFCLKRUN_STATUS_Msk;
   this->LF_Clock_state = Starting;
 
-  this->Timer_CLOCK_LF = nsi_hws_get_time(); //we assume the clock is ready in 1 delta
+  this->Timer_CLOCK_LF = nsi_hws_get_time() + this->CLOCK_start_times[NHW_CLKPWR_CLK_IDX_LF][src];
   nhw_clock_update_master_timer();
 }
 
@@ -290,7 +301,7 @@ void nhw_clock_TASKS_HFCLKSTART(uint inst) {
   if ((this->HF_Clock_state == Stopped ) || (this->HF_Clock_state == Stopping)) {
     this->HF_Clock_state = Starting;
     NRF_CLOCK_regs[inst]->HFCLKRUN = CLOCK_HFCLKRUN_STATUS_Msk;
-    this->Timer_CLOCK_HF = nsi_hws_get_time(); //we assume the clock is ready in 1 delta
+    this->Timer_CLOCK_HF = nsi_hws_get_time() + this->CLOCK_start_times[NHW_CLKPWR_CLK_IDX_HF][0];
     nhw_clock_update_master_timer();
   }
 }
@@ -337,7 +348,6 @@ void nhw_clock_TASKS_HFCLK192MSTOP(uint inst) {
   bs_trace_warning_time_line("%s not yet implemented\n", __func__);
 }
 
-
 void nhw_clock_TASKS_CAL(uint inst) {
   struct clkpwr_status *this = &nhw_clkpwr_st[inst];
 
@@ -347,9 +357,11 @@ void nhw_clock_TASKS_CAL(uint inst) {
                           "the spec)\n", __func__, inst);
   } /* LCOV_EXCL_STOP */
 
-  this->LF_cal_state = Started; //We don't check for re-triggers, as we are going to be done right away
-  this->Timer_LF_cal = nsi_hws_get_time(); //we assume the calibration is done in 1 delta
-  nhw_clock_update_master_timer();
+  if ((this->LF_cal_state == Stopped ) || (this->LF_cal_state == Stopping)) {
+    this->LF_cal_state = Started;
+    this->Timer_LF_cal = nsi_hws_get_time() + this->CAL_duration;
+    nhw_clock_update_master_timer();
+  }
 }
 
 #if (NHW_CLKPWR_HAS_CALTIMER)
@@ -527,6 +539,24 @@ static void nhw_pwrclk_timer_triggered(void) {
 }
 
 NSI_HW_EVENT(Timer_PWRCLK, nhw_pwrclk_timer_triggered, 50);
+
+void nhw_clock_cheat_set_start_time(uint inst, uint clock, uint source, bs_time_t time) {
+  (void)inst;
+  for (int c = 0; c < NHW_CLKPWR_N_CLKS; c++) {
+    if ((clock == -1) || (c == clock)) {
+      for (int s = 0; s < NHW_CLKPWR_CLK_MAX_N_SRCS; s++) {
+        if ((source == -1) || (s == source)) {
+          nhw_clkpwr_st[0].CLOCK_start_times[c][s] = time;
+        }
+      }
+    }
+  }
+}
+
+void nhw_clock_cheat_set_calibrate_time(uint inst, bs_time_t time) {
+  (void)inst;
+  nhw_clkpwr_st[0].CAL_duration = time;
+}
 
 #if (NHW_HAS_DPPI)
 
