@@ -582,6 +582,17 @@
 #define NHW_CLKPWR_INT_MAP {{0, 261}} /* {App, CLOCK_POWER_IRQn} */
 #define NHW_CLKPWR_HAS_POWER 1
 #define NHW_CLKPWR_HAS_LFCLK 1
+#define NHW_CLKPWR_CLK_MAX_N_SRCS 3
+#define NHW_CLKPWR_N_CLKS 2
+#define NHW_CLKPWR_CLK_IDX_LF 0
+#define NHW_CLKPWR_CLK_IDX_XO 1
+#define NHW_CLKPWR_CLK_START_TIMES {\
+                                    {0, 0, 0},\
+                                    {0}}
+                                    /* LFCLK,
+                                       XO*/
+#define NHW_CLKPWR_CLK_XOTUNE_TIMES {0, 16300000} /* Duration for a successful and failed tuning */
+#define NHW_CLKPWR_CLK_CAL_TIME 0
 
 #define NHW_CRACEN_TOTAL_INST 1
 /* #define NHW_CRACEN_DDPI_MAP no PPI events from CRACEN */

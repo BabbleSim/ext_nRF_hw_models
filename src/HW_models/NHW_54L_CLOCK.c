@@ -17,9 +17,11 @@
  *    This would only be the case if they had the same source or there was a tracking
  *    and adjustment loop of one based on the other.
  *
- * 3. All tasks complete in 1 delta cycle
+ * 3. By default all tasks complete in 1 delta cycle, but it is possible to
+ *    cause them to take time by using the nhw_clock_cheat_* APIs
  *
- * 4. LFCLK.SRC is ignored (beyond copying LFCLK.SRC to LFCLK.SRCCOPY and LFCLK.STAT)
+ * 4. LFCLK.SRC is mostly ignored (beyond copying LFCLK.SRC to LFCLK.SRCCOPY and LFCLK.STAT)
+ *    and optionally taking a different amount of time to start.
  *
  * 5. Turning the clocks on/off has no effect on other peripherals models. Other peripherals
  *    do not request clocks to this model.
@@ -32,9 +34,9 @@
  *    after the operation is completed or they are cleared.
  *    The model just leaves them at 1, unless the STOP task is triggered.
  *
- * 7. XOTUNE does nothing more than generate the XOTUNED event in one delta. It cannot fail.
- *    the events XOTUNEERROR and XOTUNEFAILED are never generated.
- *    XOTUNEABORT does nothing.
+ * 7. XOTUNE does nothing more than generate the XOTUNED/XOERROR event. It will only fail
+ *    if set to do so with the nhw_clock_cheat_set_xotune_fail() interface.
+ *    The event XOTUNEFAILED is never generated.
  *
  * 8. The models do not check the requirement of having the HFXO clock running to be
  *    able to run the RADIO. The RADIO models will run just fine without it.
@@ -65,6 +67,7 @@ NRF_POWER_Type *NRF_POWER_regs[NHW_CLKPWR_TOTAL_INST];
 NRF_RESET_Type *NRF_RESET_regs[NHW_CLKPWR_TOTAL_INST];
 
 enum clock_states {Stopped = 0, Starting, Started, Stopping};
+enum tuning_states {Tunning_stopped = 0, Tuning_ok, Tuning_fail};
 
 struct clkpwr_status {
   bs_time_t Timer_XO;
@@ -77,7 +80,12 @@ struct clkpwr_status {
   enum clock_states LFCLK_state;
   enum clock_states PLL_state;
   enum clock_states CAL_state;
-  enum clock_states XOTUNE_state;
+  enum tuning_states XOTUNE_state;
+
+  bs_time_t CLOCK_start_times[NHW_CLKPWR_N_CLKS][NHW_CLKPWR_CLK_MAX_N_SRCS];
+  bs_time_t XOtuning_durations[2]; /* 0: Success, 1: Fail */
+  bs_time_t XOtuning_pending_fails;
+  bs_time_t CAL_duration;
 };
 
 static bs_time_t Timer_PWRCLK = TIME_NEVER;
@@ -121,9 +129,17 @@ static void nhw_CLOCK_init(void) {
   nhw_clkpwr_st.LFCLK_state = Stopped;
   nhw_clkpwr_st.PLL_state   = Stopped;
   nhw_clkpwr_st.CAL_state   = Stopped;
-  nhw_clkpwr_st.XOTUNE_state= Stopped;
+  nhw_clkpwr_st.XOTUNE_state= Tunning_stopped;
 
   nhw_CLOCK_update_master_timer();
+
+  bs_time_t nhw_clock_start_times[NHW_CLKPWR_N_CLKS][NHW_CLKPWR_CLK_MAX_N_SRCS] = NHW_CLKPWR_CLK_START_TIMES;
+  memcpy(nhw_clkpwr_st.CLOCK_start_times, nhw_clock_start_times, sizeof(nhw_clock_start_times));
+
+  bs_time_t nhw_clock_tune_durs[2] = NHW_CLKPWR_CLK_XOTUNE_TIMES;
+  memcpy(nhw_clkpwr_st.XOtuning_durations, nhw_clock_tune_durs, sizeof(nhw_clock_tune_durs));
+
+  nhw_clkpwr_st.CAL_duration = NHW_CLKPWR_CLK_CAL_TIME;
 }
 
 NSI_TASK(nhw_CLOCK_init, HW_INIT, 100);
@@ -162,14 +178,14 @@ static void nhw_CLOCK_TASK_XOSTART(uint inst) {
   if ((nhw_clkpwr_st.XO_state == Stopped ) || (nhw_clkpwr_st.XO_state == Stopping)) {
     nhw_clkpwr_st.XO_state = Starting;
     NRF_CLOCK_regs[0]->XO.RUN = CLOCK_XO_RUN_STATUS_Msk;
-    nhw_clkpwr_st.Timer_XO = nsi_hws_get_time(); //we assume the clock is ready in 1 delta
+    nhw_clkpwr_st.Timer_XO = nsi_hws_get_time() + nhw_clkpwr_st.CLOCK_start_times[NHW_CLKPWR_CLK_IDX_XO][0];
     nhw_CLOCK_update_master_timer();
   }
 }
 
 static void nhw_CLOCK_TASK_XOSTOP(uint inst) {
   (void) inst;
-  if ((nhw_clkpwr_st.XO_state == Started) || (nhw_clkpwr_st.XO_state == Starting)) {
+  if ((nhw_clkpwr_st.XO_state != Stopping) && (nhw_clkpwr_st.XO_state != Stopped)) {
     nhw_clkpwr_st.XO_state = Stopping;
     NRF_CLOCK_regs[0]->XO.RUN = 0;
     /* Instantaneous stop */
@@ -201,10 +217,12 @@ static void nhw_CLOCK_TASK_PLLSTOP(uint inst) {
 static void nhw_CLOCK_TASK_LFCLKSTART(uint inst) {
   (void) inst;
   if ((nhw_clkpwr_st.LFCLK_state == Stopped ) || (nhw_clkpwr_st.LFCLK_state == Stopping)) {
+    uint src = NRF_CLOCK_regs[0]->LFCLK.SRC & CLOCK_LFCLK_SRC_SRC_Msk;
+
     nhw_clkpwr_st.LFCLK_state = Starting;
     NRF_CLOCK_regs[0]->LFCLK.RUN = CLOCK_LFCLK_RUN_STATUS_Msk;
-    NRF_CLOCK_regs[0]->LFCLK.SRCCOPY = NRF_CLOCK_regs[0]->LFCLK.SRC;
-    nhw_clkpwr_st.Timer_LFCLK = nsi_hws_get_time();
+    NRF_CLOCK_regs[0]->LFCLK.SRCCOPY = src;
+    nhw_clkpwr_st.Timer_LFCLK = nsi_hws_get_time() + nhw_clkpwr_st.CLOCK_start_times[NHW_CLKPWR_CLK_IDX_LF][src];
     nhw_CLOCK_update_master_timer();
   }
 }
@@ -230,23 +248,36 @@ static void nhw_CLOCK_TASK_CAL(uint inst) {
 
   if ((nhw_clkpwr_st.CAL_state == Stopped ) || (nhw_clkpwr_st.CAL_state == Stopping)) {
     nhw_clkpwr_st.CAL_state = Starting;
-    nhw_clkpwr_st.Timer_CAL = nsi_hws_get_time();
+    nhw_clkpwr_st.Timer_CAL = nsi_hws_get_time() + nhw_clkpwr_st.CAL_duration;
     nhw_CLOCK_update_master_timer();
   }
 }
 
 static void nhw_CLOCK_TASK_XOTUNE(uint inst) {
-  (void) inst;
-  if ((nhw_clkpwr_st.XOTUNE_state == Stopped ) || (nhw_clkpwr_st.XOTUNE_state == Stopping)) {
-    nhw_clkpwr_st.XOTUNE_state = Starting;
-    nhw_clkpwr_st.Timer_XOTUNE = nsi_hws_get_time();
+  (void)inst;
+
+  if (nhw_clkpwr_st.XO_state != Started) {
+    bs_trace_warning_time_line("TASK XOTUNE triggered but XO was not started\n");
+  }
+
+  if (nhw_clkpwr_st.XOTUNE_state == Tunning_stopped) {
+    if (nhw_clkpwr_st.XOtuning_pending_fails > 0) {
+      nhw_clkpwr_st.XOtuning_pending_fails--;
+      nhw_clkpwr_st.XOTUNE_state = Tuning_fail;
+      nhw_clkpwr_st.Timer_XOTUNE = nsi_hws_get_time() + nhw_clkpwr_st.XOtuning_durations[1];
+    } else {
+      nhw_clkpwr_st.XOTUNE_state = Tuning_ok;
+      nhw_clkpwr_st.Timer_XOTUNE = nsi_hws_get_time() + nhw_clkpwr_st.XOtuning_durations[0];
+    }
     nhw_CLOCK_update_master_timer();
   }
 }
 
 static void nhw_CLOCK_TASK_XOTUNEABORT(uint inst) {
   (void) inst;
-  /* Deliberately empty by now */
+  nhw_clkpwr_st.XOTUNE_state = Tunning_stopped;
+  nhw_clkpwr_st.Timer_XOTUNE = TIME_NEVER;
+  nhw_CLOCK_update_master_timer();
 }
 
 NHW_SIDEEFFECTS_INTSET(CLOCK, NRF_CLOCK_regs[0]->, NRF_CLOCK_regs[0]->INTEN)
@@ -320,6 +351,8 @@ NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOTUNE)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOTUNEABORT)
 #endif
 
+static void nhw_CLOCK_XOTUNEtimer_triggered(void);
+
 static void nhw_CLOCK_XOTimer_triggered(void) {
   nhw_clkpwr_st.Timer_XO = TIME_NEVER;
   nhw_CLOCK_update_master_timer();
@@ -330,8 +363,12 @@ static void nhw_CLOCK_XOTimer_triggered(void) {
     NRF_CLOCK_regs[0]->XO.STAT = CLOCK_XO_STAT_STATE_Msk;
 
     nhw_CLOCK_signal_EVENTS_XOSTARTED(0);
-    nhw_CLOCK_signal_EVENTS_XOTUNED(0);
-
+    if ((nhw_clkpwr_st.XOtuning_durations[0] == 0) && (nhw_clkpwr_st.XOtuning_pending_fails == 0)) {
+      //Let's raise the event in this same delta cycle
+      nhw_CLOCK_XOTUNEtimer_triggered();
+    } else {
+      nhw_CLOCK_TASK_XOTUNE(0);
+    }
   } else if ( nhw_clkpwr_st.XO_state == Stopping ){
     nhw_clkpwr_st.XO_state = Stopped;
     NRF_CLOCK_regs[0]->XO.STAT = 0;
@@ -383,10 +420,19 @@ static void nhw_CLOCK_CALtimer_triggered(void) {
 }
 
 static void nhw_CLOCK_XOTUNEtimer_triggered(void) {
-  nhw_clkpwr_st.XOTUNE_state = Stopped;
+
+  bool failed = (nhw_clkpwr_st.XOTUNE_state == Tuning_fail);
+
+  nhw_clkpwr_st.XOTUNE_state = Tunning_stopped;
   nhw_clkpwr_st.Timer_XOTUNE = TIME_NEVER;
   nhw_CLOCK_update_master_timer();
-  nhw_CLOCK_signal_EVENTS_XOTUNED(0);
+
+  if (failed) {
+    nhw_CLOCK_signal_EVENTS_XOTUNEERROR(0);
+  } else {
+    nhw_CLOCK_signal_EVENTS_XOTUNED(0);
+  }
+
 }
 
 static void nhw_pwrclk_timer_triggered(void) {
@@ -407,4 +453,31 @@ static void nhw_pwrclk_timer_triggered(void) {
 
 NSI_HW_EVENT(Timer_PWRCLK, nhw_pwrclk_timer_triggered, 50);
 
-//TODO: HAL
+void nhw_clock_cheat_set_start_time(uint inst, uint clock, uint source, bs_time_t time) {
+  (void)inst;
+  for (int c = 0; c < NHW_CLKPWR_N_CLKS; c++) {
+    if ((clock == -1) || (c == clock)) {
+      for (int s = 0; s < NHW_CLKPWR_CLK_MAX_N_SRCS; s++) {
+        if ((source == -1) || (s == source)) {
+          nhw_clkpwr_st.CLOCK_start_times[c][s] = time;
+        }
+      }
+    }
+  }
+}
+
+void nhw_clock_cheat_set_xotune_time(uint inst, bs_time_t success_time, bs_time_t fail_time) {
+  (void)inst;
+  nhw_clkpwr_st.XOtuning_durations[0] = success_time;
+  nhw_clkpwr_st.XOtuning_durations[1] = fail_time;
+}
+
+void nhw_clock_cheat_set_xotune_fail(uint inst, uint fail_count) {
+  (void)inst;
+  nhw_clkpwr_st.XOtuning_pending_fails = fail_count;
+}
+
+void nhw_clock_cheat_set_calibrate_time(uint inst, bs_time_t time) {
+  (void)inst;
+  nhw_clkpwr_st.CAL_duration = time;
+}
