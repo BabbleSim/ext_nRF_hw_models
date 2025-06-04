@@ -6,11 +6,11 @@ meant for the nrfx to run without needing further changes.
 This includes Zephyr SW.
 
 These models include models of peripherals for an
-[nRF52833](https://infocenter.nordicsemi.com/topic/struct_nrf52/struct/nrf52833.html?cp=5_1),
-an [nRF5340](https://infocenter.nordicsemi.com/topic/struct_nrf53/struct/nrf5340.html?cp=4_0),
-and [nRF54L15](https://www.nordicsemi.com/Products/nRF54L15)
+[nRF52833](https://docs.nordicsemi.com/category/nrf52833-category),
+an [nRF5340](https://docs.nordicsemi.com/category/nrf5340-category),
+and [nRF54L15](https://docs.nordicsemi.com/category/nRF54L15-category)
 <br> Note that for these models use case, an nRF52833 is very similar to other
-[nRF52 series devices](https://infocenter.nordicsemi.com/index.jsp?topic=%2Fstruct_nrf52%2Fstruct%2Fnrf52.html&cp=5)
+[nRF52 series devices](https://docs.nordicsemi.com/category/nrf-52-series)
 , so even if you are developing for another variant in that series these models may be enough for
 you.<br>
 Similarly, as the nRF54L15, L10 and L05 only differ in the amount of available RAM and RRAM either
@@ -71,10 +71,16 @@ In general, functionality is modeled only to the necessary degree as to enable t
 in a manner that is comparable to the real HW.
 
 These models are based solely on
-[the public SOC specifications](https://infocenter.nordicsemi.com/topic/struct_nrf52/struct/nrf52833.html)
+[the public SOC specifications](https://docs.nordicsemi.com/)
 
-They have been developed without any other knowledge and probably contain
-inaccuracies, and defects.
+They have been developed without any other knowledge and will contain inaccuracies, and defects.
+
+The models may not yet support some feature or mode the real HW supports. Conversely, they may allow
+to be configured in a way the real HW does not support, for example by working with parameters which
+are outside of the range the real HW allows. In such a case the models may warn about this, or they
+may just work. Similarly the models may or may not include models of known bugs.
+All this should be understood as the consequence of the models not yet being accurate.
+These models should not be understood as an specification of the HW.
 
 ### About the ARM processor peripherals
 
