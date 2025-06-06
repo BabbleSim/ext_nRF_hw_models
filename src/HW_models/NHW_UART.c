@@ -642,7 +642,7 @@ static void nhw_UARTE_RxDMA_start(int inst) {
   u_el->rx_dma_status = DMAing;
 #if NHW_UARTE_HAS_MATCH
     for (int i = 0; i < u_el->n_match; i++) {
-      u_el->MATCH_CANDIDATE[i] = NRF_UARTE_regs[i].DMA.RX.MATCH.CANDIDATE[i];
+      u_el->MATCH_CANDIDATE[i] = NRF_UARTE_regs[inst].DMA.RX.MATCH.CANDIDATE[i];
     }
 #endif
   nhw_UARTE_signal_EVENTS_RXSTARTED(inst); /* Instantaneously ready */
