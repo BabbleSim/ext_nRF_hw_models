@@ -200,7 +200,7 @@ void nrf_grtc_sys_counter_compare_event_enable(NRF_GRTC_Type * p_reg,
     nhw_GRTC_regw_sideeffects_CC_CCEN(0, cc_channel);
 }
 
-NRF_STATIC_INLINE void nrf_grtc_sys_counter_compare_event_disable(NRF_GRTC_Type * p_reg,
+void nrf_grtc_sys_counter_compare_event_disable(NRF_GRTC_Type * p_reg,
                                                                   uint8_t         cc_channel)
 {
 #if NRF_GRTC_HAS_EXTENDED
