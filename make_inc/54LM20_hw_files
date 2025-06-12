@@ -11,6 +11,7 @@ src/HW_models/NHW_misc.c
 src/HW_models/NHW_54_AAR_CCM_ECB.c
 src/HW_models/NHW_54L_CLOCK.c
 src/HW_models/NHW_CRACEN_wrap.c
+src/HW_models/NHW_CRACEN_RNG.c
 src/HW_models/NHW_CRACEN_CM.c
 src/HW_models/NHW_CRACEN_CM.AES.c
 src/HW_models/NHW_DPPI.c
