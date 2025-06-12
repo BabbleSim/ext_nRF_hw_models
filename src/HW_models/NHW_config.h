@@ -598,6 +598,7 @@
 /* #define NHW_CRACEN_DDPI_MAP no PPI events from CRACEN */
 #define NHW_CRACEN_INT_MAP {{0, 72}} /* {App, CRACEN_IRQn} */
 #define NHW_CRACEN_RNG_G_log2fifodepth 4 /* log2 of the FIFO depth in 32bit words */
+#define NHW_CRACEN_RNG_V 1
 #define NHW_CRACEN_FREQ_MHZ 128
 #define NHW_CRACEN_STARTUPTEST_DUR 4 /*In microseconds duration of the startup tests and other start overhead */
 #define NHW_CRACEN_CM_AES_t_ECB {1, 1, 1} /* In microseconds time it takes for key size of 128, 192 and 256 */
@@ -977,6 +978,7 @@
 /* #define NHW_CRACEN_DDPI_MAP no PPI events from CRACEN */
 #define NHW_CRACEN_INT_MAP {{0, 89}} /* {App, CRACEN_IRQn} */
 #define NHW_CRACEN_RNG_G_log2fifodepth 4 /* log2 of the FIFO depth in 32bit words */
+#define NHW_CRACEN_RNG_V 2 /* v2 = the CRACEN IP found in the 54LM20 or newer devices */
 #define NHW_CRACEN_FREQ_MHZ 128
 #define NHW_CRACEN_STARTUPTEST_DUR 4 /*In microseconds duration of the startup tests and other start overhead */
 #define NHW_CRACEN_CM_AES_t_ECB {1, 1, 1} /* In microseconds time it takes for key size of 128, 192 and 256 */
