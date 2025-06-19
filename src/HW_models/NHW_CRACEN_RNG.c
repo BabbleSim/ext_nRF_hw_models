@@ -39,8 +39,7 @@
  *
  *  * The model timing is a bit faster than the real v1 HW (up to 25% faster depending on configuration),
  *    and when conditioning is on, it pushes to the FIFO 4 words at a time, while the real HW pushes one at a time in sets of 4.
- *
- *  //TODO comment on model vs real HW timing for v2
+ *  * For the version 2 IP, the model timing is around +-25% of the real time depending on configuration options.
  *
  *  * Regarding FIFOLEVEL, writing to this register (in HW or the model) only clears the full status flag.
  *    The register content itself remains untouched. note that if the level is still full while writing to this
@@ -82,7 +81,7 @@ bs_time_t Timer_CRACEN_NDRNG;
 static uint Timer_rem_clocks;
 
 static struct rng_status {
-  enum status_t {rng_reset = 0, rng_startup, rng_idle_ron /*reused as fifo_full for v2*/, rng_idle_roff, rng_filling, rng_error} status;
+  enum status_t {rng_reset = 0, rng_startup, rng_idle_ron /*reused as fifo_full for v2*/, rng_idle_roff /* reserved in v2*/, rng_filling, rng_error} status;
   bool enabled;
   uint fifo_size; //Size of FIFO in 32bit words
   uint fifo_rptr; //Offset of the first available word to read
@@ -118,7 +117,7 @@ static void nhw_CRACEN_soft_reset(void) {
   rng_st.fifo_rptr = 0;
 
   rng_st.status = rng_reset;
-  update_state(CRACENCORE_RNGCONTROL_STATUS_STATE_RESET);
+  RNG_regs->STATUS = rng_reset << CRACENCORE_RNGCONTROL_STATUS_STATE_Pos;
 
   rng_st.error_ais31_noise = false;
   rng_st.error_ais31_prenoise = false;
@@ -302,6 +301,10 @@ static inline int get_NB128BITBLOCKS(void) {
       >> CRACENCORE_RNGCONTROL_CONTROL_NB128BITBLOCKS_Pos;
 }
 
+static inline bool get_CONDBYPASS(void) {
+  return (RNG_regs->CONTROL & CRACENCORE_RNGCONTROL_CONTROL_CONDBYPASS_Msk) != 0;
+}
+
 #if NHW_CRACEN_RNG_V >= 2
 static inline int get_blending_method(void) {
   return (RNG_regs->CONTROL & CRACENCORE_RNGCONTROL_CONTROL_BLENDINGMETHOD_Msk)
@@ -326,6 +329,15 @@ static double raw_entropy_rate_v2(void) {
     default:
       break;
   }
+
+  if (get_CONDBYPASS() == 0) {
+#define CONDITIONING_MAX_IN_RATE 32/14.5
+    if (bit_rate > CONDITIONING_MAX_IN_RATE) {
+      bit_rate = CONDITIONING_MAX_IN_RATE;
+      RNG_regs->STATUS |= CRACENCORE_RNGCONTROL_STATUS_CONDITIONINGISTOOSLOW_Msk;
+    }
+  }
+
   return bit_rate;
 }
 #endif
@@ -337,7 +349,7 @@ static void generate_more_data(void) {
   update_state(CRACENCORE_RNGCONTROL_STATUS_STATE_FILLFIFO);
 
 #if NHW_CRACEN_RNG_V < 2
-  if (RNG_regs->CONTROL & CRACENCORE_RNGCONTROL_CONTROL_CONDBYPASS_Msk) {
+  if (get_CONDBYPASS()) {
     clocks_next = 32*(RNG_regs->CLKDIV+1);
     rng_st.queued_words = 1;
   } else {
@@ -345,7 +357,7 @@ static void generate_more_data(void) {
     rng_st.queued_words = 4;
   }
 #else
-  if (RNG_regs->CONTROL & CRACENCORE_RNGCONTROL_CONTROL_CONDBYPASS_Msk) {
+  if (get_CONDBYPASS()) {
     clocks_next = 32/raw_entropy_rate_v2();
     rng_st.queued_words = 1;
   } else {
@@ -400,11 +412,13 @@ static void startup(void) {
   rng_st.status = rng_startup;
   update_state(CRACENCORE_RNGCONTROL_STATUS_STATE_STARTUP);
 
-#if NHW_CRACEN_RNG_V >= 2
-#define INITWAITVAL WARMUPPERIOD
-#endif
+#if NHW_CRACEN_RNG_V == 1
   Timer_CRACEN_NDRNG = nsi_hws_get_time() + RNG_regs->INITWAITVAL/NHW_CRACEN_FREQ_MHZ + NHW_CRACEN_STARTUPTEST_DUR; //TODO: do start up tests add any delay?
-#undef INITWAITVAL
+#else
+  Timer_CRACEN_NDRNG = nsi_hws_get_time() + 3 +
+                       (RNG_regs->WARMUPPERIOD + 1024*RNG_regs->SAMPLINGPERIOD)/NHW_CRACEN_FREQ_MHZ;
+#endif
+
   nhw_CRACEN_update_timer();
   check_errors();
 }
