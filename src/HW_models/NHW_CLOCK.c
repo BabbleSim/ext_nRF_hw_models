@@ -541,12 +541,11 @@ static void nhw_pwrclk_timer_triggered(void) {
 NSI_HW_EVENT(Timer_PWRCLK, nhw_pwrclk_timer_triggered, 50);
 
 void nhw_clock_cheat_set_start_time(uint inst, uint clock, uint source, bs_time_t time) {
-  (void)inst;
   for (int c = 0; c < NHW_CLKPWR_N_CLKS; c++) {
     if ((clock == -1) || (c == clock)) {
       for (int s = 0; s < NHW_CLKPWR_CLK_MAX_N_SRCS; s++) {
         if ((source == -1) || (s == source)) {
-          nhw_clkpwr_st[0].CLOCK_start_times[c][s] = time;
+          nhw_clkpwr_st[inst].CLOCK_start_times[c][s] = time;
         }
       }
     }
@@ -554,8 +553,7 @@ void nhw_clock_cheat_set_start_time(uint inst, uint clock, uint source, bs_time_
 }
 
 void nhw_clock_cheat_set_calibrate_time(uint inst, bs_time_t time) {
-  (void)inst;
-  nhw_clkpwr_st[0].CAL_duration = time;
+  nhw_clkpwr_st[inst].CAL_duration = time;
 }
 
 #if (NHW_HAS_DPPI)
