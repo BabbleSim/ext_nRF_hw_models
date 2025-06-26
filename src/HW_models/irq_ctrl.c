@@ -30,9 +30,6 @@
  *   ( hw_irq_ctrl_{raise|lower}_level_irq_line() )
  *   Pulse/edge interrupts are just events that pend the interrupt
  *   (calls to hw_irq_ctrl_set_irq()).
- *
- *   NOTE: At this point an interrupt controller may have at most 64 interrupt lines.
- *   Generalizing this is pending.
  */
 
 #include <stdint.h>
