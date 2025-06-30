@@ -73,6 +73,12 @@ void nhw_clock_cheat_set_xotune_time(uint inst, bs_time_t success_time, bs_time_
  */
 void nhw_clock_cheat_set_xotune_fail(uint inst, uint fail_count);
 
+/*
+ * Generate the XOTUNEERROR event
+ * Where <inst> is 0
+ */
+void nhw_clock_cheat_trigger_xotune_error(uint inst);
+
 union NRF_CLKPWR_Type {
   NRF_CLOCK_Type CLK;
 #if (NHW_CLKPWR_HAS_POWER)

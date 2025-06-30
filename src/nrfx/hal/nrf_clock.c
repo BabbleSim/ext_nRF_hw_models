@@ -51,6 +51,8 @@ void nrf_clock_task_trigger(NRF_CLOCK_Type * p_reg, nrf_clock_task_t task)
 #if NRF_CLOCK_HAS_XO
     case NRF_CLOCK_TASK_HFCLKSTART: nhw_CLOCK_regw_sideeffects_TASKS_XOSTART(i); break;
     case NRF_CLOCK_TASK_HFCLKSTOP : nhw_CLOCK_regw_sideeffects_TASKS_XOSTOP(i);  break;
+    CASE_TASK(XOTUNE)
+    CASE_TASK(XOTUNEABORT)
 #else
     CASE_TASK(HFCLKSTART)
     CASE_TASK(HFCLKSTOP)

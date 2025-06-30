@@ -34,9 +34,8 @@
  *    after the operation is completed or they are cleared.
  *    The model just leaves them at 1, unless the STOP task is triggered.
  *
- * 7. XOTUNE does nothing more than generate the XOTUNED/XOERROR event. It will only fail
+ * 7. XOTUNE does nothing more than generate the XOTUNED/XOTUNEFAILED event. It will only fail
  *    if set to do so with the nhw_clock_cheat_set_xotune_fail() interface.
- *    The event XOTUNEFAILED is never generated.
  *
  * 8. The models do not check the requirement of having the HFXO clock running to be
  *    able to run the RADIO. The RADIO models will run just fine without it.
@@ -100,7 +99,7 @@ static void nhw_CLOCK_update_master_timer(void) {
 
   Timer_PWRCLK = TIME_NEVER;
 
-  bs_time_t t1 = BS_MIN(nhw_clkpwr_st.Timer_XO, nhw_clkpwr_st.Timer_PLL);
+  bs_time_t t1 = BS_MIN(BS_MIN(nhw_clkpwr_st.Timer_XO, nhw_clkpwr_st.Timer_PLL), nhw_clkpwr_st.Timer_XOTUNE);
   bs_time_t t2 = BS_MIN(nhw_clkpwr_st.Timer_LFCLK, nhw_clkpwr_st.Timer_CAL);
 
   bs_time_t el_min = BS_MIN(t1, t2);
@@ -428,7 +427,7 @@ static void nhw_CLOCK_XOTUNEtimer_triggered(void) {
   nhw_CLOCK_update_master_timer();
 
   if (failed) {
-    nhw_CLOCK_signal_EVENTS_XOTUNEERROR(0);
+    nhw_CLOCK_signal_EVENTS_XOTUNEFAILED(0);
   } else {
     nhw_CLOCK_signal_EVENTS_XOTUNED(0);
   }
@@ -475,6 +474,14 @@ void nhw_clock_cheat_set_xotune_time(uint inst, bs_time_t success_time, bs_time_
 void nhw_clock_cheat_set_xotune_fail(uint inst, uint fail_count) {
   (void)inst;
   nhw_clkpwr_st.XOtuning_pending_fails = fail_count;
+}
+
+void nhw_clock_cheat_trigger_xotune_error(uint inst)
+{
+  if (nhw_clkpwr_st.XO_state != Started) {
+    bs_trace_warning_line("TUNEERROR event can only be generated when running");
+  }
+  nhw_CLOCK_signal_EVENTS_XOTUNEERROR(0);
 }
 
 void nhw_clock_cheat_set_calibrate_time(uint inst, bs_time_t time) {
