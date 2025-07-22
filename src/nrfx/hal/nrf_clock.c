@@ -51,8 +51,6 @@ void nrf_clock_task_trigger(NRF_CLOCK_Type * p_reg, nrf_clock_task_t task)
 #if NRF_CLOCK_HAS_XO
     case NRF_CLOCK_TASK_HFCLKSTART: nhw_CLOCK_regw_sideeffects_TASKS_XOSTART(i); break;
     case NRF_CLOCK_TASK_HFCLKSTOP : nhw_CLOCK_regw_sideeffects_TASKS_XOSTOP(i);  break;
-    CASE_TASK(XOTUNE)
-    CASE_TASK(XOTUNEABORT)
 #else
     CASE_TASK(HFCLKSTART)
     CASE_TASK(HFCLKSTOP)
@@ -80,7 +78,14 @@ void nrf_clock_task_trigger(NRF_CLOCK_Type * p_reg, nrf_clock_task_t task)
     CASE_TASK(HFCLK192MSTART)
     CASE_TASK(HFCLK192MSTOP)
 #endif
-    //Note: XOTUNE and XOTUNEABORT missing from the HAL at this point
+#if NRF_CLOCK_HAS_HFCLK24M
+    case NRF_CLOCK_TASK_HFCLK24MSTART: nhw_CLOCK_regw_sideeffects_TASKS_XO24MSTART(i); break;
+    case NRF_CLOCK_TASK_HFCLK24MSTOP : nhw_CLOCK_regw_sideeffects_TASKS_XO24MSTOP(i);  break;
+#endif
+#if NRF_CLOCK_HAS_XO_TUNE
+    CASE_TASK(XOTUNE)
+    CASE_TASK(XOTUNEABORT)
+#endif
     default:
       bs_trace_error_line_time("Not supported task started in nrf_clock, %d\n", task);
       break;
@@ -133,7 +138,14 @@ static void nrf_clock_subscribe_common(NRF_CLOCK_Type * p_reg,
     CASE_TASK(HFCLK192MSTART)
     CASE_TASK(HFCLK192MSTOP)
 #endif
-    //Note: XOTUNE and XOTUNEABORT missing from the HAL at this point
+#if NRF_CLOCK_HAS_HFCLK24M
+    case NRF_CLOCK_TASK_HFCLK24MSTART: nhw_CLOCK_regw_sideeffects_SUBSCRIBE_XO24MSTART(i); break;
+    case NRF_CLOCK_TASK_HFCLK24MSTOP : nhw_CLOCK_regw_sideeffects_SUBSCRIBE_XO24MSTOP(i);  break;
+#endif
+#if NRF_CLOCK_HAS_XO_TUNE
+    CASE_TASK(XOTUNE)
+    CASE_TASK(XOTUNEABORT)
+#endif
     default:
       bs_trace_error_line_time("Attempted to subscribe to a not-supported task in the nrf_clock (%i)\n",
                                 task);

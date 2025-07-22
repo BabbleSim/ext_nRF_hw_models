@@ -24,6 +24,9 @@ void nhw_CLOCK_regw_sideeffects_TASKS_LFCLKSTOP(uint i);
 void nhw_CLOCK_regw_sideeffects_TASKS_CAL(uint i);
 void nhw_CLOCK_regw_sideeffects_TASKS_XOTUNE(uint i);
 void nhw_CLOCK_regw_sideeffects_TASKS_XOTUNEABORT(uint i);
+void nhw_CLOCK_regw_sideeffects_TASKS_XO24MSTART(uint i);
+void nhw_CLOCK_regw_sideeffects_TASKS_XO24MSTOP(uint i);
+
 /* Side-effecting function when any event register is written: */
 void nhw_pwrclk_regw_sideeffects_EVENTS_all(uint i);
 
@@ -36,6 +39,8 @@ void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_LFCLKSTOP(uint i);
 void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_CAL(uint i);
 void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_XOTUNE(uint i);
 void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_XOTUNEABORT(uint i);
+void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_XO24MSTART(uint i);
+void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_XO24MSTOP(uint i);
 
 /*
  * Set how long it will take for the clock to start after triggering its start task

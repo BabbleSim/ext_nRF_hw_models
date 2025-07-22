@@ -962,15 +962,20 @@
 #define NHW_CLKPWR_INT_MAP {{0, 270}} /* {App, CLOCK_POWER_IRQn} */
 #define NHW_CLKPWR_HAS_POWER 1
 #define NHW_CLKPWR_HAS_LFCLK 1
+#define NHW_CLKPWR_HAS_XO24MCLK 1
 #define NHW_CLKPWR_CLK_MAX_N_SRCS 3
-#define NHW_CLKPWR_N_CLKS 2
+#define NHW_CLKPWR_N_CLKS 3
 #define NHW_CLKPWR_CLK_IDX_LF 0
 #define NHW_CLKPWR_CLK_IDX_XO 1
+#define NHW_CLKPWR_CLK_IDX_XO24M 2
 #define NHW_CLKPWR_CLK_START_TIMES {\
                                     {0, 0, 0},\
-                                    {0}}
+                                    {0},\
+                                    {0},\
+                                   }
                                     /* LFCLK,
-                                       XO*/
+                                       XO,
+                                       XO24M*/
 #define NHW_CLKPWR_CLK_XOTUNE_TIMES {0, 16300000} /* Duration for a successful and failed tuning */
 #define NHW_CLKPWR_CLK_CAL_TIME 0
 

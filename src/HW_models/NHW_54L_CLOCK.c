@@ -72,11 +72,15 @@ struct clkpwr_status {
   bs_time_t Timer_XO;
   bs_time_t Timer_PLL;
   bs_time_t Timer_LFCLK;
+#if (NHW_CLKPWR_HAS_XO24MCLK)
+  bs_time_t Timer_XO24M;
+#endif
   bs_time_t Timer_CAL;
   bs_time_t Timer_XOTUNE;
 
   enum clock_states XO_state;
   enum clock_states LFCLK_state;
+  enum clock_states XO24M_state;
   enum clock_states PLL_state;
   enum clock_states CAL_state;
   enum tuning_states XOTUNE_state;
@@ -96,16 +100,12 @@ static void nhw_CLOCK_LFCLK_triggered(void);
 static void nhw_CLOCK_PLLTimer_triggered(void);
 
 static void nhw_CLOCK_update_master_timer(void) {
+  Timer_PWRCLK = nhw_clkpwr_st.Timer_XO;
 
-  Timer_PWRCLK = TIME_NEVER;
-
-  bs_time_t t1 = BS_MIN(BS_MIN(nhw_clkpwr_st.Timer_XO, nhw_clkpwr_st.Timer_PLL), nhw_clkpwr_st.Timer_XOTUNE);
-  bs_time_t t2 = BS_MIN(nhw_clkpwr_st.Timer_LFCLK, nhw_clkpwr_st.Timer_CAL);
-
-  bs_time_t el_min = BS_MIN(t1, t2);
-  if (el_min < Timer_PWRCLK) {
-    Timer_PWRCLK = el_min;
+  for (bs_time_t *t = &nhw_clkpwr_st.Timer_XO + 1; t <= &nhw_clkpwr_st.Timer_XOTUNE; t++) {
+    Timer_PWRCLK = BS_MIN(Timer_PWRCLK, *t);
   }
+
   nsi_hws_find_next_event();
 }
 
@@ -121,11 +121,15 @@ static void nhw_CLOCK_init(void) {
   nhw_clkpwr_st.Timer_XO    = TIME_NEVER;
   nhw_clkpwr_st.Timer_PLL   = TIME_NEVER;
   nhw_clkpwr_st.Timer_LFCLK = TIME_NEVER;
+#if (NHW_CLKPWR_HAS_XO24MCLK)
+  nhw_clkpwr_st.Timer_XO24M = TIME_NEVER;
+#endif
   nhw_clkpwr_st.Timer_CAL   = TIME_NEVER;
   nhw_clkpwr_st.Timer_XOTUNE= TIME_NEVER;
 
   nhw_clkpwr_st.XO_state    = Stopped;
   nhw_clkpwr_st.LFCLK_state = Stopped;
+  nhw_clkpwr_st.XO24M_state = Stopped;
   nhw_clkpwr_st.PLL_state   = Stopped;
   nhw_clkpwr_st.CAL_state   = Stopped;
   nhw_clkpwr_st.XOTUNE_state= Tunning_stopped;
@@ -152,10 +156,10 @@ static void nhw_CLOCK_eval_interrupt(uint inst) {
   NRF_CLOCK_regs[0]->INTPEND = 0;
 
   #define check_interrupt(x) \
-		if (NRF_CLOCK_regs[0]->EVENTS_ ##x && (NRF_CLOCK_regs[0]->INTEN & CLOCK_INTENSET_## x ##_Msk)){ \
-		    new_int_line = 1; \
-		    NRF_CLOCK_regs[0]->INTPEND |= CLOCK_INTENSET_## x ##_Msk; \
-		}
+    if (NRF_CLOCK_regs[0]->EVENTS_ ##x && (NRF_CLOCK_regs[0]->INTEN & CLOCK_INTENSET_## x ##_Msk)){ \
+      new_int_line = 1; \
+      NRF_CLOCK_regs[0]->INTPEND |= CLOCK_INTENSET_## x ##_Msk; \
+    }
 
   check_interrupt(XOSTARTED)
   check_interrupt(PLLSTARTED)
@@ -166,6 +170,9 @@ static void nhw_CLOCK_eval_interrupt(uint inst) {
   check_interrupt(XOTUNED)
   check_interrupt(XOTUNEERROR)
   check_interrupt(XOTUNEFAILED)
+#if (NHW_CLKPWR_HAS_XO24MCLK)
+  check_interrupt(XO24MSTARTED)
+#endif
 
   hw_irq_ctrl_toggle_level_irq_line_if(&clock_int_line,
                                         new_int_line,
@@ -237,6 +244,28 @@ static void nhw_CLOCK_TASK_LFCLKSTOP(uint inst) {
 }
 #endif
 
+#if (NHW_CLKPWR_HAS_XO24MCLK)
+static void nhw_CLOCK_TASK_XO24MSTART(uint inst) {
+  (void) inst;
+  if ((nhw_clkpwr_st.XO24M_state == Stopped ) || (nhw_clkpwr_st.XO24M_state == Stopping)) {
+    nhw_clkpwr_st.XO24M_state = Starting;
+    NRF_CLOCK_regs[0]->PLL24M.RUN = CLOCK_PLL24M_RUN_STATUS_Msk;
+    nhw_clkpwr_st.Timer_XO24M = nsi_hws_get_time() + nhw_clkpwr_st.CLOCK_start_times[NHW_CLKPWR_CLK_IDX_XO24M][0];
+    nhw_CLOCK_update_master_timer();
+  }
+}
+
+static void nhw_CLOCK_TASK_XO24MSTOP(uint inst) {
+  (void) inst;
+  if ((nhw_clkpwr_st.XO24M_state != Stopping) && (nhw_clkpwr_st.XO24M_state != Stopped)) {
+    nhw_clkpwr_st.XO24M_state = Stopping;
+    NRF_CLOCK_regs[0]->PLL24M.RUN = 0;
+    /* Instantaneous stop */
+    nhw_CLOCK_XOTimer_triggered();
+  }
+}
+#endif
+
 static void nhw_CLOCK_TASK_CAL(uint inst) {
   (void) inst;
   if (nhw_clkpwr_st.XO_state != Started) { /* LCOV_EXCL_START */
@@ -304,6 +333,9 @@ NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, PLLSTARTED)
 #if (NHW_CLKPWR_HAS_LFCLK)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTARTED)
 #endif
+#if (NHW_CLKPWR_HAS_XO24MCLK)
+NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, XO24MSTARTED)
+#endif
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, DONE)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, XOTUNED)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, XOTUNEERROR)
@@ -316,6 +348,10 @@ NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, PLLSTOP)
 #if (NHW_CLKPWR_HAS_LFCLK)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTART)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTOP)
+#endif
+#if (NHW_CLKPWR_HAS_XO24MCLK)
+NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XO24MSTART)
+NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XO24MSTOP)
 #endif
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, CAL)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XOTUNE)
@@ -341,6 +377,10 @@ NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(PLLSTOP)
 #if (NHW_CLKPWR_HAS_LFCLK)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(LFCLKSTART)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(LFCLKSTOP)
+#endif
+#if (NHW_CLKPWR_HAS_XO24MCLK)
+NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XO24MSTART)
+NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XO24MSTOP)
 #endif
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(CAL)
 #if defined(CLOCK_SUBSCRIBE_XOTUNE_EN_Msk)
@@ -411,6 +451,24 @@ static void nhw_CLOCK_LFCLK_triggered(void) {
 #endif
 }
 
+#if (NHW_CLKPWR_HAS_XO24MCLK)
+static void nhw_CLOCK_XO24MTimer_triggered(void) {
+  nhw_clkpwr_st.Timer_XO24M = TIME_NEVER;
+  nhw_CLOCK_update_master_timer();
+
+  if (nhw_clkpwr_st.XO24M_state == Starting) {
+    nhw_clkpwr_st.XO24M_state = Started;
+
+    NRF_CLOCK_regs[0]->PLL24M.STAT = CLOCK_PLL24M_STAT_STATE_Msk;
+
+    nhw_CLOCK_signal_EVENTS_XO24MSTARTED(0);
+  } else if (nhw_clkpwr_st.XO24M_state == Stopping) {
+    nhw_clkpwr_st.XO24M_state = Stopped;
+    NRF_CLOCK_regs[0]->PLL24M.STAT = 0;
+  }
+}
+#endif
+
 static void nhw_CLOCK_CALtimer_triggered(void) {
   nhw_clkpwr_st.CAL_state = Stopped;
   nhw_clkpwr_st.Timer_CAL = TIME_NEVER;
@@ -441,6 +499,10 @@ static void nhw_pwrclk_timer_triggered(void) {
     nhw_CLOCK_PLLTimer_triggered();
   } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_LFCLK) {
     nhw_CLOCK_LFCLK_triggered();
+#if (NHW_CLKPWR_HAS_XO24MCLK)
+  } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_XO24M) {
+    nhw_CLOCK_XO24MTimer_triggered();
+#endif
   } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_CAL) {
     nhw_CLOCK_CALtimer_triggered();
   } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_XOTUNE) {
