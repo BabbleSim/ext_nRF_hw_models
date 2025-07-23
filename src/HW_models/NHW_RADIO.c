@@ -301,8 +301,7 @@ static void radio_set_registers_defaults(void) {
   NRF_RADIO_regs.CCACTRL = 0x052D0000;
   NRF_RADIO_regs.CTEINLINECONF = 0x00002800;
   NRF_RADIO_regs.DFECTRL1 = 0x00023282;
-  for (int i = 0; i < 8; i++)
-    NRF_RADIO_regs.PSEL.DFEGPIO[i] = 0xFFFFFFFF;
+  memset((uint32_t *)NRF_RADIO_regs.PSEL.DFEGPIO, 0xFF, sizeof(NRF_RADIO_regs.PSEL.DFEGPIO));
   NRF_RADIO_regs.DFEPACKET.MAXCNT = 0x00001000;
 
 #if defined(RADIO_DATAWHITE_IV_Msk)
