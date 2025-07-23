@@ -142,7 +142,7 @@ static void nrf_clock_subscribe_common(NRF_CLOCK_Type * p_reg,
     case NRF_CLOCK_TASK_HFCLK24MSTART: nhw_CLOCK_regw_sideeffects_SUBSCRIBE_XO24MSTART(i); break;
     case NRF_CLOCK_TASK_HFCLK24MSTOP : nhw_CLOCK_regw_sideeffects_SUBSCRIBE_XO24MSTOP(i);  break;
 #endif
-#if NRF_CLOCK_HAS_XO_TUNE
+#if defined(CLOCK_SUBSCRIBE_XOTUNE_EN_Msk)
     CASE_TASK(XOTUNE)
     CASE_TASK(XOTUNEABORT)
 #endif
