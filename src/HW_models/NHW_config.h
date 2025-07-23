@@ -1314,7 +1314,7 @@
 #define NHW_UARTE_HAS_UART 0
 #define NHW_UARTE_HAS_FRAMETIMEOUT 1
 #define NHW_UARTE_HAS_MATCH 1
-#define NHW_UARTE_N_MATCH {4, 4, 4, 4, 4}
+#define NHW_UARTE_N_MATCH {4, 4, 4, 4, 4, 4, 4}
 #define NHW_UARTE_MAX_N_MATCH 4
 #define NHW_UARTE_NAMES {"UARTE00", \
                          "UARTE20", \
@@ -1325,7 +1325,7 @@
                          "UARTE30"}
 #define NHW_UARTE_54NAMING 1
 #define NHW_UARTE_FLUSH_AMOUNT_BUG 0
-#define NHW_UARTE_CLOCKS {128, 16, 16, 16, 16}
+#define NHW_UARTE_CLOCKS {128, 16, 16, 16, 16, 16, 16}
 
 #define NHW_FAKE_TIMER_TOTAL_INST 2
 #define NHW_FAKE_TIMER_INT_MAP {{0 , 0}, \

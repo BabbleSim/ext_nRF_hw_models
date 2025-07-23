@@ -136,12 +136,12 @@ static void nhw_uarte_init(void) {
   static uint nhw_UARTE_dppi_map[NHW_UARTE_TOTAL_INST] = NHW_UARTE_DPPI_MAP;
 #endif
 #if NHW_UARTE_HAS_MATCH
-  int n_match[] = NHW_UARTE_N_MATCH;
+  int n_match[NHW_UARTE_TOTAL_INST] = NHW_UARTE_N_MATCH;
 #endif
 
   memset(NRF_UARTE_regs, 0, sizeof(NRF_UARTE_regs));
 
-  uint uart_clocks[] = NHW_UARTE_CLOCKS;
+  uint uart_clocks[NHW_UARTE_TOTAL_INST] = NHW_UARTE_CLOCKS;
 
   for (int i = 0; i < NHW_UARTE_TOTAL_INST; i++) {
     struct uarte_status *u_el = &nhw_uarte_st[i];
