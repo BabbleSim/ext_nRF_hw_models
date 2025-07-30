@@ -351,7 +351,7 @@ static void nhw_rtc_update_master_timer(void) {
  */
 static void update_cc_timer(uint rtc, uint cc) {
   uint64_t match_sub_us; // Only to comply to the interface
-  nhw_rtc_st[rtc].cc_timers[cc] = get_counter_match_time(rtc, NRF_RTC_regs[rtc].CC[cc], &match_sub_us);
+  nhw_rtc_st[rtc].cc_timers[cc] = get_counter_match_time(rtc, NRF_RTC_regs[rtc].CC[cc] & RTC_COUNTER_MASK, &match_sub_us);
 }
 
 /*

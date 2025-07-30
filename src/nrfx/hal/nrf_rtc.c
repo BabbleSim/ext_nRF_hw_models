@@ -17,7 +17,7 @@ static int rtc_number_from_ptr(NRF_RTC_Type const * p_reg){
 
 void nrf_rtc_cc_set(NRF_RTC_Type * p_reg, uint32_t ch, uint32_t cc_val)
 {
-  p_reg->CC[ch] = cc_val;
+  p_reg->CC[ch] = cc_val & 0xFFFFFF;
   int i = rtc_number_from_ptr(p_reg);
   nhw_rtc_regw_sideeffects_CC(i, ch);
 }
