@@ -216,7 +216,7 @@ static void update_cc_timer(int t, int cc) {
 
   if ((this->is_running == true) && (NRF_TIMER_regs[t].MODE == 0)) {
     bs_time_t next_match = this->start_t
-                           + counter_to_time(NRF_TIMER_regs[t].CC[cc], t);
+                           + counter_to_time(NRF_TIMER_regs[t].CC[cc] & mask_from_bitmode(t), t);
     while (next_match <= nsi_hws_get_time()) {
       next_match += time_of_1_counter_wrap(t);
     }
@@ -281,7 +281,7 @@ void nhw_timer_TASK_STOP(int t) {
   if (this->is_running == true) {
     this->is_running = false;
     if (NRF_TIMER_regs[t].MODE == 0) { //Timer mode
-      this->Counter = time_to_counter(nsi_hws_get_time() - this->start_t, t); //we save the value when the counter was stoped in case it is started again without clearing it
+      this->Counter = time_to_counter(nsi_hws_get_time() - this->start_t, t) & mask_from_bitmode(t); //we save the value when the counter was stoped in case it is started again without clearing it
     }
     for (unsigned int cc = 0 ; cc < this->n_CCs ; cc++) {
       this->CC_timers[cc] = TIME_NEVER;
