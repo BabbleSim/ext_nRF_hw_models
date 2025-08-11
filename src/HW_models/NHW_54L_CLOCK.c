@@ -31,8 +31,8 @@
  *    There is no relationship to the OSCILLATORS peripheral yet.
  *
  * 6. From the spec, it is unclear if the *.RUN.STATUS register fields are kept on even
- *    after the operation is completed or they are cleared.
- *    The model just leaves them at 1, unless the STOP task is triggered.
+ *    after the START operation is completed or they are cleared.
+ *    But it seems (and this is what the model does), that they are cleared after the STOP task is triggered.
  *
  * 7. XOTUNE does nothing more than generate the XOTUNED/XOTUNEFAILED event. It will only fail
  *    if set to do so with the nhw_clock_cheat_set_xotune_fail() interface.
@@ -69,21 +69,22 @@ enum clock_states {Stopped = 0, Starting, Started, Stopping};
 enum tuning_states {Tunning_stopped = 0, Tuning_ok, Tuning_fail};
 
 struct clkpwr_status {
-  bs_time_t Timer_XO;
-  bs_time_t Timer_PLL;
+  bs_time_t Timer_PLL_128MXO; //Note nhw_CLOCK_update_master_timer() assumes this is first
+  bs_time_t Timer_PLL_128Mfree;
   bs_time_t Timer_LFCLK;
-#if (NHW_CLKPWR_HAS_XO24MCLK)
-  bs_time_t Timer_XO24M;
+#if (NHW_CLKPWR_HAS_PLL_24M)
+  bs_time_t Timer_PLL_24M;
 #endif
   bs_time_t Timer_CAL;
-  bs_time_t Timer_XOTUNE;
+  bs_time_t Timer_XOTUNE; //Note nhw_CLOCK_update_master_timer() assumes this is last
 
-  enum clock_states XO_state;
+  int HFXO_users; //How many PLLs (0, 1 or 2) are currently requesting the HFXO
+  enum clock_states PLL_128MXO_state;   //State of the 128M PLL locked to the HFXO
+  enum clock_states PLL_128Mfree_state; //State of the 128M PLL freerunning
   enum clock_states LFCLK_state;
-  enum clock_states XO24M_state;
-  enum clock_states PLL_state;
+  enum clock_states PLL_24M_state;      //State of the 24M PLL locked to the HFXO
   enum clock_states CAL_state;
-  enum tuning_states XOTUNE_state;
+  enum tuning_states HFXOTUNE_state;
 
   bs_time_t CLOCK_start_times[NHW_CLKPWR_N_CLKS][NHW_CLKPWR_CLK_MAX_N_SRCS];
   bs_time_t XOtuning_durations[2]; /* 0: Success, 1: Fail */
@@ -95,14 +96,17 @@ static bs_time_t Timer_PWRCLK = TIME_NEVER;
 static struct clkpwr_status nhw_clkpwr_st;
 static uint nhw_CLOCK_dppi_map[] = NHW_CLKPWR_DPPI_MAP;
 
-static void nhw_CLOCK_XOTimer_triggered(void);
+static void nhw_CLOCK_PLL_128MXO_Timer_triggered(void);
 static void nhw_CLOCK_LFCLK_triggered(void);
-static void nhw_CLOCK_PLLTimer_triggered(void);
+static void nhw_CLOCK_PLL_128Mfree_Timer_triggered(void);
+#if (NHW_CLKPWR_HAS_PLL_24M)
+static void nhw_CLOCK_PLL_24MXO_Timer_triggered(void);
+#endif
 
 static void nhw_CLOCK_update_master_timer(void) {
-  Timer_PWRCLK = nhw_clkpwr_st.Timer_XO;
+  Timer_PWRCLK = nhw_clkpwr_st.Timer_PLL_128MXO;
 
-  for (bs_time_t *t = &nhw_clkpwr_st.Timer_XO + 1; t <= &nhw_clkpwr_st.Timer_XOTUNE; t++) {
+  for (bs_time_t *t = &nhw_clkpwr_st.Timer_PLL_128MXO + 1; t <= &nhw_clkpwr_st.Timer_XOTUNE; t++) {
     Timer_PWRCLK = BS_MIN(Timer_PWRCLK, *t);
   }
 
@@ -118,21 +122,22 @@ static void nhw_CLOCK_init(void) {
 
   memset(NRF_CLKPWR_regs, 0, sizeof(NRF_CLKPWR_regs));
 
-  nhw_clkpwr_st.Timer_XO    = TIME_NEVER;
-  nhw_clkpwr_st.Timer_PLL   = TIME_NEVER;
+  nhw_clkpwr_st.Timer_PLL_128MXO = TIME_NEVER;
+  nhw_clkpwr_st.Timer_PLL_128Mfree = TIME_NEVER;
   nhw_clkpwr_st.Timer_LFCLK = TIME_NEVER;
-#if (NHW_CLKPWR_HAS_XO24MCLK)
-  nhw_clkpwr_st.Timer_XO24M = TIME_NEVER;
+#if (NHW_CLKPWR_HAS_PLL_24M)
+  nhw_clkpwr_st.Timer_PLL_24M = TIME_NEVER;
 #endif
   nhw_clkpwr_st.Timer_CAL   = TIME_NEVER;
   nhw_clkpwr_st.Timer_XOTUNE= TIME_NEVER;
 
-  nhw_clkpwr_st.XO_state    = Stopped;
+  nhw_clkpwr_st.HFXO_users = 0;
+  nhw_clkpwr_st.PLL_128MXO_state = Stopped;
   nhw_clkpwr_st.LFCLK_state = Stopped;
-  nhw_clkpwr_st.XO24M_state = Stopped;
-  nhw_clkpwr_st.PLL_state   = Stopped;
-  nhw_clkpwr_st.CAL_state   = Stopped;
-  nhw_clkpwr_st.XOTUNE_state= Tunning_stopped;
+  nhw_clkpwr_st.PLL_24M_state = Stopped;
+  nhw_clkpwr_st.PLL_128Mfree_state = Stopped;
+  nhw_clkpwr_st.CAL_state = Stopped;
+  nhw_clkpwr_st.HFXOTUNE_state= Tunning_stopped;
 
   nhw_CLOCK_update_master_timer();
 
@@ -170,7 +175,7 @@ static void nhw_CLOCK_eval_interrupt(uint inst) {
   check_interrupt(XOTUNED)
   check_interrupt(XOTUNEERROR)
   check_interrupt(XOTUNEFAILED)
-#if (NHW_CLKPWR_HAS_XO24MCLK)
+#if (NHW_CLKPWR_HAS_PLL_24M)
   check_interrupt(XO24MSTARTED)
 #endif
 
@@ -181,41 +186,41 @@ static void nhw_CLOCK_eval_interrupt(uint inst) {
 
 static void nhw_CLOCK_TASK_XOSTART(uint inst) {
   (void) inst;
-  if ((nhw_clkpwr_st.XO_state == Stopped ) || (nhw_clkpwr_st.XO_state == Stopping)) {
-    nhw_clkpwr_st.XO_state = Starting;
+  if ((nhw_clkpwr_st.PLL_128MXO_state == Stopped ) || (nhw_clkpwr_st.PLL_128MXO_state == Stopping)) {
+    nhw_clkpwr_st.PLL_128MXO_state = Starting;
     NRF_CLOCK_regs[0]->XO.RUN = CLOCK_XO_RUN_STATUS_Msk;
-    nhw_clkpwr_st.Timer_XO = nsi_hws_get_time() + nhw_clkpwr_st.CLOCK_start_times[NHW_CLKPWR_CLK_IDX_XO][0];
+    nhw_clkpwr_st.Timer_PLL_128MXO = nsi_hws_get_time() + nhw_clkpwr_st.CLOCK_start_times[NHW_CLKPWR_CLK_IDX_XO][0];
     nhw_CLOCK_update_master_timer();
   }
 }
 
 static void nhw_CLOCK_TASK_XOSTOP(uint inst) {
   (void) inst;
-  if ((nhw_clkpwr_st.XO_state != Stopping) && (nhw_clkpwr_st.XO_state != Stopped)) {
-    nhw_clkpwr_st.XO_state = Stopping;
+  if ((nhw_clkpwr_st.PLL_128MXO_state != Stopping) && (nhw_clkpwr_st.PLL_128MXO_state != Stopped)) {
+    nhw_clkpwr_st.PLL_128MXO_state = Stopping;
     NRF_CLOCK_regs[0]->XO.RUN = 0;
     /* Instantaneous stop */
-    nhw_CLOCK_XOTimer_triggered();
+    nhw_CLOCK_PLL_128MXO_Timer_triggered();
   }
 }
 
 static void nhw_CLOCK_TASK_PLLSTART(uint inst) {
   (void) inst;
-  if ((nhw_clkpwr_st.PLL_state == Stopped ) || (nhw_clkpwr_st.PLL_state == Stopping)) {
-    nhw_clkpwr_st.PLL_state = Starting;
+  if ((nhw_clkpwr_st.PLL_128Mfree_state == Stopped ) || (nhw_clkpwr_st.PLL_128Mfree_state == Stopping)) {
+    nhw_clkpwr_st.PLL_128Mfree_state = Starting;
     NRF_CLOCK_regs[0]->PLL.RUN = CLOCK_PLL_RUN_STATUS_Msk;
-    nhw_clkpwr_st.Timer_PLL = nsi_hws_get_time();
+    nhw_clkpwr_st.Timer_PLL_128Mfree = nsi_hws_get_time();
     nhw_CLOCK_update_master_timer();
   }
 }
 
 static void nhw_CLOCK_TASK_PLLSTOP(uint inst) {
   (void) inst;
-  if ((nhw_clkpwr_st.PLL_state == Started) || (nhw_clkpwr_st.PLL_state == Starting)) {
-    nhw_clkpwr_st.PLL_state = Stopping;
+  if ((nhw_clkpwr_st.PLL_128Mfree_state == Started) || (nhw_clkpwr_st.PLL_128Mfree_state == Starting)) {
+    nhw_clkpwr_st.PLL_128Mfree_state = Stopping;
     NRF_CLOCK_regs[0]->PLL.RUN = 0;
     /* Instantaneous stop */
-    nhw_CLOCK_PLLTimer_triggered();
+    nhw_CLOCK_PLL_128Mfree_Timer_triggered();
   }
 }
 
@@ -244,31 +249,31 @@ static void nhw_CLOCK_TASK_LFCLKSTOP(uint inst) {
 }
 #endif
 
-#if (NHW_CLKPWR_HAS_XO24MCLK)
+#if (NHW_CLKPWR_HAS_PLL_24M)
 static void nhw_CLOCK_TASK_XO24MSTART(uint inst) {
   (void) inst;
-  if ((nhw_clkpwr_st.XO24M_state == Stopped ) || (nhw_clkpwr_st.XO24M_state == Stopping)) {
-    nhw_clkpwr_st.XO24M_state = Starting;
+  if ((nhw_clkpwr_st.PLL_24M_state == Stopped ) || (nhw_clkpwr_st.PLL_24M_state == Stopping)) {
+    nhw_clkpwr_st.PLL_24M_state = Starting;
     NRF_CLOCK_regs[0]->PLL24M.RUN = CLOCK_PLL24M_RUN_STATUS_Msk;
-    nhw_clkpwr_st.Timer_XO24M = nsi_hws_get_time() + nhw_clkpwr_st.CLOCK_start_times[NHW_CLKPWR_CLK_IDX_XO24M][0];
+    nhw_clkpwr_st.Timer_PLL_24M = nsi_hws_get_time() + nhw_clkpwr_st.CLOCK_start_times[NHW_CLKPWR_CLK_IDX_XO24M][0];
     nhw_CLOCK_update_master_timer();
   }
 }
 
 static void nhw_CLOCK_TASK_XO24MSTOP(uint inst) {
   (void) inst;
-  if ((nhw_clkpwr_st.XO24M_state != Stopping) && (nhw_clkpwr_st.XO24M_state != Stopped)) {
-    nhw_clkpwr_st.XO24M_state = Stopping;
+  if ((nhw_clkpwr_st.PLL_24M_state != Stopping) && (nhw_clkpwr_st.PLL_24M_state != Stopped)) {
+    nhw_clkpwr_st.PLL_24M_state = Stopping;
     NRF_CLOCK_regs[0]->PLL24M.RUN = 0;
     /* Instantaneous stop */
-    nhw_CLOCK_XOTimer_triggered();
+    nhw_CLOCK_PLL_24MXO_Timer_triggered();
   }
 }
 #endif
 
 static void nhw_CLOCK_TASK_CAL(uint inst) {
   (void) inst;
-  if (nhw_clkpwr_st.XO_state != Started) { /* LCOV_EXCL_START */
+  if (nhw_clkpwr_st.PLL_128MXO_state != Started) { /* LCOV_EXCL_START */
     bs_trace_warning_line("%s: Triggered RC oscillator calibration with the HFXO CLK stopped "
                           "(the model does not have a problem with this, but this is against "
                           "the spec)\n", __func__);
@@ -284,17 +289,17 @@ static void nhw_CLOCK_TASK_CAL(uint inst) {
 static void nhw_CLOCK_TASK_XOTUNE(uint inst) {
   (void)inst;
 
-  if (nhw_clkpwr_st.XO_state != Started) {
-    bs_trace_warning_time_line("TASK XOTUNE triggered but XO was not started\n");
+  if (nhw_clkpwr_st.HFXO_users == 0) {
+    bs_trace_warning_time_line("TASK XOTUNE triggered but HFXO was not started\n");
   }
 
-  if (nhw_clkpwr_st.XOTUNE_state == Tunning_stopped) {
+  if (nhw_clkpwr_st.HFXOTUNE_state == Tunning_stopped) {
     if (nhw_clkpwr_st.XOtuning_pending_fails > 0) {
       nhw_clkpwr_st.XOtuning_pending_fails--;
-      nhw_clkpwr_st.XOTUNE_state = Tuning_fail;
+      nhw_clkpwr_st.HFXOTUNE_state = Tuning_fail;
       nhw_clkpwr_st.Timer_XOTUNE = nsi_hws_get_time() + nhw_clkpwr_st.XOtuning_durations[1];
     } else {
-      nhw_clkpwr_st.XOTUNE_state = Tuning_ok;
+      nhw_clkpwr_st.HFXOTUNE_state = Tuning_ok;
       nhw_clkpwr_st.Timer_XOTUNE = nsi_hws_get_time() + nhw_clkpwr_st.XOtuning_durations[0];
     }
     nhw_CLOCK_update_master_timer();
@@ -303,7 +308,7 @@ static void nhw_CLOCK_TASK_XOTUNE(uint inst) {
 
 static void nhw_CLOCK_TASK_XOTUNEABORT(uint inst) {
   (void) inst;
-  nhw_clkpwr_st.XOTUNE_state = Tunning_stopped;
+  nhw_clkpwr_st.HFXOTUNE_state = Tunning_stopped;
   nhw_clkpwr_st.Timer_XOTUNE = TIME_NEVER;
   nhw_CLOCK_update_master_timer();
 }
@@ -333,7 +338,7 @@ NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, PLLSTARTED)
 #if (NHW_CLKPWR_HAS_LFCLK)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTARTED)
 #endif
-#if (NHW_CLKPWR_HAS_XO24MCLK)
+#if (NHW_CLKPWR_HAS_PLL_24M)
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, XO24MSTARTED)
 #endif
 NHW_SIGNAL_EVENT(CLOCK, NRF_CLOCK_regs[0]->, DONE)
@@ -349,7 +354,7 @@ NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, PLLSTOP)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTART)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, LFCLKSTOP)
 #endif
-#if (NHW_CLKPWR_HAS_XO24MCLK)
+#if (NHW_CLKPWR_HAS_PLL_24M)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XO24MSTART)
 NHW_SIDEEFFECTS_TASKS(CLOCK, NRF_CLOCK_regs[0]->, XO24MSTOP)
 #endif
@@ -378,7 +383,7 @@ NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(PLLSTOP)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(LFCLKSTART)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(LFCLKSTOP)
 #endif
-#if (NHW_CLKPWR_HAS_XO24MCLK)
+#if (NHW_CLKPWR_HAS_PLL_24M)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XO24MSTART)
 NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XO24MSTOP)
 #endif
@@ -392,41 +397,55 @@ NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOTUNEABORT)
 
 static void nhw_CLOCK_XOTUNEtimer_triggered(void);
 
-static void nhw_CLOCK_XOTimer_triggered(void) {
-  nhw_clkpwr_st.Timer_XO = TIME_NEVER;
+static void nhw_CLOCK_request_HFXO(void) {
+  nhw_clkpwr_st.HFXO_users +=1;
+
+  if (nhw_clkpwr_st.HFXO_users == 1) {
+    nhw_CLOCK_TASK_XOTUNE(0);
+    if ((nhw_clkpwr_st.XOtuning_durations[0] == 0) && (nhw_clkpwr_st.HFXOTUNE_state == Tuning_ok)) {
+      //Let's raise the event in this same delta cycle in this particular case
+      // This is just to avoid a possibly backwards incompatible change in behavior.
+      // Without this, nhw_CLOCK_XOTUNEtimer_triggered() would be called in 1 delta
+      nhw_CLOCK_XOTUNEtimer_triggered();
+    }
+  }
+}
+
+static void nhw_CLOCK_release_HFXO(void) {
+  nhw_clkpwr_st.HFXO_users -=1;
+}
+
+static void nhw_CLOCK_PLL_128MXO_Timer_triggered(void) {
+  nhw_clkpwr_st.Timer_PLL_128MXO = TIME_NEVER;
   nhw_CLOCK_update_master_timer();
 
-  if ( nhw_clkpwr_st.XO_state == Starting ){
-    nhw_clkpwr_st.XO_state = Started;
+  if ( nhw_clkpwr_st.PLL_128MXO_state == Starting ){
+    nhw_clkpwr_st.PLL_128MXO_state = Started;
 
     NRF_CLOCK_regs[0]->XO.STAT = CLOCK_XO_STAT_STATE_Msk;
 
+    nhw_CLOCK_request_HFXO();
     nhw_CLOCK_signal_EVENTS_XOSTARTED(0);
-    if ((nhw_clkpwr_st.XOtuning_durations[0] == 0) && (nhw_clkpwr_st.XOtuning_pending_fails == 0)) {
-      //Let's raise the event in this same delta cycle
-      nhw_CLOCK_XOTUNEtimer_triggered();
-    } else {
-      nhw_CLOCK_TASK_XOTUNE(0);
-    }
-  } else if ( nhw_clkpwr_st.XO_state == Stopping ){
-    nhw_clkpwr_st.XO_state = Stopped;
+  } else if ( nhw_clkpwr_st.PLL_128MXO_state == Stopping ){
+    nhw_CLOCK_release_HFXO();
+    nhw_clkpwr_st.PLL_128MXO_state = Stopped;
     NRF_CLOCK_regs[0]->XO.STAT = 0;
   }
 }
 
-static void nhw_CLOCK_PLLTimer_triggered(void) {
-  nhw_clkpwr_st.Timer_PLL = TIME_NEVER;
+static void nhw_CLOCK_PLL_128Mfree_Timer_triggered(void) {
+  nhw_clkpwr_st.Timer_PLL_128Mfree = TIME_NEVER;
   nhw_CLOCK_update_master_timer();
 
-  if ( nhw_clkpwr_st.PLL_state == Starting ){
-    nhw_clkpwr_st.PLL_state = Started;
+  if ( nhw_clkpwr_st.PLL_128Mfree_state == Starting ){
+    nhw_clkpwr_st.PLL_128Mfree_state = Started;
 
     NRF_CLOCK_regs[0]->PLL.STAT = CLOCK_PLL_STAT_STATE_Msk;
 
     nhw_CLOCK_signal_EVENTS_PLLSTARTED(0);
 
-  } else if ( nhw_clkpwr_st.PLL_state == Stopping ){
-    nhw_clkpwr_st.PLL_state = Stopped;
+  } else if ( nhw_clkpwr_st.PLL_128Mfree_state == Stopping ){
+    nhw_clkpwr_st.PLL_128Mfree_state = Stopped;
     NRF_CLOCK_regs[0]->PLL.STAT = 0;
   }
 }
@@ -451,19 +470,21 @@ static void nhw_CLOCK_LFCLK_triggered(void) {
 #endif
 }
 
-#if (NHW_CLKPWR_HAS_XO24MCLK)
-static void nhw_CLOCK_XO24MTimer_triggered(void) {
-  nhw_clkpwr_st.Timer_XO24M = TIME_NEVER;
+#if (NHW_CLKPWR_HAS_PLL_24M)
+static void nhw_CLOCK_PLL_24MXO_Timer_triggered(void) {
+  nhw_clkpwr_st.Timer_PLL_24M = TIME_NEVER;
   nhw_CLOCK_update_master_timer();
 
-  if (nhw_clkpwr_st.XO24M_state == Starting) {
-    nhw_clkpwr_st.XO24M_state = Started;
+  if (nhw_clkpwr_st.PLL_24M_state == Starting) {
+    nhw_clkpwr_st.PLL_24M_state = Started;
 
     NRF_CLOCK_regs[0]->PLL24M.STAT = CLOCK_PLL24M_STAT_STATE_Msk;
 
+    nhw_CLOCK_request_HFXO();
     nhw_CLOCK_signal_EVENTS_XO24MSTARTED(0);
-  } else if (nhw_clkpwr_st.XO24M_state == Stopping) {
-    nhw_clkpwr_st.XO24M_state = Stopped;
+  } else if (nhw_clkpwr_st.PLL_24M_state == Stopping) {
+    nhw_CLOCK_release_HFXO();
+    nhw_clkpwr_st.PLL_24M_state = Stopped;
     NRF_CLOCK_regs[0]->PLL24M.STAT = 0;
   }
 }
@@ -478,9 +499,9 @@ static void nhw_CLOCK_CALtimer_triggered(void) {
 
 static void nhw_CLOCK_XOTUNEtimer_triggered(void) {
 
-  bool failed = (nhw_clkpwr_st.XOTUNE_state == Tuning_fail);
+  bool failed = (nhw_clkpwr_st.HFXOTUNE_state == Tuning_fail);
 
-  nhw_clkpwr_st.XOTUNE_state = Tunning_stopped;
+  nhw_clkpwr_st.HFXOTUNE_state = Tunning_stopped;
   nhw_clkpwr_st.Timer_XOTUNE = TIME_NEVER;
   nhw_CLOCK_update_master_timer();
 
@@ -489,19 +510,18 @@ static void nhw_CLOCK_XOTUNEtimer_triggered(void) {
   } else {
     nhw_CLOCK_signal_EVENTS_XOTUNED(0);
   }
-
 }
 
 static void nhw_pwrclk_timer_triggered(void) {
-  if (Timer_PWRCLK == nhw_clkpwr_st.Timer_XO) {
-    nhw_CLOCK_XOTimer_triggered();
-  } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_PLL) {
-    nhw_CLOCK_PLLTimer_triggered();
+  if (Timer_PWRCLK == nhw_clkpwr_st.Timer_PLL_128MXO) {
+    nhw_CLOCK_PLL_128MXO_Timer_triggered();
+  } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_PLL_128Mfree) {
+    nhw_CLOCK_PLL_128Mfree_Timer_triggered();
   } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_LFCLK) {
     nhw_CLOCK_LFCLK_triggered();
-#if (NHW_CLKPWR_HAS_XO24MCLK)
-  } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_XO24M) {
-    nhw_CLOCK_XO24MTimer_triggered();
+#if (NHW_CLKPWR_HAS_PLL_24M)
+  } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_PLL_24M) {
+    nhw_CLOCK_PLL_24MXO_Timer_triggered();
 #endif
   } else if (Timer_PWRCLK == nhw_clkpwr_st.Timer_CAL) {
     nhw_CLOCK_CALtimer_triggered();
@@ -540,7 +560,7 @@ void nhw_clock_cheat_set_xotune_fail(uint inst, uint fail_count) {
 
 void nhw_clock_cheat_trigger_xotune_error(uint inst)
 {
-  if (nhw_clkpwr_st.XO_state != Started) {
+  if (nhw_clkpwr_st.PLL_128MXO_state != Started) {
     bs_trace_warning_line("TUNEERROR event can only be generated when running");
   }
   nhw_CLOCK_signal_EVENTS_XOTUNEERROR(0);
