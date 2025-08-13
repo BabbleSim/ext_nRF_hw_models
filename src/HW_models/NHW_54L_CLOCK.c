@@ -397,10 +397,11 @@ NHW_CLOCK_SIDEEFFECTS_SUBSCRIBE(XOTUNEABORT)
 
 static void nhw_CLOCK_XOTUNEtimer_triggered(void);
 
-static void nhw_CLOCK_request_HFXO(void) {
-  nhw_clkpwr_st.HFXO_users +=1;
+static void nhw_CLOCK_request_HFXO(uint32_t mask /* bit mask, with one bit for each user */) {
+  bool start = (nhw_clkpwr_st.HFXO_users == 0);
 
-  if (nhw_clkpwr_st.HFXO_users == 1) {
+  nhw_clkpwr_st.HFXO_users |= mask;
+  if (start) {
     nhw_CLOCK_TASK_XOTUNE(0);
     if ((nhw_clkpwr_st.XOtuning_durations[0] == 0) && (nhw_clkpwr_st.HFXOTUNE_state == Tuning_ok)) {
       //Let's raise the event in this same delta cycle in this particular case
@@ -411,8 +412,8 @@ static void nhw_CLOCK_request_HFXO(void) {
   }
 }
 
-static void nhw_CLOCK_release_HFXO(void) {
-  nhw_clkpwr_st.HFXO_users -=1;
+static void nhw_CLOCK_release_HFXO(uint32_t mask /* bit mask, with one bit for each user */) {
+  nhw_clkpwr_st.HFXO_users &= ~mask;
 }
 
 static void nhw_CLOCK_PLL_128MXO_Timer_triggered(void) {
@@ -424,10 +425,10 @@ static void nhw_CLOCK_PLL_128MXO_Timer_triggered(void) {
 
     NRF_CLOCK_regs[0]->XO.STAT = CLOCK_XO_STAT_STATE_Msk;
 
-    nhw_CLOCK_request_HFXO();
+    nhw_CLOCK_request_HFXO(1 /*128M PLL*/);
     nhw_CLOCK_signal_EVENTS_XOSTARTED(0);
   } else if ( nhw_clkpwr_st.PLL_128MXO_state == Stopping ){
-    nhw_CLOCK_release_HFXO();
+    nhw_CLOCK_release_HFXO(1 /*128M PLL*/);
     nhw_clkpwr_st.PLL_128MXO_state = Stopped;
     NRF_CLOCK_regs[0]->XO.STAT = 0;
   }
@@ -480,10 +481,10 @@ static void nhw_CLOCK_PLL_24MXO_Timer_triggered(void) {
 
     NRF_CLOCK_regs[0]->PLL24M.STAT = CLOCK_PLL24M_STAT_STATE_Msk;
 
-    nhw_CLOCK_request_HFXO();
+    nhw_CLOCK_request_HFXO(2 /*24M PLL*/);
     nhw_CLOCK_signal_EVENTS_XO24MSTARTED(0);
   } else if (nhw_clkpwr_st.PLL_24M_state == Stopping) {
-    nhw_CLOCK_release_HFXO();
+    nhw_CLOCK_release_HFXO(2 /*24M PLL*/);
     nhw_clkpwr_st.PLL_24M_state = Stopped;
     NRF_CLOCK_regs[0]->PLL24M.STAT = 0;
   }
