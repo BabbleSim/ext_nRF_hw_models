@@ -429,6 +429,9 @@ static void handle_overflow_event(uint rtc)
 }
 
 static void nhw_rtc_timer_triggered(void) {
+  /* Store the time we expect to match to allow overwriting it later. */
+  bs_time_t match_time = Timer_RTC;
+
   for (int rtc = 0; rtc < NHW_RTC_TOTAL_INST ; rtc++) {
     struct rtc_status *rtc_el = &nhw_rtc_st[rtc];
     if (rtc_el->running == false) {
@@ -436,13 +439,13 @@ static void nhw_rtc_timer_triggered(void) {
     }
 
     for (int cc = 0 ; cc < rtc_el->n_CCs ; cc++) {
-      if (rtc_el->cc_timers[cc] == Timer_RTC ){ //This CC is matching now
+      if (rtc_el->cc_timers[cc] == match_time ){ //This CC is matching now
         update_cc_timer(rtc, cc); //Next time it will match
         nhw_rtc_signal_COMPARE(rtc, cc);
       }
     }
 
-    if (rtc_el->overflow_timer == Timer_RTC) { //Overflow occurred now
+    if (rtc_el->overflow_timer == match_time) { //Overflow occurred now
       handle_overflow_event(rtc); // this must always be the last event, as it might update counter_startT_sub_us
     }
 
@@ -891,6 +894,6 @@ int64_t nhw_rtc_start_time_get(uint rtc) {
   if(this->counter_startT_sub_us > 0) {
     return (int64_t)sub_us_time_to_us_time(this->counter_startT_sub_us);
   } else {
-    return -(int64_t)sub_us_time_to_us_time(this->counter_startT_negative_sub_us); 
+    return -(int64_t)sub_us_time_to_us_time(this->counter_startT_negative_sub_us);
   }
 }
