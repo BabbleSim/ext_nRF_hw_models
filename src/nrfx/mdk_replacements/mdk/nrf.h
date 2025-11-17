@@ -12,8 +12,10 @@
 #ifndef NRF_BSIM_H__
 #define NRF_BSIM_H__
 
-/* Include the real nrf.h */
-#include <mdk/nrf.h>
+#ifdef __GNUC__
+__extension__
+#endif
+#include_next <mdk/nrf.h>
 
 #if !defined(NRF_H_NO_BSIM_REDEFS)
 /* In the HW models, peripherals registers are not mapped in the same addresses as in

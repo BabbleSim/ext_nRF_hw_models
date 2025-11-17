@@ -42,7 +42,8 @@ INCLUDES:=-I${NATIVE_SIM_PATH}/common/src/include/ \
           -Isrc/nrfx_config \
           -Isrc/nrfx/nrfx_replacements \
           -I${NRFX_BASE} \
-          -I${NRFX_BASE}/mdk
+          -I${NRFX_BASE}/bsp/stable/ \
+          -I${NRFX_BASE}/bsp/stable/mdk
 
 NRF_HW_MODELS_LIB_SUFFIX?=
 LIB_NAME=libnRF_hw_models.${VARIANT}.32${NRF_HW_MODELS_LIB_SUFFIX}

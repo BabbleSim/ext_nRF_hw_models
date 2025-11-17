@@ -97,7 +97,8 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
     -I${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/mdk_replacements
     -I${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/nrfx_replacements
     -I${NRFX_DIR}
-    -I${NRFX_DIR}/mdk
+    -I${NRFX_DIR}/bsp/stable/
+    -I${NRFX_DIR}/bsp/stable/mdk/
     ${VARIANT_FLAGS}
     -std=gnu11 #The nrfx hal uses non standard features which will cause warnings otherwise
   )

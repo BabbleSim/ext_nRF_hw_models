@@ -16,7 +16,7 @@
 #if NHW_USE_MDK_TYPES
   #define __I /* They cannot be const from the HW models POV */
   #define __IM
-  #include "nrf.h"
+  #include "mdk/nrf.h"
 #else
 
   #if defined(NRF5340)
