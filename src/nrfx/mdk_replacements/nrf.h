@@ -15,7 +15,12 @@
 /* Include the real nrf.h */
 #include <mdk/nrf.h>
 
-/* For BSIM we require redefining the pointers to the peripherals. */
+#if !defined(NRF_H_NO_BSIM_REDEFS)
+/* In the HW models, peripherals registers are not mapped in the same addresses as in
+ * the real HW so we need to correct them.
+ * For the very special cases in which one wants the real HW addresses after
+ * including nrf.h, define NRF_H_NO_BSIM_REDEFS before including *any* header */
 #include "nrf_bsim_redef.h"
+#endif
 
 #endif
