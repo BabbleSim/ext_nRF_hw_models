@@ -21,3 +21,4 @@ src/nrfx/hal/nrf_timer.c
 src/nrfx/hal/nrf_uarte.c
 src/nrfx/hal/nrf_hal_originals.c
 src/nrfx/mdk_replacements/system.c
+src/nrfx/nrfx_replacements/nrfx_gppi_lumos.c
