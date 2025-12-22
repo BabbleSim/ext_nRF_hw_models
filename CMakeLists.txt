@@ -76,6 +76,7 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
   # The nrfx HAL is built in the context of the embedded software
   zephyr_library()
   zephyr_library_sources(${HAL_SRCS})
+  zephyr_library_compile_definitions(${VARIANT_FLAGS})
 
   zephyr_library_include_directories(
     $ENV{BSIM_COMPONENTS_PATH}/libUtilv1/src/
