@@ -161,10 +161,6 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   } else IF_PER(RTC, 1, , rtc)
   } else IF_PER(RTC, 2, , rtc)
   } else IF_PER(TEMP, , , temp)
-  } else {
-    bs_trace_error_time_line("Tried to look for a task register not known to these HW models\n");
-    return; /* unreachable */
-  }
 #elif defined(NRF5340_XXAA_NETWORK)
   /*IF_PER(POWER, , _NS, power)
   } else*/ IF_PER(CLOCK, , _NS, clock)
@@ -185,10 +181,6 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   } else IF_PER(RTC, 1, _NS, rtc)
   } else IF_PER(TIMER, 1, _NS, timer)
   } else IF_PER(TIMER, 2, _NS, timer)
-  } else {
-    bs_trace_error_time_line("Tried to look for a task register not known to these HW models\n");
-    return; /* unreachable */
-  }
 #elif defined(NRF5340_XXAA_APPLICATION)
   /*IF_PER(DCNF, , _NS, dcnf)
   } else IF_PER(FPU, , _NS, fpu)
@@ -234,10 +226,6 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   } else IF_PER(I2S0, , _NS, dppi)*/
   } else IF_PER(IPC, , _NS, ipc)
   /* QSPI, NFCT */
-  } else {
-    bs_trace_error_time_line("Tried to look for a task register not known to these HW models\n");
-    return; /* unreachable */
-  }
 #elif defined(NRF54L15_XXAA)
   /*IF_PER(SPU, 00, _S, spu)
   } else IF_PER(MPC, 00, _S, mpc)
@@ -313,10 +301,6 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   //} else IF_PER(RESET, , _NS, reset)
   //} else IF_PER(OSCILLARTORS, , _NS, oscillators)
   //} else IF_PER(REGULATORS, , _NS, regulators)
-  } else {
-    bs_trace_error_time_line("Tried to look for a task register not known to these HW models\n");
-    return; /* unreachable */
-  }
 #elif defined(NRF54LM20A_XXAA) || defined(NRF54LM20A_ENGA_XXAA)
   /*IF_PER(USBHSCORE, , _S, usbhscore)
   } else IF_PER(SPU, 00, _S, spu)
@@ -404,11 +388,11 @@ static void nrf_hack_get_task_from_ptr(void *task_reg,
   //} else IF_PER(OSCILLARTORS, , _NS, oscillators)
   //} else IF_PER(REGULATORS, , _NS, regulators)
   //} else IF_PER(VREGUSB, , _S, vregusb)
+#endif
   } else {
     bs_trace_error_time_line("Tried to look for a task register not known to these HW models\n");
     return; /* unreachable */
   }
-#endif
 
 #undef IF_PER
 }

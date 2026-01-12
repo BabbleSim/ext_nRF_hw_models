@@ -25,4 +25,4 @@ __extension__
 #include "nrf_bsim_redef.h"
 #endif
 
-#endif
+#endif /* NRF_BSIM_H__ */
