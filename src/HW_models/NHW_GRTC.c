@@ -86,6 +86,7 @@ struct grtc_status {
   bs_time_t *SYSCOUNTER_read_deadline; /* Last microsecond before the SYSCOUNTERL would have wrapped*/
 
   bs_time_t *CC_timers; //[n_CCs] When each compare match is expected to happen
+  bool *CC_timer_set_in_past; //[n_CCs] When CCEN.ACTIVE was set, the SYSCOUNTER was > CC[n]
 };
 
 static bs_time_t Timer_GRTC = TIME_NEVER;
@@ -132,6 +133,7 @@ static void nhw_grtc_init(void) {
 
 
   nhw_grtc_st.CC_timers = (bs_time_t *)bs_calloc(nhw_grtc_st.n_cc, sizeof(bs_time_t));
+  nhw_grtc_st.CC_timer_set_in_past = (bool *)bs_calloc(nhw_grtc_st.n_cc, sizeof(bool));;
 
   nhw_GRTC_update_all_cc_timers(0);
 
@@ -155,6 +157,8 @@ static void nhw_grtc_free(void)
   nhw_grtc_st.SYSCOUNTER_read_deadline = NULL;
   free(nhw_grtc_st.CC_timers);
   nhw_grtc_st.CC_timers = NULL;
+  free(nhw_grtc_st.CC_timer_set_in_past);
+  nhw_grtc_st.CC_timer_set_in_past = NULL;
 }
 
 NSI_TASK(nhw_grtc_free, ON_EXIT_PRE, 100);
@@ -209,11 +213,14 @@ static void nhw_GRTC_update_master_timer(void) {
  */
 static void nhw_GRTC_update_cc_timer(uint inst, int cc) {
   (void) inst;
-  if (NRF_GRTC_regs.CC[cc].CCEN) {
+  if (NRF_GRTC_regs.CC[cc].CCEN & GRTC_CC_CCEN_ACTIVE_Msk) {
     uint64_t cc_value = ((uint64_t)NRF_GRTC_regs.CC[cc].CCH << 32) | NRF_GRTC_regs.CC[cc].CCL;
     nhw_grtc_st.CC_timers[cc] = nhw_GRTC_counter_to_time(inst, cc_value);
     if (nhw_grtc_st.CC_timers[cc] < nsi_hws_get_time()) {
       nhw_grtc_st.CC_timers[cc] = nsi_hws_get_time();
+      nhw_grtc_st.CC_timer_set_in_past[cc] = true;
+    } else {
+      nhw_grtc_st.CC_timer_set_in_past[cc] = false;
     }
   } else {
     nhw_grtc_st.CC_timers[cc] = TIME_NEVER;
@@ -348,7 +355,7 @@ static inline uint32_t nhw_GRTC_get_SYNCOUNTERH(uint inst) {
 }
 
 static void nhw_GRTC_TASK_CAPTURE(uint inst, uint n) {
-  NRF_GRTC_regs.CC[n].CCEN = 0; /* Trigger the capture task disables the compare feature */
+  NRF_GRTC_regs.CC[n].CCEN &= ~GRTC_CC_CCEN_ACTIVE_Msk; /* Trigger the capture task disables the compare feature */
   nhw_GRTC_update_cc_timer(inst, n);
   nhw_GRTC_update_master_timer();
 
@@ -497,7 +504,7 @@ void nhw_GRTC_regw_sideeffects_CC_CCADD(uint inst, uint cc) {
   NRF_GRTC_regs.CC[cc].CCL = value & UINT32_MAX;
   NRF_GRTC_regs.CC[cc].CCH = nhw_GRTC_get_counterhighword(value);
 
-  NRF_GRTC_regs.CC[cc].CCEN = GRTC_CC_CCEN_ACTIVE_Msk; /* Writing to CCADD enables that compare channel */
+  NRF_GRTC_regs.CC[cc].CCEN |= GRTC_CC_CCEN_ACTIVE_Msk; /* Writing to CCADD enables that compare channel */
 
   nhw_GRTC_update_cc_timer(inst, cc);
   nhw_GRTC_update_master_timer();
@@ -515,7 +522,7 @@ void nhw_GRTC_regw_sideeffects_CC_CCEN(uint inst, uint cc) {
 void nhw_GRTC_regw_sideeffects_CC_CCL(uint inst, uint cc) {
   nhw_GRTC_check_valid_cc_index(inst, cc, "CC.CCL");
 
-  NRF_GRTC_regs.CC[cc].CCEN = 0; /* Writing to CCL disables that compare channel */
+  NRF_GRTC_regs.CC[cc].CCEN &= ~GRTC_CC_CCEN_ACTIVE_Msk; /* Writing to CCL disables that compare channel */
   nhw_GRTC_update_cc_timer(inst, cc);
   nhw_GRTC_update_master_timer();
 }
@@ -523,7 +530,7 @@ void nhw_GRTC_regw_sideeffects_CC_CCL(uint inst, uint cc) {
 void nhw_GRTC_regw_sideeffects_CC_CCH(uint inst, uint cc) {
   nhw_GRTC_check_valid_cc_index(inst, cc, "CC.CCH");
 
-  NRF_GRTC_regs.CC[cc].CCEN = GRTC_CC_CCEN_ACTIVE_Msk; /* Writing to CCH enables that compare channel */
+  NRF_GRTC_regs.CC[cc].CCEN |= GRTC_CC_CCEN_ACTIVE_Msk; /* Writing to CCH enables that compare channel */
 
   nhw_GRTC_update_cc_timer(inst, cc);
   nhw_GRTC_update_master_timer();
@@ -531,17 +538,25 @@ void nhw_GRTC_regw_sideeffects_CC_CCH(uint inst, uint cc) {
 }
 
 static void nhw_GRTC_compare_reached(uint inst, uint cc) {
-  if (NRF_GRTC_regs.CC[cc].CCEN == 0) {
+  if ((NRF_GRTC_regs.CC[cc].CCEN & GRTC_CC_CCEN_ACTIVE_Msk) == 0) {
     bs_trace_warning_time_line("Programming error: CCEN was cleared without using the HAL\n");
     return;
   }
+#if NHW_GRTC_HAS_PASTCC
+  if (nhw_grtc_st.CC_timer_set_in_past[cc]) {
+    NRF_GRTC_regs.CC[cc].CCEN |= GRTC_CC_CCEN_PASTCC_Msk;
+  } else {
+    NRF_GRTC_regs.CC[cc].CCEN &= ~GRTC_CC_CCEN_PASTCC_Msk;
+  }
+#endif
+
   if ((cc==0) && NRF_GRTC_regs.INTERVAL) {
     uint64_t value = ((uint64_t)NRF_GRTC_regs.CC[cc].CCH << 32) | NRF_GRTC_regs.CC[cc].CCL;
     value += NRF_GRTC_regs.INTERVAL;
     NRF_GRTC_regs.CC[cc].CCL = value & UINT32_MAX;
     NRF_GRTC_regs.CC[cc].CCH = nhw_GRTC_get_counterhighword(value);
   } else {
-    NRF_GRTC_regs.CC[cc].CCEN = 0;
+    NRF_GRTC_regs.CC[cc].CCEN &= ~GRTC_CC_CCEN_ACTIVE_Msk;
   }
   nhw_GRTC_update_cc_timer(inst, cc);
 
