@@ -415,11 +415,11 @@ void nrf_dppi_hack_subscribe_set(void *sub_reg, unsigned int channel)
   int task;
   subscribe_set_f set_f;
   subscribe_clear_f clear_f;
-  task_trigger_f task_trigger_f;
+  task_trigger_f task_trigger;
 
   intptr_t task_reg_pr = (intptr_t)sub_reg - NRF_SUBSCRIBE_PUBLISH_OFFSET((uintptr_t)sub_reg);
 
-  nrf_hack_get_task_from_ptr((void *)task_reg_pr, &p_reg, &set_f, &clear_f, &task_trigger_f, &task);
+  nrf_hack_get_task_from_ptr((void *)task_reg_pr, &p_reg, &set_f, &clear_f, &task_trigger, &task);
   if (nrf_hack_is_task(task)) {
     set_f(p_reg, task, channel);
   }

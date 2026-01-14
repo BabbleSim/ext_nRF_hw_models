@@ -875,12 +875,11 @@ static void handle_Tx_response(int ret){
  * Set the Phy abort structure to the next time we will want to either abort or have a recheck
  * And store in next_recheck_time the next recheck time
  */
-static void update_abort_struct(p2G4_abort_t *abort, bs_time_t *next_recheck_time){
+static void update_abort_struct(p2G4_abort_t *abort, bs_time_t *next_recheck_time_out){
   //We will want to recheck next time anything may decide to stop the radio, that can be SW or HW
   //The only logical way to do so is to set it to the next timer whatever it may be as many can trigger SW interrupts
-  *next_recheck_time = nsi_hws_get_next_event_time();
-  abort->recheck_time = hwll_phy_time_from_dev(*next_recheck_time);
-
+  *next_recheck_time_out = nsi_hws_get_next_event_time();
+  abort->recheck_time = hwll_phy_time_from_dev(*next_recheck_time_out);
   //We either have decided already we want to abort so we do it right now
   //or we have not decided yet
   if ( aborting_set == 1 ) {
@@ -1431,7 +1430,7 @@ static void Rx_Addr_received(void) {
  * the address is assumed to be the first 48 bits after the 2 byte header
  * and the TxAddr bit to be 7th bit in 1st header byte as per the BT Core spec.
  */
-static void nhw_radio_device_address_match(uint8_t rx_buf[]) {
+static void nhw_radio_device_address_match(uint8_t rx_buf_in[]) {
   bool match_found = false;
   bool nomatch;
   int TxAdd;
@@ -1443,13 +1442,13 @@ static void nhw_radio_device_address_match(uint8_t rx_buf[]) {
 
     TxAdd = (NRF_RADIO_regs.DACNF >> (i + 8)) & 1;
 
-    if (TxAdd != ((rx_buf[0] >> 6) & 1) ) {
+    if (TxAdd != ((rx_buf_in[0] >> 6) & 1) ) {
       continue;
     }
 
-    nomatch = (*(uint32_t *)(rx_buf + 2) != NRF_RADIO_regs.DAB[i]);
+    nomatch = (*(uint32_t *)(rx_buf_in + 2) != NRF_RADIO_regs.DAB[i]);
     uint32_t DAP = NRF_RADIO_regs.DAP[i] & UINT16_MAX;
-    nomatch |= (*(uint16_t *)(rx_buf + 6) != DAP);
+    nomatch |= (*(uint16_t *)(rx_buf_in + 6) != DAP);
 
     if (nomatch) {
       continue;
