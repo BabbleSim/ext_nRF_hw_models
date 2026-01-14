@@ -321,10 +321,13 @@ static double raw_entropy_rate_v2(void) {
   switch (get_blending_method()) {
     case 3: //Von Neumann
       bit_rate /=4;
+      //fall through
     case 2: //XOR2
       bit_rate /=4;
+      //fall through
     case 1: //XOR1
       bit_rate /=8;
+      //fall through
     case 0: //Concat
     default:
       break;
