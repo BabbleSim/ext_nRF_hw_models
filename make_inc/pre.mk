@@ -2,7 +2,7 @@
 # Copyright 2023 Nordic Semiconductor ASA
 # SPDX-License-Identifier: Apache-2.0
 
-# BSIM_BASE_PATH must point to the bsim base component folder (typically placed directly in 
+# BSIM_BASE_PATH must point to the bsim base component folder (typically placed directly in
 # bsim/components).
 # And BSIM_COMPONENTS_PATH must point to the bsim/components folder.
 # if these HW models were fetched inside the bsim/components/ folder, it is very likely we will just
@@ -21,7 +21,7 @@ CC:=ccache gcc
 DEBUG:=-g
 OPT:=
 ARCH:=-m32
-WARNINGS:=-Wall -Wpedantic
+WARNINGS:=-Wall -Wextra -Wpedantic -Wno-sign-compare -Wno-unused-parameter -Wshadow
 COVERAGE:=
 COMMON_CC_FLAGS:=\
   ${ARCH} ${DEBUG} ${OPT} ${WARNINGS} -MMD -MP -std=gnu11 \
