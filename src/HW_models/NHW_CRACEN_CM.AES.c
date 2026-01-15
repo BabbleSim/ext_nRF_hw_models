@@ -65,6 +65,7 @@ static int nhw_CRACEN_CM_AES_get_KeySel(void) {
 }
 
 static void nhw_CRACEN_CM_AES_process_data(struct CM_tag *tag_st, char* buf, size_t len) {
+  (void)tag_st;
   if (nhw_CRACEN_CM_AES_get_mode() != 1) {
     bs_trace_error_time_line("%s: Only ECB mode supported by now\n",
                              __func__);
