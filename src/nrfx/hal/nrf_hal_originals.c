@@ -11,6 +11,10 @@
 #define NRF_DONT_DECLARE_ONLY
 #define NRF_STATIC_INLINE __attribute__((weak))
 
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #include "nrfx.h"
 
 #if defined(NRF54L15_XXAA)
