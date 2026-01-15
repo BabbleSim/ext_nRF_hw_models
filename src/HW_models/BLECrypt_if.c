@@ -313,16 +313,16 @@ void BLECrypt_if_aes_ecb(
     /* Let's do a quick deterministic scramble of the data */
     uint64_t r64 = 0, r64_2;
     uint8_t r;
-    for (int i = 0; i < key_size/64; i++) {
+    for (uint i = 0; i < key_size/64; i++) {
       r64 ^= ((uint64_t *)key_be)[i];
     }
-    for (int i = 0; i < 2; i++) {
+    for (uint i = 0; i < 2; i++) {
       r64 ^= ((uint64_t *)plaintext_data_be)[i];
     }
     r = (r64 >> 56) ^ (r64 >> 48) ^ (r64 >> 40) ^ (r64 >> 32) ^ (r64 >> 24) ^ (r64 >> 16) ^ (r64 >> 8) ^ r64;
     r64 = r64 * 2862933555777941757ULL + 3037000493ULL;
     r64_2 = r64 * 2862933555777941757ULL + 3037000493ULL;
-    for (int i = 0; i < 16; i++) {
+    for (uint i = 0; i < 16; i++) {
       encrypted_data_be[i] = plaintext_data_be[(16-i+r*7)%16] ^ key_be[(i + r) % (key_size/8)];
     }
     ((uint64_t *)encrypted_data_be)[0] ^= r64;

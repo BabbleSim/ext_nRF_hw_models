@@ -85,7 +85,7 @@ struct simu_real_conv_table_t {
   uint32_t size;
 };
 static struct simu_real_conv_table_t *simu_real_conv_table;
-static int simu_real_conv_table_size;
+static uint simu_real_conv_table_size;
 
 static void init_simu_real_conv_table(void) {
   struct simu_real_conv_table_t content[] = {
