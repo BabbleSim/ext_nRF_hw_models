@@ -535,7 +535,7 @@ static void nhw_pwrclk_timer_triggered(void) {
 
 NSI_HW_EVENT(Timer_PWRCLK, nhw_pwrclk_timer_triggered, 50);
 
-void nhw_clock_cheat_set_start_time(uint inst, uint clock, uint source, bs_time_t time) {
+void nhw_clock_cheat_set_start_time(uint inst, int clock, int source, bs_time_t time) {
   (void)inst;
   for (int c = 0; c < NHW_CLKPWR_N_CLKS; c++) {
     if ((clock == -1) || (c == clock)) {
@@ -561,6 +561,7 @@ void nhw_clock_cheat_set_xotune_fail(uint inst, uint fail_count) {
 
 void nhw_clock_cheat_trigger_xotune_error(uint inst)
 {
+  (void)inst;
   if (nhw_clkpwr_st.PLL_128MXO_state != Started) {
     bs_trace_warning_line("TUNEERROR event can only be generated when running");
   }

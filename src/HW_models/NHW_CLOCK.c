@@ -540,7 +540,7 @@ static void nhw_pwrclk_timer_triggered(void) {
 
 NSI_HW_EVENT(Timer_PWRCLK, nhw_pwrclk_timer_triggered, 50);
 
-void nhw_clock_cheat_set_start_time(uint inst, uint clock, uint source, bs_time_t time) {
+void nhw_clock_cheat_set_start_time(uint inst, int clock, int source, bs_time_t time) {
   for (int c = 0; c < NHW_CLKPWR_N_CLKS; c++) {
     if ((clock == -1) || (c == clock)) {
       for (int s = 0; s < NHW_CLKPWR_CLK_MAX_N_SRCS; s++) {

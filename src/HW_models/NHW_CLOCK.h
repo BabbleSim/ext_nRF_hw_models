@@ -56,7 +56,7 @@ void nhw_CLOCK_regw_sideeffects_SUBSCRIBE_HFCLK192MSTOP(uint i);
  *   You can set it to -1 to set the value for all sources
  * <time> is the start time duration.
  */
-void nhw_clock_cheat_set_start_time(uint inst, uint clock, uint source, bs_time_t time);
+void nhw_clock_cheat_set_start_time(uint inst, int clock, int source, bs_time_t time);
 
 /*
  * Set how long it will take for the LF clock to calibrate after triggering its CAL task
