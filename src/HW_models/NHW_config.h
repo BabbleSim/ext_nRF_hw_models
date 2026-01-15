@@ -577,6 +577,7 @@
 #define NHW_ECB_t_ECB {1} /* In micros (~73cc/128MHz in real HW)*/
 
 #define NHW_CLKPWR_TOTAL_INST 1
+#define NHW_CLKPWR_54L_MODEL 1
 #define NHW_CLKPWR_0 0
 #define NHW_CLKPWR_DPPI_MAP {0} /* Global */
 #define NHW_CLKPWR_INT_MAP {{0, 261}} /* {App, CLOCK_POWER_IRQn} */
@@ -957,6 +958,7 @@
 #define NHW_ECB_t_ECB {1} /* In micros (~73cc/128MHz in real HW)*/
 
 #define NHW_CLKPWR_TOTAL_INST 1
+#define NHW_CLKPWR_54L_MODEL 1
 #define NHW_CLKPWR_0 0
 #define NHW_CLKPWR_DPPI_MAP {3} /* LP */
 #define NHW_CLKPWR_INT_MAP {{0, 270}} /* {App, CLOCK_POWER_IRQn} */

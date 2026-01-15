@@ -8,7 +8,7 @@
  */
 #include "hal/nrf_clock.h"
 #include "bs_tracing.h"
-#if defined(NRF54L_SERIES)
+#if NHW_CLKPWR_54L_MODEL
 #include "NHW_54L_CLOCK.h"
 #else
 #include "NHW_CLOCK.h"
