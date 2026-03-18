@@ -41,7 +41,7 @@ void nrfra_timings_init(void) {
   /* The versions are [1, 2Mbps,CodedS=2,CodedS=8, 15.4] [Normal, Fast] [No_TIFS, HW_TIFS] */
   /* where HW TIFS only applies for Normal rampup */
   /* BLE 1 Mbps */
-  radio_timings.TX_RU_time[0][1][0] =  41; // 41000
+  radio_timings.TX_RU_time[0][1][0] =  40; // 40000
   radio_timings.TX_RU_time[0][0][1] = 141; //141000
   radio_timings.TX_RU_time[0][0][0] = 130; //130000
   /* BLE 2 Mbps */
@@ -49,11 +49,11 @@ void nrfra_timings_init(void) {
   radio_timings.TX_RU_time[1][0][1] = 140; //140000
   radio_timings.TX_RU_time[1][0][0] = 129; //128900
   /* Coded S=2 */
-  radio_timings.TX_RU_time[2][1][0] =  42; // 42000
+  radio_timings.TX_RU_time[2][1][0] =  40; // 40000
   radio_timings.TX_RU_time[2][0][1] = 132; //132000
   radio_timings.TX_RU_time[2][0][0] = 132; //132000
   /* Coded S=8 */
-  radio_timings.TX_RU_time[3][1][0] =  42; // 42000
+  radio_timings.TX_RU_time[3][1][0] =  40; // 40000
   radio_timings.TX_RU_time[3][0][1] = 122; //122000
   radio_timings.TX_RU_time[3][0][0] = 132; //132000
   /* 15.4 */
