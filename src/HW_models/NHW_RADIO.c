@@ -34,7 +34,7 @@
  *
  * Note9: Double buffering of registers is not implemented. Changing the register during the packet Tx/Rx will cause trouble
  *        It should be (at least): PACKETPTR @ START
- *                                 MODE @ TXEN | RXEN
+ *                                 MODE @ TXEN | RXEN (only for 52 and 53, not for 54 or newer)
  *                                 CRC config @ START
  *
  * Note10: Regarding MAXLEN:
