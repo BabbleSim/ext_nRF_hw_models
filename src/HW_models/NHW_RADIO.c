@@ -61,7 +61,7 @@
  *
  * Note16: No antenna switching
  *
- * Note17: Interrupts are modeled as pulses to the NVIC, not level interrupts as they are in reality
+ * Note17: -
  *
  * Note18: EVENTS_SYNC:
  *         a) It is not generated at the exact correct time:
