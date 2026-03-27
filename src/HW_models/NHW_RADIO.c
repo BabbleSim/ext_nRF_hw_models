@@ -792,13 +792,7 @@ static void nhw_radio_timer_triggered(void) {
     } else { //ED procedure ended
       nhw_RADIO_signal_EVENTS_EDEND(0);
     }
-  } else if ( radio_state == RAD_TXDISABLE ){
-    radio_state = RAD_DISABLED;
-    NRF_RADIO_regs.STATE = RAD_DISABLED;
-    nhwra_set_Timer_RADIO(TIME_NEVER);
-    nhw_radio_stop_bit_counter();
-    nhw_RADIO_signal_EVENTS_DISABLED(0);
-  } else if ( radio_state == RAD_RXDISABLE ){
+  } else if ((radio_state == RAD_TXDISABLE) || (radio_state == RAD_RXDISABLE)) {
     radio_state = RAD_DISABLED;
     NRF_RADIO_regs.STATE = RAD_DISABLED;
     nhwra_set_Timer_RADIO(TIME_NEVER);
