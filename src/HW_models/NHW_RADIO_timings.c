@@ -20,10 +20,10 @@ extern NRF_RADIO_Type NRF_RADIO_regs;
 
 static struct {
   /*Ramp up times*/
-  bs_time_t TX_RU_time[5][2][2];
-  /* The versions are [1,2Mbps,CodedS=2,CodedS=8, 15.4] [Normal, Fast] [No_TIFS, HW_TIFS] */
+  bs_time_t TX_RU_time[5][3];
+  /* The versions are [1,2Mbps,CodedS=2,CodedS=8, 15.4] [Fast, Normal w HW_TIFS, Normal wo HW_TIFS] */
   /* where HW TIFS only applies for Normal rampup */
-  bs_time_t RX_RU_time[5][2][2];
+  bs_time_t RX_RU_time[5][3];
 
   /*Digital processing delay:*/
   bs_time_t TX_chain_delay;    //Time between the START task and the bits start coming out of the antenna
@@ -41,46 +41,46 @@ void nrfra_timings_init(void) {
   /* The versions are [1, 2Mbps,CodedS=2,CodedS=8, 15.4] [Normal, Fast] [No_TIFS, HW_TIFS] */
   /* where HW TIFS only applies for Normal rampup */
   /* BLE 1 Mbps */
-  radio_timings.TX_RU_time[0][1][0] =  40; // 40000
-  radio_timings.TX_RU_time[0][0][1] = 141; //141000
-  radio_timings.TX_RU_time[0][0][0] = 130; //130000
+  radio_timings.TX_RU_time[0][0] =  40; // 40000 //Fast RU
+  radio_timings.TX_RU_time[0][1] = 141; //141000 //Normal RU, HW_TIFS
+  radio_timings.TX_RU_time[0][2] = 130; //130000 //Normal RU, No HW_TIFS
   /* BLE 2 Mbps */
-  radio_timings.TX_RU_time[1][1][0] =  40; // 40000
-  radio_timings.TX_RU_time[1][0][1] = 140; //140000
-  radio_timings.TX_RU_time[1][0][0] = 129; //128900
+  radio_timings.TX_RU_time[1][0] =  40; // 40000
+  radio_timings.TX_RU_time[1][1] = 140; //140000
+  radio_timings.TX_RU_time[1][2] = 129; //128900
   /* Coded S=2 */
-  radio_timings.TX_RU_time[2][1][0] =  40; // 40000
-  radio_timings.TX_RU_time[2][0][1] = 132; //132000
-  radio_timings.TX_RU_time[2][0][0] = 132; //132000
+  radio_timings.TX_RU_time[2][0] =  40; // 40000
+  radio_timings.TX_RU_time[2][1] = 132; //132000
+  radio_timings.TX_RU_time[2][2] = 132; //132000
   /* Coded S=8 */
-  radio_timings.TX_RU_time[3][1][0] =  40; // 40000
-  radio_timings.TX_RU_time[3][0][1] = 122; //122000
-  radio_timings.TX_RU_time[3][0][0] = 132; //132000
+  radio_timings.TX_RU_time[3][0] =  40; // 40000
+  radio_timings.TX_RU_time[3][1] = 122; //122000
+  radio_timings.TX_RU_time[3][2] = 132; //132000
   /* 15.4 */
-  radio_timings.TX_RU_time[4][1][0] =  40; // 40000
-  radio_timings.TX_RU_time[4][0][1] = 130; //130000 - Is this correct? or should it be 169us?
-  radio_timings.TX_RU_time[4][0][0] = 129; //128900 ?? just copied from Ble 1Mbps
+  radio_timings.TX_RU_time[4][0] =  40; // 40000
+  radio_timings.TX_RU_time[4][1] = 130; //130000 - Is this correct? or should it be 169us?
+  radio_timings.TX_RU_time[4][2] = 129; //128900 ?? just copied from Ble 1Mbps
 
   /* BLE 1 Mbps */
-  radio_timings.RX_RU_time[0][1][0] =  40; // 40000
-  radio_timings.RX_RU_time[0][0][1] = 140; //140000
-  radio_timings.RX_RU_time[0][0][0] = 129; //129000
+  radio_timings.RX_RU_time[0][0] =  40; // 40000 //Fast RU
+  radio_timings.RX_RU_time[0][1] = 140; //140000 //Normal RU, HW_TIFS
+  radio_timings.RX_RU_time[0][2] = 129; //129000 //Normal RU, No HW_TIFS
   /* BLE 2 Mbps */
-  radio_timings.RX_RU_time[1][1][0] =  40; // 40000
-  radio_timings.RX_RU_time[1][0][1] = 140; //140000
-  radio_timings.RX_RU_time[1][0][0] = 129; //129000
+  radio_timings.RX_RU_time[1][0] =  40; // 40000
+  radio_timings.RX_RU_time[1][1] = 140; //140000
+  radio_timings.RX_RU_time[1][2] = 129; //129000
   /* Coded S=2 */ //The radio always ramps up with S=8
-  radio_timings.RX_RU_time[2][1][0] =  40; // 40000
-  radio_timings.RX_RU_time[2][0][1] = 120; //120000
-  radio_timings.RX_RU_time[2][0][0] = 130; //130000
+  radio_timings.RX_RU_time[2][0] =  40; // 40000
+  radio_timings.RX_RU_time[2][1] = 120; //120000
+  radio_timings.RX_RU_time[2][2] = 130; //130000
   /* Coded S=8 */
-  radio_timings.RX_RU_time[3][1][0] =  40; // 40000
-  radio_timings.RX_RU_time[3][0][1] = 120; //120000
-  radio_timings.RX_RU_time[3][0][0] = 130; //130000
+  radio_timings.RX_RU_time[3][0] =  40; // 40000
+  radio_timings.RX_RU_time[3][1] = 120; //120000
+  radio_timings.RX_RU_time[3][2] = 130; //130000
   /* 15.4 */
-  radio_timings.RX_RU_time[4][1][0] =  40; // 40000
-  radio_timings.RX_RU_time[4][0][1] = 130; //140000 - Is this correct? or should it be 169us?
-  radio_timings.RX_RU_time[4][0][0] = 129; //129000 ?? just copied from Ble 1Mbps
+  radio_timings.RX_RU_time[4][0] =  40; // 40000
+  radio_timings.RX_RU_time[4][1] = 130; //140000 - Is this correct? or should it be 169us?
+  radio_timings.RX_RU_time[4][2] = 129; //129000 ?? just copied from Ble 1Mbps
 
   radio_timings.TX_chain_delay    = 1; //~1us /*both 1, 2Mbps and 15.4, for BLE coded phy it is ~2us*/
   radio_timings.RX_chain_delay[0] = 9; //9.4  /* 1Mbps */
@@ -139,24 +139,27 @@ static int get_modidx(void) {
  * returns the requested rampup time
  */
 bs_time_t nhwra_timings_get_rampup_time(bool TxNotRx, bool from_hw_TIFS) {
-  int fast  = 0;
   int mod_idx = get_modidx();
-  int HWTIFS= 0;
+  int RU_index;
 
 #if NHW_RADIO_IS_54
   if ( NRF_RADIO_regs.TIMING & 1 ){ /* TIMMING.RU */
 #else
   if ( NRF_RADIO_regs.MODECNF0 & 1 ){ /* MODECNF0.RU */
 #endif
-    fast = 1;
+    RU_index = 0; //Fast
   } else {
-    HWTIFS = from_hw_TIFS | nhwra_is_HW_TIFS_enabled();
+    if (from_hw_TIFS | nhwra_is_HW_TIFS_enabled()) {
+      RU_index = 1; //Normal RU with HW TIFS
+    } else {
+      RU_index = 2; //Normal RU without HW TIFS
+    }
   }
 
   if (TxNotRx) {
-    return radio_timings.TX_RU_time[mod_idx][fast][HWTIFS];
+    return radio_timings.TX_RU_time[mod_idx][RU_index];
   } else {
-    return radio_timings.RX_RU_time[mod_idx][fast][HWTIFS];
+    return radio_timings.RX_RU_time[mod_idx][RU_index];
   }
 }
 
