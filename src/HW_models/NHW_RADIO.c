@@ -556,12 +556,10 @@ void nhw_RADIO_TASK_DISABLE(void) {
   if ( ( radio_state == RAD_TXRU ) || ( radio_state == RAD_TXIDLE ) ) {
     radio_state = RAD_TXDISABLE;
     NRF_RADIO_regs.STATE = RAD_TXDISABLE;
-    TIFS_state = TIFS_DISABLE;
     nhwra_set_Timer_RADIO(nsi_hws_get_time() + nhwra_timings_get_TX_rampdown_time());
   } else if ( ( radio_state == RAD_RXRU ) || ( radio_state == RAD_RXIDLE ) ) {
     radio_state = RAD_RXDISABLE;
     NRF_RADIO_regs.STATE = RAD_RXDISABLE;
-    TIFS_state = TIFS_DISABLE;
     nhwra_set_Timer_RADIO(nsi_hws_get_time() + nhwra_timings_get_RX_rampdown_time());
   } else if ( radio_state == RAD_DISABLED ) {
     //It seems the radio will also signal a DISABLED event even if it was already disabled
