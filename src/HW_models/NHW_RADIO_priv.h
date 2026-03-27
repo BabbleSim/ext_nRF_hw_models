@@ -22,6 +22,8 @@ typedef enum { //Note: This should match the real RADIO state values in the STAT
   RAD_RXIDLE, //The radio is ready for reception to start
   RAD_RX, //Reception has been started and the addresses enabled in the RXADDRESSES register are being monitored
   RAD_RXDISABLE, //The radio is disabling the receiver
+  RAD_SETTLE, //Waiting for the PLL to settle
+  RAD_PLL,    //The PLL is settled
 
   RAD_TXRU = 9, //The radio is ramping up and preparing for transmission
   RAD_TXIDLE, //The radio is ready for transmission to start

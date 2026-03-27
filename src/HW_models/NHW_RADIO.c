@@ -116,7 +116,14 @@
  *         and roughly at the end of TERM1. The models generates it at that point and only in that case.
  *         (It's timing is probably a bit off compared to real HW)
  *
+ * Note26: It seem PLLREADY is only generated after TASKS_PLLEN, and not after TXEN/RXEN.
+ *         That is what the models do.
  *
+ * Note27: From the spec, it is unclear what may happen if TASK_PLLEN is triggered from any other state than DISABLED, RX/TXIDLE or SETTLE
+ *         The model just warns about it.
+ *
+ * Note28: From the spec, it is unclear what would happen if TASK_TX/RXEN is triggered from SETTLE.
+ *         The model just warns about it.
  *
  * Implementation Specification:
  *   A diagram of the main state machine can be found in docs/RADIO_states.svg
@@ -222,6 +229,7 @@ static TIFS_state_t TIFS_state = TIFS_DISABLE;
 static bool TIFS_ToTxNotRx = false; //Are we in a TIFS automatically starting a Tx from a Rx (true), or Rx from Tx (false)
 static bs_time_t Timer_TIFS = TIME_NEVER;
 static bool from_hw_tifs = false; /* Unfortunate hack due to the SW racing the HW to clear SHORTS*/
+static bool last_was_Tx; /* The last time we were doing something, was it Tx related (true), or Rx related (false) */
 
 static RADIO_Rx_status_t rx_status;
 static RADIO_Tx_status_t tx_status;
@@ -360,34 +368,78 @@ static inline void nhwra_set_Timer_abort_reeval(bs_time_t t){
   nsi_hws_find_next_event();
 }
 
-void nhw_RADIO_TASK_TXEN(void) {
-  if ( ( radio_state != RAD_DISABLED )
-      && ( radio_state != RAD_TXIDLE )
-      && ( radio_state != RAD_RXIDLE ) ){
+void nhw_RADIO_TASK_PLLEN(void) {
+  bool freq_change;
+  bs_time_t delta_t;
+
+  if ((radio_state != RAD_DISABLED) && (radio_state != RAD_TXIDLE)
+      && (radio_state != RAD_RXIDLE) && (radio_state != RAD_PLL)) {
     bs_trace_warning_line_time(
-        "NRF_RADIO: TXEN received when the radio was not DISABLED or TX/RXIDLE but in state %i. It will be ignored. Expect problems\n",
+        "NRF_RADIO: PLLEN received when the radio was not in a state in which it is expected "
+        "(it was in %i). It will be ignored. Expect problems\n",
         radio_state);
     return;
   }
+
+  freq_change = nhwra_latch_frequency();
+  delta_t = nhwra_timings_get_PLL_settle_time(radio_state, freq_change);
+
+  radio_state = RAD_SETTLE;
+  NRF_RADIO_regs.STATE = RAD_SETTLE;
+  nhwra_set_Timer_RADIO(nsi_hws_get_time() + delta_t);
+}
+
+void nhw_RADIO_TASK_TXEN(void) {
+  bs_time_t t_delta;
+
+  if ((radio_state != RAD_DISABLED) && (radio_state != RAD_TXIDLE)
+      && (radio_state != RAD_RXIDLE) && (radio_state != RAD_PLL)) {
+    bs_trace_warning_line_time(
+        "NRF_RADIO: TXEN received when the radio was not DISABLED or TX/RXIDLE or "
+        "PLL but in state %i. It will be ignored. Expect problems\n",
+        radio_state);
+    return;
+  }
+
+  if (radio_state == RAD_PLL) {
+    t_delta = nhwra_timings_get_rampup_time(1, NHWRA_FROM_PLL);
+  } else {
+    t_delta = nhwra_timings_get_rampup_time(1, from_hw_tifs? NHWRA_FROM_HW_TIFS : NHWRA_NONE);
+    (void)nhwra_latch_frequency();
+  }
+
   radio_state = RAD_TXRU;
   NRF_RADIO_regs.STATE = RAD_TXRU;
+  last_was_Tx = true;
 
-  nhwra_set_Timer_RADIO(nsi_hws_get_time() + nhwra_timings_get_rampup_time(1, from_hw_tifs));
+  nhwra_set_Timer_RADIO(nsi_hws_get_time() + t_delta);
 }
 
 void nhw_RADIO_TASK_RXEN(void) {
-  if ( ( radio_state != RAD_DISABLED )
-      && ( radio_state != RAD_TXIDLE )
-      && ( radio_state != RAD_RXIDLE ) ){
+  bs_time_t t_delta;
+
+  if ((radio_state != RAD_DISABLED) && (radio_state != RAD_TXIDLE)
+      && (radio_state != RAD_RXIDLE) && (radio_state != RAD_PLL)) {
     bs_trace_warning_line_time(
-        "NRF_RADIO: RXEN received when the radio was not DISABLED or TX/RXIDLE but in state %i. It will be ignored. Expect problems\n",
+        "NRF_RADIO: RXEN received when the radio was not DISABLED or TX/RXIDLE "
+        "or PLL but in state %i. It will be ignored. Expect problems\n",
         radio_state);
     return;
   }
+
+  if (radio_state == RAD_PLL) {
+    t_delta = nhwra_timings_get_rampup_time(0, NHWRA_FROM_PLL);
+  } else {
+    t_delta = nhwra_timings_get_rampup_time(0, from_hw_tifs? NHWRA_FROM_HW_TIFS : NHWRA_NONE);
+    (void)nhwra_latch_frequency();
+  }
+
   TIFS_state = TIFS_DISABLE;
   radio_state = RAD_RXRU;
   NRF_RADIO_regs.STATE = RAD_RXRU;
-  nhwra_set_Timer_RADIO(nsi_hws_get_time() + nhwra_timings_get_rampup_time(0, from_hw_tifs));
+  last_was_Tx = false;
+
+  nhwra_set_Timer_RADIO(nsi_hws_get_time() + t_delta);
 }
 
 static void abort_if_needed(void) {
@@ -565,6 +617,18 @@ void nhw_RADIO_TASK_DISABLE(void) {
     //It seems the radio will also signal a DISABLED event even if it was already disabled
     nhw_radio_stop_bit_counter();
     nhw_RADIO_signal_EVENTS_DISABLED(0);
+  } else if ((radio_state == RAD_SETTLE) || (radio_state == RAD_PLL)) {
+    bs_time_t delta_t;
+    // Note It is unclear if it is really almost instantaneous in this case
+    if (last_was_Tx) {
+      radio_state = RAD_TXDISABLE;
+      delta_t = 0;
+    } else {
+      radio_state = RAD_RXDISABLE;
+      delta_t = 0;
+    }
+    NRF_RADIO_regs.STATE = radio_state;
+    nhwra_set_Timer_RADIO(nsi_hws_get_time() + delta_t);
   }
 }
 
@@ -668,9 +732,12 @@ void maybe_prepare_TIFS(bool Tx_Not_Rx){
   }
 
   if ( Tx_Not_Rx ){ //End of Tx
-    delta = NRF_RADIO_regs.TIFS + nhwra_timings_get_TX_chain_delay() - nhwra_timings_get_rampup_time(0, 1) - 3; /*open slightly earlier to have jitter margin*/
+    delta = NRF_RADIO_regs.TIFS + nhwra_timings_get_TX_chain_delay()
+           - nhwra_timings_get_rampup_time(0, NHWRA_FROM_HW_TIFS) - 3; /*open slightly earlier to have jitter margin*/
   } else { //End of Rx
-    delta = NRF_RADIO_regs.TIFS - nhwra_timings_get_Rx_chain_delay() - nhwra_timings_get_TX_chain_delay() - nhwra_timings_get_rampup_time(1, 1) + 1;
+    delta = NRF_RADIO_regs.TIFS - nhwra_timings_get_Rx_chain_delay()
+           - nhwra_timings_get_TX_chain_delay()
+           - nhwra_timings_get_rampup_time(1, NHWRA_FROM_HW_TIFS) + 1;
   }
   Timer_TIFS = nsi_hws_get_time() + delta;
   TIFS_state = TIFS_WAITING_FOR_DISABLE; /* In Timer_TIFS we will trigger a TxEN or RxEN */
@@ -701,6 +768,13 @@ static void nhw_radio_timer_triggered(void) {
     nhwra_set_Timer_RADIO(TIME_NEVER);
     nhw_RADIO_signal_EVENTS_READY(0);
     nhw_RADIO_signal_EVENTS_RXREADY(0);
+#if NHW_RADIO_HAS_PLLEN
+  } else if ( radio_state == RAD_SETTLE ) {
+    radio_state = RAD_PLL;
+    NRF_RADIO_regs.STATE = RAD_PLL;
+    nhwra_set_Timer_RADIO(TIME_NEVER);
+    nhw_RADIO_signal_EVENTS_PLLREADY(0);
+#endif
   } else if ( radio_state == RAD_TXSTARTING ){
     nhwra_set_Timer_RADIO(TIME_NEVER);
     start_Tx();

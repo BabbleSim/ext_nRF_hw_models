@@ -8,6 +8,7 @@
 #ifndef _NRF_RADIO_UTILS_H
 #define _NRF_RADIO_UTILS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "bs_pc_2G4_types.h"
 
@@ -34,6 +35,8 @@ bool nhwra_is_ble_mode(uint32_t MODE);
 uint64_t nhwra_get_address(uint logical_addr);
 p2G4_freq_t nhwra_get_freq(void);
 p2G4_power_t nhwra_get_tx_power(void);
+bool nhwra_latch_frequency(void);
+uint32_t nhwra_get_latched_frequency(void);
 
 #ifdef __cplusplus
 }

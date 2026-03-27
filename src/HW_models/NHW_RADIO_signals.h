@@ -36,6 +36,7 @@ void nhw_RADIO_signal_EVENTS_RXREADY(unsigned int inst);
 void nhw_RADIO_signal_EVENTS_SYNC(unsigned int inst);
 void nhw_RADIO_signal_EVENTS_PHYEND(unsigned int inst);
 //void nhw_RADIO_signal_EVENTS_CTEPRESENT(unsigned int inst);
+void nhw_RADIO_signal_EVENTS_PLLREADY(unsigned int inst);
 
 void nhwra_signalif_reset(void);
 

@@ -312,6 +312,7 @@
 #define NHW_RADIO_DPPI_MAP {1} /* Radio domain */
 #define NHW_RADIO_ED_RSSIOFFS (-92)
 #define NHW_RADIO_IS_54 1
+#define NHW_RADIO_HAS_PLLEN 1
 
 #define NHW_RRAMC_UICR_TOTAL_INST 1
 #define NHW_RRAM_START_ADDR {0x00000000}

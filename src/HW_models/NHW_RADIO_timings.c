@@ -15,15 +15,16 @@
 #include "NHW_peri_types.h"
 #include "NHW_RADIO.h"
 #include "NHW_RADIO_utils.h"
+#include "NHW_RADIO_timings.h"
 
 extern NRF_RADIO_Type NRF_RADIO_regs;
 
 static struct {
   /*Ramp up times*/
-  bs_time_t TX_RU_time[5][3];
-  /* The versions are [1,2Mbps,CodedS=2,CodedS=8, 15.4] [Fast, Normal w HW_TIFS, Normal wo HW_TIFS] */
+  bs_time_t TX_RU_time[5][4];
+  /* The versions are [1,2Mbps,CodedS=2,CodedS=8, 15.4] [Fast, Normal w HW_TIFS, Normal wo HW_TIFS, from PLL state] */
   /* where HW TIFS only applies for Normal rampup */
-  bs_time_t RX_RU_time[5][3];
+  bs_time_t RX_RU_time[5][4];
 
   /*Digital processing delay:*/
   bs_time_t TX_chain_delay;    //Time between the START task and the bits start coming out of the antenna
@@ -33,6 +34,9 @@ static struct {
   /*Ramp down times*/
   bs_time_t TX_RD_time[5];
   bs_time_t RX_RD_time;
+
+  bs_time_t PLL_settle_time[3]; // Time from TASK_PLLEN to EVENT_PLLREADY
+           // Indexed [from disable; from PLL | [R/T]XIDLE if freq change; from T/RXIDLE if *no* freq change
 } radio_timings;
 
 
@@ -44,43 +48,53 @@ void nrfra_timings_init(void) {
   radio_timings.TX_RU_time[0][0] =  40; // 40000 //Fast RU
   radio_timings.TX_RU_time[0][1] = 141; //141000 //Normal RU, HW_TIFS
   radio_timings.TX_RU_time[0][2] = 130; //130000 //Normal RU, No HW_TIFS
+  radio_timings.TX_RU_time[0][3] =  10;
   /* BLE 2 Mbps */
   radio_timings.TX_RU_time[1][0] =  40; // 40000
   radio_timings.TX_RU_time[1][1] = 140; //140000
   radio_timings.TX_RU_time[1][2] = 129; //128900
+  radio_timings.TX_RU_time[1][3] =  10;
   /* Coded S=2 */
   radio_timings.TX_RU_time[2][0] =  40; // 40000
   radio_timings.TX_RU_time[2][1] = 132; //132000
   radio_timings.TX_RU_time[2][2] = 132; //132000
+  radio_timings.TX_RU_time[2][3] =  10;
   /* Coded S=8 */
   radio_timings.TX_RU_time[3][0] =  40; // 40000
   radio_timings.TX_RU_time[3][1] = 122; //122000
   radio_timings.TX_RU_time[3][2] = 132; //132000
+  radio_timings.TX_RU_time[3][3] =  10;
   /* 15.4 */
   radio_timings.TX_RU_time[4][0] =  40; // 40000
   radio_timings.TX_RU_time[4][1] = 130; //130000 - Is this correct? or should it be 169us?
   radio_timings.TX_RU_time[4][2] = 129; //128900 ?? just copied from Ble 1Mbps
+  radio_timings.TX_RU_time[4][3] =  10;
 
   /* BLE 1 Mbps */
   radio_timings.RX_RU_time[0][0] =  40; // 40000 //Fast RU
   radio_timings.RX_RU_time[0][1] = 140; //140000 //Normal RU, HW_TIFS
   radio_timings.RX_RU_time[0][2] = 129; //129000 //Normal RU, No HW_TIFS
+  radio_timings.RX_RU_time[0][3] =  10;
   /* BLE 2 Mbps */
   radio_timings.RX_RU_time[1][0] =  40; // 40000
   radio_timings.RX_RU_time[1][1] = 140; //140000
   radio_timings.RX_RU_time[1][2] = 129; //129000
+  radio_timings.RX_RU_time[1][3] =  10;
   /* Coded S=2 */ //The radio always ramps up with S=8
   radio_timings.RX_RU_time[2][0] =  40; // 40000
   radio_timings.RX_RU_time[2][1] = 120; //120000
   radio_timings.RX_RU_time[2][2] = 130; //130000
+  radio_timings.RX_RU_time[2][3] =  10;
   /* Coded S=8 */
   radio_timings.RX_RU_time[3][0] =  40; // 40000
   radio_timings.RX_RU_time[3][1] = 120; //120000
   radio_timings.RX_RU_time[3][2] = 130; //130000
+  radio_timings.RX_RU_time[3][3] =  10;
   /* 15.4 */
   radio_timings.RX_RU_time[4][0] =  40; // 40000
   radio_timings.RX_RU_time[4][1] = 130; //140000 - Is this correct? or should it be 169us?
   radio_timings.RX_RU_time[4][2] = 129; //129000 ?? just copied from Ble 1Mbps
+  radio_timings.RX_RU_time[4][3] =  10;
 
   radio_timings.TX_chain_delay    = 1; //~1us /*both 1, 2Mbps and 15.4, for BLE coded phy it is ~2us*/
   radio_timings.RX_chain_delay[0] = 9; //9.4  /* 1Mbps */
@@ -99,6 +113,10 @@ void nrfra_timings_init(void) {
   radio_timings.TX_RD_time[3] = 10;
   radio_timings.TX_RD_time[4] = 21;
   radio_timings.RX_RD_time = 0; //In reality it seems modulation dependent at ~0, ~0 & ~0.5 us
+
+  radio_timings.PLL_settle_time[0] = 30; //From DISABLED state
+  radio_timings.PLL_settle_time[1] = 10; //From PLL state or from T/RXIDLE when changing frequency
+  radio_timings.PLL_settle_time[2] = 0;  //From T/RXIDLE when *not* changing frequency
 }
 
 /**
@@ -138,18 +156,20 @@ static int get_modidx(void) {
  *                switching during its auto IFS mechanism
  * returns the requested rampup time
  */
-bs_time_t nhwra_timings_get_rampup_time(bool TxNotRx, bool from_hw_TIFS) {
+bs_time_t nhwra_timings_get_rampup_time(bool TxNotRx, enum nhwra_tim_condition cond) {
   int mod_idx = get_modidx();
   int RU_index;
 
+  if (cond == NHWRA_FROM_PLL) {
+    RU_index = 3; //from PLL state
 #if NHW_RADIO_IS_54
-  if ( NRF_RADIO_regs.TIMING & 1 ){ /* TIMMING.RU */
+  } else if ( NRF_RADIO_regs.TIMING & 1 ){ /* TIMMING.RU */
 #else
-  if ( NRF_RADIO_regs.MODECNF0 & 1 ){ /* MODECNF0.RU */
+  } else if ( NRF_RADIO_regs.MODECNF0 & 1 ){ /* MODECNF0.RU */
 #endif
-    RU_index = 0; //Fast
+    RU_index = 0; //Fast ramp up
   } else {
-    if (from_hw_TIFS | nhwra_is_HW_TIFS_enabled()) {
+    if ((cond == NHWRA_FROM_HW_TIFS) | nhwra_is_HW_TIFS_enabled()) {
       RU_index = 1; //Normal RU with HW TIFS
     } else {
       RU_index = 2; //Normal RU without HW TIFS
@@ -176,3 +196,19 @@ bs_time_t nhwra_timings_get_TX_chain_delay(void){
   return radio_timings.TX_chain_delay;
 }
 
+/**
+ * Get the time it will take to go from TASK_PLLEN to PLLREADY
+ * (time in SETTLE state) depending on the previous radio state and the FREQUENCY register
+ * having changed or not
+ */
+bs_time_t nhwra_timings_get_PLL_settle_time(nrfra_state_t radio_state, bool freq_change)
+{
+  if (radio_state == RAD_DISABLED) {
+    return radio_timings.PLL_settle_time[0];
+  } else if ((radio_state == RAD_PLL) || (freq_change)) {
+    return radio_timings.PLL_settle_time[1];
+  } else { //!freq_change from T/RXIDLE
+    return radio_timings.PLL_settle_time[2];
+  }
+
+}

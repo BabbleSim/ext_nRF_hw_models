@@ -7,6 +7,8 @@
  * This file includes miscellaneous utility functions used by the RADIO model
  * but no significant logic *
  */
+
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include "bs_tracing.h"
@@ -752,4 +754,25 @@ uint nhwra_tx_copy_payload(uint8_t *tx_buf){
 
 void hw_radio_testcheat_set_tx_power_gain(double power_offset_i) {
   cheat_tx_power_offset = power_offset_i;
+}
+
+static uint32_t l_FREQUENCY = UINT32_MAX;
+
+/*
+ * Latch the FREQUENCY register
+ * return true if it changed compared to the last time, false otherwise
+ */
+bool nhwra_latch_frequency(void) {
+  bool ret;
+
+  uint32_t new_freq = NRF_RADIO_regs.FREQUENCY;
+
+  ret = (l_FREQUENCY != new_freq);
+  l_FREQUENCY = new_freq;
+
+  return ret;
+}
+
+uint32_t nhwra_get_latched_frequency(void) {
+  return l_FREQUENCY;
 }
