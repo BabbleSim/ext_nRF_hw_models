@@ -36,7 +36,6 @@ void nrf_radio_task_trigger(NRF_RADIO_Type * p_reg, nrf_radio_task_t task)
     CASE_CALL_SIDEEFFECT(CCASTART);
     CASE_CALL_SIDEEFFECT(CCASTOP);
 #if defined(RADIO_TASKS_SOFTRESET_TASKS_SOFTRESET_Msk)
-    //To be enabled once NRF_RADIO_TASK_SOFTRESET is added to the HAL
     CASE_CALL_SIDEEFFECT(SOFTRESET);
 #endif
     default:
@@ -114,8 +113,8 @@ static void nrf_radio_subscribe_common(NRF_RADIO_Type * p_reg,
     CASE_CALL_SIDEEFFECT(EDSTOP);
     CASE_CALL_SIDEEFFECT(CCASTART);
     CASE_CALL_SIDEEFFECT(CCASTOP);
-#if 0 /* defined(RADIO_TASKS_SOFTRESET_TASKS_SOFTRESET_Msk) */
-    CASE_CALL_SIDEEFFECT(SOFTRESET); //TODO missing in HAL
+#if defined(RADIO_TASKS_SOFTRESET_TASKS_SOFTRESET_Msk)
+    CASE_CALL_SIDEEFFECT(SOFTRESET);
 #endif
     default:
       bs_trace_error_line_time("%s: Attempted to subscribe to a not-supported task in the nrf_radio (%i)\n",
