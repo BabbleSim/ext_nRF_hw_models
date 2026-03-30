@@ -38,6 +38,9 @@ void nrf_radio_task_trigger(NRF_RADIO_Type * p_reg, nrf_radio_task_t task)
 #if defined(RADIO_TASKS_SOFTRESET_TASKS_SOFTRESET_Msk)
     CASE_CALL_SIDEEFFECT(SOFTRESET);
 #endif
+#if defined(RADIO_TASKS_PLLEN_TASKS_PLLEN_Msk) && NRFX_RELEASE_VER_AT_LEAST(4,2,2)
+    CASE_CALL_SIDEEFFECT(PLLEN);
+#endif
     default:
       bs_trace_error_line_time("%s: Not supported task %i started\n", __func__, task);
       break;
@@ -115,6 +118,9 @@ static void nrf_radio_subscribe_common(NRF_RADIO_Type * p_reg,
     CASE_CALL_SIDEEFFECT(CCASTOP);
 #if defined(RADIO_TASKS_SOFTRESET_TASKS_SOFTRESET_Msk)
     CASE_CALL_SIDEEFFECT(SOFTRESET);
+#endif
+#if defined(RADIO_TASKS_PLLEN_TASKS_PLLEN_Msk) && NRFX_RELEASE_VER_AT_LEAST(4,2,2)
+    CASE_CALL_SIDEEFFECT(PLLEN);
 #endif
     default:
       bs_trace_error_line_time("%s: Attempted to subscribe to a not-supported task in the nrf_radio (%i)\n",
