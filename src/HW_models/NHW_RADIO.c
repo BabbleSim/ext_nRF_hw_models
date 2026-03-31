@@ -252,6 +252,12 @@ static uint8_t *rx_pkt_buffer_ptr = (uint8_t*)&rx_buf;
 static bool radio_POWER = false;
 #endif
 
+#define RADIO_SET_STATE(_new_state) \
+  do { \
+    radio_state = _new_state; \
+    NRF_RADIO_regs.STATE = _new_state; \
+  } while (0)
+
 static struct {
   double rx_power_offset;
   int64_t tx_disabled;
@@ -330,7 +336,7 @@ static void radio_set_registers_defaults(void) {
 
 static void radio_reset(void) {
   memset(&NRF_RADIO_regs, 0, sizeof(NRF_RADIO_regs));
-  radio_state = RAD_DISABLED;
+  RADIO_SET_STATE(RAD_DISABLED);
   radio_sub_state = SUB_STATE_INVALID;
   Timer_RADIO = TIME_NEVER;
 
@@ -384,8 +390,7 @@ void nhw_RADIO_TASK_PLLEN(void) {
   freq_change = nhwra_latch_frequency();
   delta_t = nhwra_timings_get_PLL_settle_time(radio_state, freq_change);
 
-  radio_state = RAD_SETTLE;
-  NRF_RADIO_regs.STATE = RAD_SETTLE;
+  RADIO_SET_STATE(RAD_SETTLE);
   nhwra_set_Timer_RADIO(nsi_hws_get_time() + delta_t);
 }
 
@@ -408,8 +413,7 @@ void nhw_RADIO_TASK_TXEN(void) {
     (void)nhwra_latch_frequency();
   }
 
-  radio_state = RAD_TXRU;
-  NRF_RADIO_regs.STATE = RAD_TXRU;
+  RADIO_SET_STATE(RAD_TXRU);
   last_was_Tx = true;
 
   nhwra_set_Timer_RADIO(nsi_hws_get_time() + t_delta);
@@ -435,8 +439,7 @@ void nhw_RADIO_TASK_RXEN(void) {
   }
 
   TIFS_state = TIFS_DISABLE;
-  radio_state = RAD_RXRU;
-  NRF_RADIO_regs.STATE = RAD_RXRU;
+  RADIO_SET_STATE(RAD_RXRU);
   last_was_Tx = false;
 
   nhwra_set_Timer_RADIO(nsi_hws_get_time() + t_delta);
@@ -464,8 +467,7 @@ static void abort_if_needed(void) {
 void nhw_RADIO_TASK_START(void) {
   if ( radio_state == RAD_TXIDLE ) {
     bs_time_t Tx_start_time = nsi_hws_get_time() + nhwra_timings_get_TX_chain_delay();
-    radio_state = RAD_TX;
-    NRF_RADIO_regs.STATE = RAD_TX;
+    RADIO_SET_STATE(RAD_TX);
     radio_sub_state = TX_TXSTARTING;
     nhwra_set_Timer_RADIO(Tx_start_time);
   } else if ( radio_state == RAD_RXIDLE ) {
@@ -507,8 +509,7 @@ void nhw_RADIO_TASK_CCASTART(void) {
 void nhw_RADIO_TASK_CCASTOP(void) {
   if (( radio_state == RAD_CCA_ED ) && ( cca_status.CCA_notED )) {
     abort_if_needed();
-    radio_state = RAD_RXIDLE;
-    NRF_RADIO_regs.STATE = RAD_RXIDLE;
+    RADIO_SET_STATE(RAD_RXIDLE);
     nhwra_set_Timer_RADIO(TIME_NEVER);
     nhw_RADIO_signal_EVENTS_CCASTOPPED(0);
   } else {
@@ -533,8 +534,7 @@ void nhw_RADIO_TASK_EDSTART(void) {
 void nhw_RADIO_TASK_EDSTOP(void) {
   if (( radio_state == RAD_CCA_ED ) && ( cca_status.CCA_notED == 0)) {
     abort_if_needed();
-    radio_state = RAD_RXIDLE;
-    NRF_RADIO_regs.STATE = RAD_RXIDLE;
+    RADIO_SET_STATE(RAD_RXIDLE);
     nhwra_set_Timer_RADIO(TIME_NEVER);
     nhw_RADIO_signal_EVENTS_EDSTOPPED(0);
   } else {
@@ -552,13 +552,11 @@ void nhw_RADIO_TASK_STOP(void) {
     if (radio_sub_state != TX_TXSTARTING) {
       abort_if_needed();
     }
-    radio_state = RAD_TXIDLE;
-    NRF_RADIO_regs.STATE = RAD_TXIDLE;
+    RADIO_SET_STATE(RAD_TXIDLE);
     nhwra_set_Timer_RADIO(TIME_NEVER);
   } else if ( radio_state == RAD_RX ){
     abort_if_needed();
-    radio_state = RAD_RXIDLE;
-    NRF_RADIO_regs.STATE = RAD_RXIDLE;
+    RADIO_SET_STATE(RAD_RXIDLE);
     nhwra_set_Timer_RADIO(TIME_NEVER);
   } else if ( radio_state == RAD_CCA_ED ){
     //The documentation is not clear about what happens if we get a STOP during a CCA or ED procedure,
@@ -568,8 +566,7 @@ void nhw_RADIO_TASK_STOP(void) {
         "NRF_RADIO: TASK_STOP received while the radio was performing a CCA or ED procedure. "
         "In this models we stop the procedure, but this can cause a mess in real HW\n");
     abort_if_needed();
-    radio_state = RAD_RXIDLE;
-    NRF_RADIO_regs.STATE = RAD_RXIDLE;
+    RADIO_SET_STATE(RAD_RXIDLE);
     nhwra_set_Timer_RADIO(TIME_NEVER);
   } else {
     bs_trace_warning_line_time(
@@ -586,18 +583,15 @@ void nhw_RADIO_TASK_DISABLE(void) {
     if (radio_sub_state != TX_TXSTARTING) {
       abort_if_needed();
     }
-    radio_state = RAD_TXIDLE; //Momentary (will be changed in the if below)
-    NRF_RADIO_regs.STATE = RAD_TXIDLE;
+    RADIO_SET_STATE(RAD_TXIDLE); //Momentary (will be changed in the if below)
   } else if ( radio_state == RAD_RX ){
     abort_if_needed();
-    radio_state = RAD_RXIDLE; //Momentary (will be changed in the if below)
-    NRF_RADIO_regs.STATE = RAD_RXIDLE;
+    RADIO_SET_STATE(RAD_RXIDLE); //Momentary (will be changed in the if below)
   } else if ( radio_state == RAD_CCA_ED ){
     //The documentation is not clear about what happens if we get a disable during a CCA  or ED procedure,
     //the assumption here is that we stop just like if it was an active Rx, but do not trigger a CCASTOPPED or EDSTOPPED event
     abort_if_needed();
-    radio_state = RAD_RXIDLE; //Momentary (will be changed in the if below)
-    NRF_RADIO_regs.STATE = RAD_RXIDLE;
+    RADIO_SET_STATE(RAD_RXIDLE); //Momentary (will be changed in the if below)
   }
 
   if (TIFS_state != TIFS_DISABLE) {
@@ -607,12 +601,10 @@ void nhw_RADIO_TASK_DISABLE(void) {
   }
 
   if ( ( radio_state == RAD_TXRU ) || ( radio_state == RAD_TXIDLE ) ) {
-    radio_state = RAD_TXDISABLE;
-    NRF_RADIO_regs.STATE = RAD_TXDISABLE;
+    RADIO_SET_STATE(RAD_TXDISABLE);
     nhwra_set_Timer_RADIO(nsi_hws_get_time() + nhwra_timings_get_TX_rampdown_time());
   } else if ( ( radio_state == RAD_RXRU ) || ( radio_state == RAD_RXIDLE ) ) {
-    radio_state = RAD_RXDISABLE;
-    NRF_RADIO_regs.STATE = RAD_RXDISABLE;
+    RADIO_SET_STATE(RAD_RXDISABLE);
     nhwra_set_Timer_RADIO(nsi_hws_get_time() + nhwra_timings_get_RX_rampdown_time());
   } else if ( radio_state == RAD_DISABLED ) {
     //It seems the radio will also signal a DISABLED event even if it was already disabled
@@ -622,13 +614,12 @@ void nhw_RADIO_TASK_DISABLE(void) {
     bs_time_t delta_t;
     // Note It is unclear if it is really almost instantaneous in this case
     if (last_was_Tx) {
-      radio_state = RAD_TXDISABLE;
+      RADIO_SET_STATE(RAD_TXDISABLE);
       delta_t = 0;
     } else {
-      radio_state = RAD_RXDISABLE;
+      RADIO_SET_STATE(RAD_RXDISABLE);
       delta_t = 0;
     }
-    NRF_RADIO_regs.STATE = radio_state;
     nhwra_set_Timer_RADIO(nsi_hws_get_time() + delta_t);
   }
 }
@@ -758,21 +749,18 @@ static void maybe_signal_event_RATEBOOST(void) {
  */
 static void nhw_radio_timer_triggered(void) {
   if ( radio_state == RAD_TXRU ){
-    radio_state = RAD_TXIDLE;
-    NRF_RADIO_regs.STATE = RAD_TXIDLE;
+    RADIO_SET_STATE(RAD_TXIDLE);
     nhwra_set_Timer_RADIO(TIME_NEVER);
     nhw_RADIO_signal_EVENTS_READY(0);
     nhw_RADIO_signal_EVENTS_TXREADY(0);
   } else if ( radio_state == RAD_RXRU ){
-    radio_state = RAD_RXIDLE;
-    NRF_RADIO_regs.STATE = RAD_RXIDLE;
+    RADIO_SET_STATE(RAD_RXIDLE);
     nhwra_set_Timer_RADIO(TIME_NEVER);
     nhw_RADIO_signal_EVENTS_READY(0);
     nhw_RADIO_signal_EVENTS_RXREADY(0);
 #if NHW_RADIO_HAS_PLLEN
   } else if ( radio_state == RAD_SETTLE ) {
-    radio_state = RAD_PLL;
-    NRF_RADIO_regs.STATE = RAD_PLL;
+    RADIO_SET_STATE(RAD_PLL);
     nhwra_set_Timer_RADIO(TIME_NEVER);
     nhw_RADIO_signal_EVENTS_PLLREADY(0);
 #endif
@@ -800,8 +788,7 @@ static void nhw_radio_timer_triggered(void) {
       nhw_RADIO_signal_EVENTS_PAYLOAD(0);
     } else if ( radio_sub_state == TX_WAIT_FOR_CRC_END ) {
       radio_sub_state = SUB_STATE_INVALID;
-      radio_state = RAD_TXIDLE;
-      NRF_RADIO_regs.STATE = RAD_TXIDLE;
+      RADIO_SET_STATE(RAD_TXIDLE);
       nhwra_set_Timer_RADIO(TIME_NEVER);
       nhw_radio_stop_bit_counter();
       nhw_RADIO_signal_EVENTS_END(0);
@@ -839,8 +826,7 @@ static void nhw_radio_timer_triggered(void) {
       nhw_ccm_radio_received_packet(!rx_status.CRC_OK);
 #endif
       radio_sub_state = SUB_STATE_INVALID;
-      radio_state = RAD_RXIDLE;
-      NRF_RADIO_regs.STATE = RAD_RXIDLE;
+      RADIO_SET_STATE(RAD_RXIDLE);
       nhwra_set_Timer_RADIO(TIME_NEVER);
       if ( rx_status.CRC_OK ) {
         nhw_RADIO_signal_EVENTS_CRCOK(0);
@@ -855,8 +841,7 @@ static void nhw_radio_timer_triggered(void) {
       bs_trace_error_time_line("programming error\n");
     }
   } else if ( radio_state == RAD_CCA_ED ){
-    radio_state = RAD_RXIDLE;
-    NRF_RADIO_regs.STATE = RAD_RXIDLE;
+    RADIO_SET_STATE(RAD_RXIDLE);
     nhwra_set_Timer_RADIO(TIME_NEVER);
     if (cca_status.CCA_notED) { //CCA procedure ended
       if (cca_status.is_busy) {
@@ -868,8 +853,7 @@ static void nhw_radio_timer_triggered(void) {
       nhw_RADIO_signal_EVENTS_EDEND(0);
     }
   } else if ((radio_state == RAD_TXDISABLE) || (radio_state == RAD_RXDISABLE)) {
-    radio_state = RAD_DISABLED;
-    NRF_RADIO_regs.STATE = RAD_DISABLED;
+    RADIO_SET_STATE(RAD_DISABLED);
     nhwra_set_Timer_RADIO(TIME_NEVER);
     nhw_radio_stop_bit_counter();
     nhw_RADIO_signal_EVENTS_DISABLED(0);
@@ -979,8 +963,7 @@ static void Tx_abort_eval_respond(void) {
  */
 static void start_Tx(void) {
 
-  radio_state = RAD_TX;
-  NRF_RADIO_regs.STATE = RAD_TX;
+  RADIO_SET_STATE(RAD_TX);
 
   nhwra_check_packet_conf();
 
@@ -1346,8 +1329,7 @@ static void start_Rx(void) {
 
   nhwra_check_packet_conf();
 
-  radio_state = RAD_RX;
-  NRF_RADIO_regs.STATE = RAD_RX;
+  RADIO_SET_STATE(RAD_RX);
   NRF_RADIO_regs.CRCSTATUS = 0;
   NRF_RADIO_regs.PDUSTAT = 0;
 
