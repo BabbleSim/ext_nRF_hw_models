@@ -464,8 +464,9 @@ static void abort_if_needed(void) {
 void nhw_RADIO_TASK_START(void) {
   if ( radio_state == RAD_TXIDLE ) {
     bs_time_t Tx_start_time = nsi_hws_get_time() + nhwra_timings_get_TX_chain_delay();
-    radio_state = RAD_TXSTARTING;
+    radio_state = RAD_TX;
     NRF_RADIO_regs.STATE = RAD_TX;
+    radio_sub_state = TX_TXSTARTING;
     nhwra_set_Timer_RADIO(Tx_start_time);
   } else if ( radio_state == RAD_RXIDLE ) {
     start_Rx();
@@ -547,8 +548,8 @@ void nhw_RADIO_TASK_EDSTOP(void) {
 void nhw_RADIO_TASK_STOP(void) {
   nhw_radio_stop_bit_counter();
 
-  if ((radio_state == RAD_TX) || (radio_state == RAD_TXSTARTING)) {
-    if (radio_state == RAD_TX) {
+  if (radio_state == RAD_TX) {
+    if (radio_sub_state != TX_TXSTARTING) {
       abort_if_needed();
     }
     radio_state = RAD_TXIDLE;
@@ -581,8 +582,8 @@ void nhw_RADIO_TASK_STOP(void) {
 void nhw_RADIO_TASK_DISABLE(void) {
   nhw_radio_stop_bit_counter();
 
-  if ((radio_state == RAD_TX) || (radio_state == RAD_TXSTARTING)) {
-    if (radio_state == RAD_TX) {
+  if (radio_state == RAD_TX) {
+    if (radio_sub_state != TX_TXSTARTING) {
       abort_if_needed();
     }
     radio_state = RAD_TXIDLE; //Momentary (will be changed in the if below)
@@ -775,11 +776,11 @@ static void nhw_radio_timer_triggered(void) {
     nhwra_set_Timer_RADIO(TIME_NEVER);
     nhw_RADIO_signal_EVENTS_PLLREADY(0);
 #endif
-  } else if ( radio_state == RAD_TXSTARTING ){
-    nhwra_set_Timer_RADIO(TIME_NEVER);
-    start_Tx();
   } else if ( radio_state == RAD_TX ){
-    if ( radio_sub_state == TX_WAIT_FOR_ADDRESS_END ){
+    if ( radio_sub_state == TX_TXSTARTING ){
+      nhwra_set_Timer_RADIO(TIME_NEVER);
+      start_Tx();
+    } else if ( radio_sub_state == TX_WAIT_FOR_ADDRESS_END ){
       if (tx_status.codedphy) {
         radio_sub_state = TX_WAIT_FOR_FEC1_END;
         nhwra_set_Timer_RADIO(tx_status.FEC2_start_time);

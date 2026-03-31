@@ -31,13 +31,12 @@ typedef enum { //Note: This should match the real RADIO state values in the STAT
   RAD_TXDISABLE, //The radio is disabling the transmitter
 
   //States only present in the model:
-  RAD_TXSTARTING = 32, //The radio is starting to Tx (it will be in this state for TxChainDelay)
   RAD_CCA_ED, //We are in either a CCA or ED procedure
               //Not a real HW state. In real HW the RADIO is in RXIDLE or some other RX state. Seems the CCA and ED procedures as separate machines
 } nrfra_state_t;
 
 typedef enum {SUB_STATE_INVALID, /*The timer should not trigger in TX or RX state with this substate*/
-  TX_WAIT_FOR_ADDRESS_END, TX_WAIT_FOR_FEC1_END, TX_WAIT_FOR_PAYLOAD_END, TX_WAIT_FOR_CRC_END,
+  TX_WAIT_FOR_ADDRESS_END, TX_WAIT_FOR_FEC1_END, TX_WAIT_FOR_PAYLOAD_END, TX_WAIT_FOR_CRC_END, TX_TXSTARTING,
   RX_WAIT_FOR_ADDRESS_END, RX_WAIT_FOR_FEC1_END, RX_WAIT_FOR_PAYLOAD_END, RX_WAIT_FOR_CRC_END
 } nrfra_sub_state_t;
 
