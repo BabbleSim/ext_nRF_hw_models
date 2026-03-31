@@ -269,8 +269,12 @@ void nhw_RADIO_signal_EVENTS_PHYEND(unsigned int inst) {
 void nhw_RADIO_signal_EVENTS_PLLREADY(unsigned int inst) {
   nhw_RADIO_signal_EVENTS_PLLREADY_noshort(inst);
 
+#if defined(RADIO_SHORTS_PLLREADY_TXEN_Msk)
   NHW_SHORT_si(RADIO, PLLREADY, TXEN)
+#endif
+#if defined(RADIO_SHORTS_PLLREADY_RXEN_Msk)
   NHW_SHORT_si(RADIO, PLLREADY, RXEN)
+#endif
 }
 #endif
 
