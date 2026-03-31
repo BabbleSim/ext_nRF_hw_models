@@ -27,10 +27,11 @@ typedef enum { //Note: This should match the real RADIO state values in the STAT
 
   RAD_TXRU = 9, //The radio is ramping up and preparing for transmission
   RAD_TXIDLE, //The radio is ready for transmission to start
-  RAD_TXSTARTING, //The radio is starting to Tx (it will be in this state for TxChainDelay)
   RAD_TX, //The radio is transmitting a packet
   RAD_TXDISABLE, //The radio is disabling the transmitter
 
+  //States only present in the model:
+  RAD_TXSTARTING = 32, //The radio is starting to Tx (it will be in this state for TxChainDelay)
   RAD_CCA_ED, //We are in either a CCA or ED procedure
               //Not a real HW state. In real HW the RADIO is in RXIDLE or some other RX state. Seems the CCA and ED procedures as separate machines
 } nrfra_state_t;
