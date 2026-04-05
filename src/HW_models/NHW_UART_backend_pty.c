@@ -22,6 +22,13 @@
  */
 
 #include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <time.h>
+#include <sys/ioctl.h>
+
+int tcdrain(int fd);
+
 #include "bs_types.h"
 #include "bs_tracing.h"
 #include "bs_oswrap.h"
@@ -47,6 +54,7 @@ struct upty_st_t {
   bool auto_attach;
   char *attach_cmd;
   bool respect_RTS;
+  bool wait_for_readers;
 
   int out_fd; /* File descriptor used for output */
   int in_fd; /* File descriptor used for input */
@@ -206,17 +214,50 @@ static void nhw_upty_timer_triggered(void) {
 
 NSI_HW_EVENT(Timer_UPTY, nhw_upty_timer_triggered, 900); /* Let's let as many timers as possible evaluate before this one */
 
+static void nhw_upty_wait_for_fionread_empty(int fd) {
+  int bytes_left = 0;
+  const struct timespec sleep_time = { .tv_sec = 0, .tv_nsec = 1000000 }; // 1ms
+
+  while (1) {
+    if (ioctl(fd, FIONREAD, &bytes_left) != 0) {
+      return;
+    }
+
+    if (bytes_left == 0) {
+      return;
+    }
+
+    (void)nanosleep(&sleep_time, NULL);
+  }
+}
+
 static void nhw_upty_cleanup(void) {
   for (int i = 0; i < NHW_UARTE_TOTAL_INST; i++) {
     struct upty_st_t *u_el = &upty_st[i];
 
+    if (u_el->out_fd != -1) {
+      if (u_el->wait_for_readers) {
+        (void)tcdrain(u_el->out_fd);
+
+        char *slave_name = ptsname(u_el->out_fd);
+        if (slave_name != NULL) {
+          int slave_fd = open(slave_name, O_RDWR | O_NOCTTY);
+          if (slave_fd != -1) {
+            nhw_upty_wait_for_fionread_empty(slave_fd);
+            close(slave_fd);
+          }
+        }
+      }
+
+      close(u_el->out_fd);
+      if (u_el->in_fd == u_el->out_fd) {
+        u_el->in_fd = -1;
+      }
+      u_el->out_fd = -1;
+    }
     if (u_el->in_fd != -1) {
       close(u_el->in_fd);
       u_el->in_fd = -1;
-    }
-    if (u_el->out_fd != -1) {
-      close(u_el->out_fd);
-      u_el->out_fd = -1;
     }
   }
 }
@@ -234,7 +275,7 @@ static void parse_poll_period(char *argv, int offset) {
 }
 
 static void nhw_upty_backend_register_cmdline(void) {
-#define OPT_PER_UART 4
+#define OPT_PER_UART 5
   static bs_args_struct_t args[OPT_PER_UART*NHW_UARTE_TOTAL_INST + 1 /* End marker */];
   static char descr_connect[] = "Connect this UART to a pseudoterminal";
   static char descr_auto[] = "Automatically attach to the UART terminal (implies uartx_pty)";
@@ -242,7 +283,9 @@ static void nhw_upty_backend_register_cmdline(void) {
                             "uartx_pty_attach), by default: '" DEFAULT_CMD "'";
   static char descr_ignoreRTS[] = "Hold feeding data from the PTY if RTS is high (note: "
                                   "If HW flow control is disabled the UART never lowers RTS)";
-#define OPTION_LEN (4 + 2 + 15 + 1)
+  static char descr_wait_readers[] = "At exit, wait for this UART's PTY slave FIONREAD counter "
+                                     "to reach 0 before closing";
+#define OPTION_LEN (4 + 2 + 21 + 1)
   static char options[NHW_UARTE_TOTAL_INST][OPT_PER_UART][OPTION_LEN];
   static char opt_cmd[]= "cmd";
 
@@ -251,6 +294,7 @@ static void nhw_upty_backend_register_cmdline(void) {
     snprintf(options[i][1], OPTION_LEN, "uart%i_pty_attach", i);
     snprintf(options[i][2], OPTION_LEN, "uart%i_pty_attach_cmd", i);
     snprintf(options[i][3], OPTION_LEN, "uart%i_pty_respect_RTS", i);
+    snprintf(options[i][4], OPTION_LEN, "uart%i_pty_wait_for_readers", i);
 
     args[OPT_PER_UART*i].option = options[i][0];
     args[OPT_PER_UART*i].is_switch = true;
@@ -275,6 +319,12 @@ static void nhw_upty_backend_register_cmdline(void) {
     args[OPT_PER_UART*i + 3].type = 'b';
     args[OPT_PER_UART*i + 3].dest = &upty_st[i].respect_RTS;
     args[OPT_PER_UART*i + 3].descript = descr_ignoreRTS;
+
+    args[OPT_PER_UART*i + 4].option = options[i][4];
+    args[OPT_PER_UART*i + 4].is_switch = true;
+    args[OPT_PER_UART*i + 4].type = 'b';
+    args[OPT_PER_UART*i + 4].dest = &upty_st[i].wait_for_readers;
+    args[OPT_PER_UART*i + 4].descript = descr_wait_readers;
   }
 
   bs_add_extra_dynargs(args);
