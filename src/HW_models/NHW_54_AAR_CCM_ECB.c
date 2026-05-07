@@ -66,9 +66,6 @@
  *    and run fast, unlike in the 52/3 where it was meant to run slowly as the bytes were
  *    received)
  *
- *  * [CCM5]: At this point only BLE protocol is supported
- *    (and therefore an AAD length/l_a of 1 byte, and MIC length of 4 bytes)
- *
  *  * [CCM6]: It is unclear if for the real HW, during decryption, when l_c < MACLEN (or < 5 for BLE)
  *    if apart from an ERROR event being generated something else happens (for ex. if ERRORSTATUS
  *    is changed)
