@@ -319,6 +319,9 @@
 #define NHW_RRAM_SIZE       {(2036*1024)}
 #define NHW_UICR_SIZE {2560 /*bytes*/}
 
+#define NHW_FICR_PART 0x054BC20A
+#define NHW_FICR_RRAM 2036 /* KB */
+
 #define NHW_SPU_TOTAL_INST 4
 #define NHW_SPU_00 0
 #define NHW_SPU_10 1

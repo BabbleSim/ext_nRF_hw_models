@@ -30,9 +30,8 @@ static void nhw_54l_ficr_init(void) {
 
   NRF_FICR_regs.INFO.DEVICEID[0] = (bs_random_uint32() & 0xFFFFFF00) + bsim_args_get_global_device_nbr();
   NRF_FICR_regs.INFO.DEVICEID[1] = bs_random_uint32();
-  //NRF_FICR_regs.INFO.PART = 0x5415;
-  NRF_FICR_regs.INFO.RRAM = 0x5F4; /*1524 KB*/
-  //NRF_FICR_regs.INFO.DEVICETYPE = 0;
+  NRF_FICR_regs.INFO.PART = NHW_FICR_PART;
+  NRF_FICR_regs.INFO.RRAM = NHW_FICR_RRAM;
   for (int i = 0; i < 4; i++) {
     NRF_FICR_regs.ER[i] = bs_random_uint32();
     NRF_FICR_regs.IR[i] = bs_random_uint32();

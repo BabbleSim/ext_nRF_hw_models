@@ -302,6 +302,9 @@
 #define NHW_RRAM_SIZE       {(1524*1024)}
 #define NHW_UICR_SIZE {2560 /*bytes*/}
 
+#define NHW_FICR_PART 0x00054B15
+#define NHW_FICR_RRAM 1524 /* KB */
+
 #define NHW_SPU_TOTAL_INST 4
 #define NHW_SPU_00 0
 #define NHW_SPU_10 1
