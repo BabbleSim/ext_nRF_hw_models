@@ -247,6 +247,10 @@
 #include "hal/nrf_uarte.h"
 #endif
 
+#ifdef UICR_PRESENT
+#include "hal/nrf_uicr.h"
+#endif
+
 #ifdef USBD_PRESENT
 #include "hal/nrf_usbd.h"
 #endif
