@@ -1055,6 +1055,10 @@ static void start_Tx(void) {
   tx_status.PAYLOAD_end_time = payload_start_time + (bs_time_t)(8*(header_len + payload_len)/bits_per_us);
   tx_status.CRC_end_time = tx_status.PAYLOAD_end_time + (bs_time_t)(crc_len*8/bits_per_us);
 
+  if (tx_status.codedphy) {
+    tx_status.CRC_end_time += 3/bits_per_us; // + TERM2
+  }
+
   nhwra_prep_tx_request(&tx_status.tx_req, main_packet_size, packet_duration,
                         main_packet_start_time, main_packet_coding_rate);
   update_abort_struct(&tx_status.tx_req.abort, &abort_next_recheck_time);
