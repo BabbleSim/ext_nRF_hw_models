@@ -63,9 +63,13 @@ static void nhw_CRACEN_eval_interrupt(uint inst) {
   static struct nhw_irq_mapping nhw_cracen_irq_map[NHW_CRACEN_TOTAL_INST] = NHW_CRACEN_INT_MAP;
   bool new_int_line = false;
 
+#if (NHW_CRACEN_HAS_CM)
   NHW_CHECK_INTERRUPT_si(CRACEN, CRYPTOMASTER, NRF_CRACEN_regs.INTEN)
+#endif
   NHW_CHECK_INTERRUPT_si(CRACEN, RNG, NRF_CRACEN_regs.INTEN)
+#if (NHW_CRACEN_HAS_PKEIKG)
   NHW_CHECK_INTERRUPT_si(CRACEN, PKEIKG, NRF_CRACEN_regs.INTEN)
+#endif
 
   hw_irq_ctrl_toggle_level_irq_line_if(&CRACEN_int_line[inst],
                                        new_int_line,
@@ -103,9 +107,13 @@ static void nhw_CRACEN_eval_interrupt(uint inst) {
   NHW_CRACEN_TOGGLE_INTLINE(event) \
   NHW_CRACEN_REGW_SIDEEFFECTS_EVENT(event) \
 
+#if (NHW_CRACEN_HAS_CM)
 NHW_CRACEN_EVENT_LOGIC(CRYPTOMASTER)
+#endif
 NHW_CRACEN_EVENT_LOGIC(RNG)
+#if (NHW_CRACEN_HAS_PKEIKG)
 NHW_CRACEN_EVENT_LOGIC(PKEIKG)
+#endif
 
 NHW_SIDEEFFECTS_INTEN(CRACEN, NRF_CRACEN_regs., NRF_CRACEN_regs.INTEN)
 NHW_SIDEEFFECTS_INTSET(CRACEN, NRF_CRACEN_regs., NRF_CRACEN_regs.INTEN)
@@ -116,7 +124,11 @@ extern bs_time_t Timer_CRACEN_CM;
 
 void nhw_CRACEN_update_timer(void) {
 
+#if (NHW_CRACEN_HAS_CM)
   bs_time_t new_t = BS_MIN(Timer_CRACEN_NDRNG, Timer_CRACEN_CM);
+#else
+  bs_time_t new_t = Timer_CRACEN_NDRNG;
+#endif
   if (Timer_CRACEN != new_t) {
     Timer_CRACEN = new_t;
     nsi_hws_find_next_event();
@@ -128,9 +140,11 @@ static void nhw_CRACEN_timer_triggered(void) {
   if (timer == Timer_CRACEN_NDRNG) {
     nhw_CRACEN_RNG_timer_triggered();
   }
+#if (NHW_CRACEN_HAS_CM)
   if (timer == Timer_CRACEN_CM) {
     nhw_CRACEN_CM_timer_triggered();
   }
+#endif
 }
 
 NSI_HW_EVENT(Timer_CRACEN, nhw_CRACEN_timer_triggered, 50);

@@ -27,13 +27,21 @@ void nrf_cracen_event_clear(NRF_CRACEN_Type *  p_reg,
                             nrf_cracen_event_t event)
 {
   *((volatile uint32_t *)((uint8_t *)p_reg + (uint32_t)event)) = 0;
+
+#if NRF_CRACEN_HAS_CRYPTOMASTER
   if (event == NRF_CRACEN_EVENT_CRYPTOMASTER) {
     nhw_CRACEN_regw_sideeffects_EVENTS_CRYPTOMASTER();
-  } else if (event == NRF_CRACEN_EVENT_RNG) {
+  } else
+#endif
+  if (event == NRF_CRACEN_EVENT_RNG) {
     nhw_CRACEN_regw_sideeffects_EVENTS_RNG();
-  } else if (event == NRF_CRACEN_EVENT_PKE_IKG) {
+  }
+#if NRF_CRACEN_HAS_PKEIKG
+  else if (event == NRF_CRACEN_EVENT_PKE_IKG) {
     nhw_CRACEN_regw_sideeffects_EVENTS_PKEIKG();
-  } else {
+  }
+#endif
+  else {
     bs_trace_error_time_line("Attempted to clear unknown event %i\n", event);
   }
 }

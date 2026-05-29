@@ -62,7 +62,9 @@
 
 #if defined(CRACEN_PRESENT) && ( (defined(NRFX_RELEASE_VER_AT_LEAST) && NRFX_RELEASE_VER_AT_LEAST(3,10,0)) )
 #include "hal/nrf_cracen_rng.h"
+#if NHW_CRACEN_HAS_CM
 #include "hal/nrf_cracen_cm.h"
+#endif
 #endif
 
 #ifdef NRF_DCNF_NS
