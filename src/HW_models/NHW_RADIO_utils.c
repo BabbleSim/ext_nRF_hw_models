@@ -478,6 +478,40 @@ static double nhwra_tx_power_from_reg(void) {
       bs_trace_warning_time_line("Unknown TXPOWER setting for this radio\n");
       return 0;
   }
+#elif defined(NRF54LS05)
+  switch (NRF_RADIO_regs.TXPOWER) {
+    case 0x3F : return  +8;
+    case 0x39 : return  +7;
+    case 0x33 : return  +6;
+    case 0x2D : return  +5;
+    case 0x28 : return  +4;
+    case 0x23 : return  +3;
+    case 0x1F : return  +2;
+    case 0x1B : return  +1;
+    case 0x18 : return   0;
+    case 0x15 : return  -1;
+    case 0x13 : return  -2;
+    case 0x11 : return  -3;
+    case 0xF  : return  -4;
+    case 0xD  : return  -5;
+    case 0xB  : return  -6;
+    case 0xA  : return  -7;
+    case 0x9  : return  -8;
+    case 0x8  : return  -9;
+    case 0x7  : return -10;
+    case 0x6  : return -12;
+    case 0x5  : return -14;
+    case 0x4  : return -16;
+    case 0x3  : return -18;
+    case 0x2  : return -20;
+    case 0x1  : return -28;
+    case 0x130: return -40;
+    case 0x110: return -46;
+    case 0x0  : return -100;
+    default:
+      bs_trace_warning_time_line("Unknown TXPOWER setting for this radio\n");
+      return 0;
+  }
 #elif defined(NRF54H20)
   switch (NRF_RADIO_regs.TXPOWER) {
     case 0x1F: return 10;
@@ -505,6 +539,7 @@ static double nhwra_tx_power_from_reg(void) {
       bs_trace_warning_time_line("Unknown TXPOWER setting for this radio\n");
       return 0;
   }
+#else
 #error "Tx power mapping missing for this device"
 #endif
 #endif /* !NHW_RADIO_IS_54 */

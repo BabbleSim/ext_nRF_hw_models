@@ -29,6 +29,9 @@ void *nhw_convert_periph_base_addr(void *hw_addr);
 #elif defined(NRF54L15_XXAA)
 #include "nrf_bsim_redef.54L15.h"
 
+#elif defined(NRF54LS05A_XXAA)
+#include "nrf_bsim_redef.54LS05.h"
+
 #elif defined(NRF54LM20A_XXAA) || defined(NRF54LM20A_ENGA_XXAA)
 #include "nrf_bsim_redef.54LM20.h"
 

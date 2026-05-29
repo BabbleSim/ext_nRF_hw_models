@@ -25,6 +25,9 @@
 #elif defined(NRF54L15) || defined(NRF54L15_XXAA)
 #include "NHW_config.54L15.h"
 
+#elif defined(NRF54LS05) || defined(NRF54LS05A_XXAA)
+#include "NHW_config.54LS05.h"
+
 #elif defined(NRF54LM20) || defined(NRF54LM20A_XXAA) || defined(NRF54LM20A_ENGA_XXAA)
 #include "NHW_config.54LM20.h"
 

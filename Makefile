@@ -12,6 +12,7 @@ endif
 default: \
  NRF52833 \
  NRF5340 \
+ NRF54LS05 \
  NRF54L15 \
  NRF54LM20
 
@@ -33,6 +34,10 @@ NRF5340_hal_app:
 	@$(MAKE) --no-print-directory -f 5340.mk hw install
 	@$(MAKE) --no-print-directory -f 5340.mk hal_app install
 
+NRF54LS05:
+	@$(MAKE) --no-print-directory -f 54LS05.mk hw install
+	@$(MAKE) --no-print-directory -f 54LS05.mk hal_app install
+
 NRF54L15:
 	@$(MAKE) --no-print-directory -f 54L15.mk hw install
 	@$(MAKE) --no-print-directory -f 54L15.mk hal_app install
@@ -49,6 +54,7 @@ NRF54LM20:
  NRF52833 \
  NRF5340 \
  NRF5340_hal_net NRF5340_hal_app \
+ NRF54LS05 \
  NRF54L15 \
  NRF54LM20 \
  default compile
