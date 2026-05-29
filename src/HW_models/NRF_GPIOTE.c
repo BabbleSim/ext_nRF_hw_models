@@ -47,6 +47,12 @@
 #include "bs_tracing.h"
 #include "nsi_tasks.h"
 
+#if defined(GPIOTE_INTENCLR0_PORT0SECURE_Msk)
+#define NHW_GPIOTE_HAS_SECURE_PORTS 1
+#else
+#define NHW_GPIOTE_HAS_SECURE_PORTS 0
+#endif
+
 NRF_GPIOTE_Type NRF_GPIOTE_regs[NHW_GPIOTE_TOTAL_INST] = {0};
 /* Mapping of peripheral instance to {int controller instance, int number} */
 static struct nhw_irq_mapping nhw_gpiote_irq_map[NHW_GPIOTE_TOTAL_INST][NHW_GPIOTE_N_INT] = NHW_GPIOTE_INT_MAP;
@@ -184,11 +190,13 @@ static void nrf_gpiote_eval_interrupt(unsigned int inst) {
     if (NRF_GPIOTE_regs[inst].EVENTS_PORT[0].NONSECURE && mask) {
       new_int_line = true;
     }
+#if (NHW_GPIOTE_HAS_SECURE_PORTS)
     mask = (st->GPIOTE_ITEN[line] & GPIOTE_INTENCLR0_PORT0SECURE_Msk) >> GPIOTE_INTENCLR0_PORT0SECURE_Pos;
     if (NRF_GPIOTE_regs[inst].EVENTS_PORT[0].SECURE && mask) {
       new_int_line = true;
     }
 #endif
+#endif /* NHW_GPIOTE_IS_54 */
 
     hw_irq_ctrl_toggle_level_irq_line_if(&st->gpiote_int_line[line],
         new_int_line,
@@ -212,8 +220,10 @@ static void nhw_GPIOTE_signal_EVENTS_PORT(unsigned int inst) {
   NRF_GPIOTE_regs[inst].EVENTS_PORT = 1;
 #else
   NRF_GPIOTE_regs[inst].EVENTS_PORT[0].NONSECURE = 1;
+#if (NHW_GPIOTE_HAS_SECURE_PORTS)
   NRF_GPIOTE_regs[inst].EVENTS_PORT[0].SECURE = 1;
 #endif
+#endif /* NHW_GPIOTE_IS_54 */
   nrf_gpiote_eval_interrupt(inst);
 
 #if (NHW_HAS_PPI)
@@ -223,11 +233,14 @@ static void nhw_GPIOTE_signal_EVENTS_PORT(unsigned int inst) {
   nhw_dppi_event_signal_if(gpiote_st[inst].dppi_map,
                            NRF_GPIOTE_regs[inst].PUBLISH_PORT);
   #else
+
+  #if (NHW_GPIOTE_HAS_SECURE_PORTS)
   nhw_dppi_event_signal_if(gpiote_st[inst].dppi_map,
                            NRF_GPIOTE_regs[inst].PUBLISH_PORT[0].SECURE);
+  #endif
   nhw_dppi_event_signal_if(gpiote_st[inst].dppi_map,
                            NRF_GPIOTE_regs[inst].PUBLISH_PORT[0].NONSECURE);
-  #endif
+  #endif /* NHW_GPIOTE_IS_54 */
 #endif
 }
 

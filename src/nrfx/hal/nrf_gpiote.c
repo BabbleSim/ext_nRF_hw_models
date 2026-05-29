@@ -85,7 +85,10 @@ void nrf_gpiote_event_clear(NRF_GPIOTE_Type * p_reg, nrf_gpiote_event_t event)
     nrf_gpiote_regw_sideeffects_EVENTS_PORT(inst);
 #else
   } else if ((reg == &NRF_GPIOTE_regs[inst].EVENTS_PORT[0].NONSECURE)
-             || (reg == &NRF_GPIOTE_regs[inst].EVENTS_PORT[0].SECURE)) {
+#if defined(GPIOTE_EVENTS_PORT_SECURE_SECURE_Msk)
+             || (reg == &NRF_GPIOTE_regs[inst].EVENTS_PORT[0].SECURE)
+#endif
+             ) {
     nrf_gpiote_regw_sideeffects_EVENTS_PORT(inst);
 #endif
   } else {
