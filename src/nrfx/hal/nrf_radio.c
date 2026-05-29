@@ -6,6 +6,8 @@
  *
  * Note that the function prototypes are taken from the NRFx HAL
  */
+
+#include "NHW_config.h"
 #include "hal/nrf_radio.h"
 #include "bs_tracing.h"
 #include "NHW_RADIO.h"
@@ -31,10 +33,12 @@ void nrf_radio_task_trigger(NRF_RADIO_Type * p_reg, nrf_radio_task_t task)
 #endif
     CASE_CALL_SIDEEFFECT(BCSTART);
     CASE_CALL_SIDEEFFECT(BCSTOP);
+#if NHW_RADIO_HAS_15_4
     CASE_CALL_SIDEEFFECT(EDSTART);
     CASE_CALL_SIDEEFFECT(EDSTOP);
     CASE_CALL_SIDEEFFECT(CCASTART);
     CASE_CALL_SIDEEFFECT(CCASTOP);
+#endif
 #if defined(RADIO_TASKS_SOFTRESET_TASKS_SOFTRESET_Msk)
     CASE_CALL_SIDEEFFECT(SOFTRESET);
 #endif
@@ -112,10 +116,12 @@ static void nrf_radio_subscribe_common(NRF_RADIO_Type * p_reg,
 #endif
     CASE_CALL_SIDEEFFECT(BCSTART);
     CASE_CALL_SIDEEFFECT(BCSTOP);
+#if NHW_RADIO_HAS_15_4
     CASE_CALL_SIDEEFFECT(EDSTART);
     CASE_CALL_SIDEEFFECT(EDSTOP);
     CASE_CALL_SIDEEFFECT(CCASTART);
     CASE_CALL_SIDEEFFECT(CCASTOP);
+#endif
 #if defined(RADIO_TASKS_SOFTRESET_TASKS_SOFTRESET_Msk)
     CASE_CALL_SIDEEFFECT(SOFTRESET);
 #endif

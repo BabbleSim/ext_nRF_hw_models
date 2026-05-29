@@ -311,12 +311,16 @@ static void nhw_radio_device_address_match(uint8_t rx_data[]);
 static void radio_set_registers_defaults(void) {
   //Registers' reset values:
   NRF_RADIO_regs.FREQUENCY = 0x00000002;
+#if (NHW_RADIO_HAS_15_4)
   NRF_RADIO_regs.SFD = 0xA7;
   NRF_RADIO_regs.CCACTRL = 0x052D0000;
+#endif
+#if (NHW_RADIO_HAS_DF)
   NRF_RADIO_regs.CTEINLINECONF = 0x00002800;
   NRF_RADIO_regs.DFECTRL1 = 0x00023282;
   memset((uint32_t *)NRF_RADIO_regs.PSEL.DFEGPIO, 0xFF, sizeof(NRF_RADIO_regs.PSEL.DFEGPIO));
   NRF_RADIO_regs.DFEPACKET.MAXCNT = 0x00001000;
+#endif
 
 #if defined(RADIO_DATAWHITE_IV_Msk)
   NRF_RADIO_regs.DATAWHITE = 0x00890040;
@@ -327,11 +331,13 @@ static void radio_set_registers_defaults(void) {
 #if !NHW_RADIO_IS_54
   NRF_RADIO_regs.MODECNF0 = 0x00000200;
   NRF_RADIO_regs.POWER = 1;
-#else
+#else /* NHW_RADIO_IS_54 */
+#if (NHW_RADIO_HAS_15_4)
   NRF_RADIO_regs.EDCTRL = 0x20000000;
+#endif /* NHW_RADIO_HAS_15_4 */
   NRF_RADIO_regs.TXPOWER = 0x00000013;
   NRF_RADIO_regs.TIMING = 1;
-#endif
+#endif /* NHW_RADIO_IS_54 */
 }
 
 static void radio_reset(void) {
@@ -490,7 +496,9 @@ void nhw_RADIO_TASK_SOFTRESET(void) {
   //Reset all registers after interrupts (first is MODE), but not the PACKETPTR.
   //Note: DFE PACKETPTR should also not be reset(?), but is not yet implemented
   memset((void *)&NRF_RADIO_regs.MODE, 0, offsetof(NRF_RADIO_Type, PACKETPTR) - offsetof(NRF_RADIO_Type, MODE));
+#if NHW_RADIO_HAS_CS
   memset((void *)&NRF_RADIO_regs.CSTONES, 0, sizeof(NRF_RADIO_Type) - offsetof(NRF_RADIO_Type, CSTONES));
+#endif
   radio_set_registers_defaults();
 #endif
 }
@@ -988,12 +996,11 @@ static void start_Tx(void) {
     address_len = 4;
     header_len  = 2;
     bits_per_us = 2;
-  } else if ((NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit)
-            || (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR500Kbit)) {
+  } else if (nhwra_mode_is_blecoded()) {
     tx_status.codedphy = true;
     address_len = 4;
     header_len  = 2;
-    if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit) {
+    if (nhwra_mode_is_blecoded125()) {
       bits_per_us = 0.125;
       CI = 0; //0b00
       main_packet_coding_rate = 8;
@@ -1002,7 +1009,7 @@ static void start_Tx(void) {
       CI = 1; //0b01
       main_packet_coding_rate = 2;
     }
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     preamble_len = 4;
     address_len = 1;
     header_len  = 1;
@@ -1015,9 +1022,9 @@ static void start_Tx(void) {
    * When doing so, we should still calculate the ble and 154 crc's with their optimized table implementations
    * Here we just assume the CRC is configured as it should given the modulation */
   uint32_t crc_init = NRF_RADIO_regs.CRCINIT & RADIO_CRCINIT_CRCINIT_Msk;
-  if (nhwra_is_ble_mode(NRF_RADIO_regs.MODE)) {
+  if (nhwra_mode_is_ble()) {
     append_crc_ble(tx_buf, header_len + payload_len, crc_init);
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     //15.4 does not CRC the length (header) field
     append_crc_154(&tx_buf[header_len], payload_len, crc_init);
   }
@@ -1091,6 +1098,7 @@ static void start_Tx_FEC2(void) {
 }
 
 static void Rx_handle_CI_reception(void) {
+#if NHW_RADIO_HAS_BLECODED
   rx_status.CI = rx_buf[0] & 0x3;
 
   if ((rx_status.rx_resp.packet_size < 1) || (rx_status.CI > 1)) {
@@ -1114,6 +1122,7 @@ static void Rx_handle_CI_reception(void) {
       rx_status.CI_error = true;
     }
   }
+#endif
 }
 
 static void Rx_handle_end_response(bs_time_t end_time) {
@@ -1175,9 +1184,9 @@ static void Rx_handle_address_end_response(bs_time_t address_time) {
 
   bs_time_t payload_end = 0;
 
-  if (nhwra_is_ble_mode(NRF_RADIO_regs.MODE)) {
+  if (nhwra_mode_is_ble()) {
     payload_end = rx_status.rx_resp.rx_time_stamp + (bs_time_t)((2+length)*8/bits_per_us);
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     payload_end = rx_status.rx_resp.rx_time_stamp + (bs_time_t)((1+length)*8/bits_per_us);
   } //Eventually this should be generalized with the packet configuration
 
@@ -1196,7 +1205,7 @@ static void Rx_handle_address_end_response(bs_time_t address_time) {
   rx_status.CRC_End_Time = rx_status.PAYLOAD_End_Time + rx_status.CRC_duration + TERM2_duration; //Provisional value (if we are accepting the packet)
 
   //Copy the whole packet (S0, lenght, S1 & payload) excluding the CRC.
-  if (nhwra_is_ble_mode(NRF_RADIO_regs.MODE)) {
+  if (nhwra_mode_is_ble()) {
     if (rx_status.rx_resp.packet_size >= 5) { /*At least the header and CRC, otherwise better to not try to copy it*/
       ((uint8_t*)NRF_RADIO_regs.PACKETPTR)[0] = rx_buf[0];
       ((uint8_t*)NRF_RADIO_regs.PACKETPTR)[1] = rx_buf[1];
@@ -1204,7 +1213,7 @@ static void Rx_handle_address_end_response(bs_time_t address_time) {
       memcpy(&((uint8_t*)NRF_RADIO_regs.PACKETPTR)[2 + rx_status.S1Offset],
           &rx_buf[2] , length);
     }
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     if (rx_status.rx_resp.packet_size >= 3) { /*At least the header and CRC, otherwise better to not try to copy it*/
             ((uint8_t*)NRF_RADIO_regs.PACKETPTR)[0] = rx_buf[0];
             memcpy(&((uint8_t*)NRF_RADIO_regs.PACKETPTR)[1 + rx_status.S1Offset],
@@ -1212,7 +1221,7 @@ static void Rx_handle_address_end_response(bs_time_t address_time) {
           }
   } //Eventually this should be generalized with the packet configuration
 
-  if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  if (nhwra_mode_is_154()) {
     //The real HW only copies the LQI value after the payload in this mode
     //Note that doing it this early is a cheat
     double RSSI = p2G4_RSSI_value_to_dBm(rx_status.rx_resp.rssi.RSSI) + cheat_options.rx_power_offset;
@@ -1352,12 +1361,11 @@ static void start_Rx(void) {
     bits_per_us = 1;
   } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_2Mbit) {
     bits_per_us = 2;
-  } else if ((NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit)
-      || (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR500Kbit)) {
+  } else if (nhwra_mode_is_blecoded()) {
     bits_per_us = 0.125; /* For FEC1 part */
     rx_status.codedphy = true;
     rx_status.inFEC1 = true;
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     bits_per_us = 0.25;
   }
   rx_status.CRC_duration = nhwra_get_crc_length()*8/bits_per_us;
@@ -1521,6 +1529,7 @@ static void nhw_radio_device_address_match(uint8_t rx_data[]) {
 }
 
 static void CCA_handle_end_response(void) {
+#if NHW_RADIO_HAS_15_4
   //Depending on mode, set status and registers
   //raising CCAIDLE, CCABUSY or EDEND will happen in the correct time in the main machine
 
@@ -1546,6 +1555,7 @@ static void CCA_handle_end_response(void) {
     double RSSI = p2G4_RSSI_value_to_dBm(cca_status.cca_resp.RSSI_max) + cheat_options.rx_power_offset;
     NRF_RADIO_regs.EDSAMPLE = nhwra_dBm_to_modem_LQIformat(RSSI);
   }
+#endif /* NHW_RADIO_HAS_15_4 */
 }
 
 /**

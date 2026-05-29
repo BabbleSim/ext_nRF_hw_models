@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "bs_pc_2G4_types.h"
+#include "NHW_config.h"
+#include "NHW_peri_types.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -31,12 +33,46 @@ uint nhwra_get_payload_length(uint8_t *buf);
 uint32_t nhwra_get_rx_crc_value(uint8_t *rx_buf, size_t rx_packet_size);
 uint nhwra_get_crc_length(void);
 uint nhwra_get_MAXLEN(void);
-bool nhwra_is_ble_mode(uint32_t MODE);
+bool nhwra_mode_is_ble(void);
 uint64_t nhwra_get_address(uint logical_addr);
 p2G4_freq_t nhwra_get_freq(void);
-p2G4_power_t nhwra_get_tx_power(void);
 bool nhwra_latch_frequency(void);
 uint32_t nhwra_get_latched_frequency(void);
+
+extern NRF_RADIO_Type NRF_RADIO_regs;
+
+BSIM_INLINE bool nhwra_mode_is_154(void) {
+#if NHW_RADIO_HAS_15_4
+  return (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit);
+#else
+  return false;
+#endif
+}
+
+BSIM_INLINE bool nhwra_mode_is_blecoded(void) {
+#if NHW_RADIO_HAS_BLECODED
+  return ((NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR500Kbit)
+       || (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit));
+#else
+  return false;
+#endif
+}
+
+BSIM_INLINE bool nhwra_mode_is_blecoded125(void) {
+#if NHW_RADIO_HAS_BLECODED
+  return (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit);
+#else
+  return false;
+#endif
+}
+
+BSIM_INLINE bool nhwra_mode_is_blecoded500(void) {
+#if NHW_RADIO_HAS_BLECODED
+  return (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR500Kbit);
+#else
+  return false;
+#endif
+}
 
 #ifdef __cplusplus
 }

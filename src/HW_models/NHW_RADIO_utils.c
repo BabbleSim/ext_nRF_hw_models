@@ -20,6 +20,7 @@
 #include "NHW_peri_types.h"
 #include "NHW_RADIO.h"
 #include "NHW_RADIO_priv.h"
+#include "NHW_RADIO_utils.h"
 #include "NHW_RADIO_timings.h"
 #include "NRF_HWLowL.h"
 #include "nsi_hw_scheduler.h"
@@ -112,7 +113,7 @@ static void nrfra_check_ble2M_conf(void){
 }
 
 static void nrfra_check_bleLR_conf(void){
-
+#if (NHW_RADIO_HAS_BLECODED)
   int checked =NRF_RADIO_regs.PCNF0 &
           ( RADIO_PCNF0_TERMLEN_Msk
           | RADIO_PCNF0_PLEN_Msk
@@ -136,10 +137,11 @@ static void nrfra_check_bleLR_conf(void){
 
   nrfra_check_pcnf1_ble();
   nrfra_check_crc_conf_ble();
+#endif
 }
 
-
 static void nrfra_check_802154_conf(void){
+#if NHW_RADIO_HAS_15_4
   int checked, check;
 
   //Overall packet structure:
@@ -194,6 +196,7 @@ static void nrfra_check_802154_conf(void){
         __func__,
         NRF_RADIO_regs.CRCCNF & RADIO_CRCCNF_LEN_Msk);
   }
+#endif
 }
 
 /*
@@ -205,14 +208,13 @@ void nhwra_check_packet_conf(void){
     nrfra_check_ble1M_conf();
   } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_2Mbit) {
     nrfra_check_ble2M_conf();
-  } else if ((NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit)
-      || (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR500Kbit)){
+  } else if (nhwra_mode_is_blecoded()){
     nrfra_check_bleLR_conf();
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     nrfra_check_802154_conf();
   } else {
     bs_trace_error_line_time(
-        "NRF_RADIO: Only 1&2 Mbps BLE & 802.15.4 packet formats supported so far (MODE=%u)\n",
+        "NRF_RADIO: Only BLE & 802.15.4 packet formats supported so far (MODE=%u)\n",
         NRF_RADIO_regs.MODE);
   }
 }
@@ -263,9 +265,12 @@ int nhwra_is_HW_TIFS_enabled(void) {
 uint64_t nhwra_get_address(uint logical_addr) {
   uint64_t address;
 
-  if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+#if NHW_RADIO_HAS_15_4
+  if (nhwra_mode_is_154()) {
     address = NRF_RADIO_regs.SFD & RADIO_SFD_SFD_Msk;
-  } else {
+  } else
+#endif
+  {
     if (logical_addr > 7) {
       bs_trace_error_time_line("programming error: Logical address out of range (%u > 7)\n", logical_addr);
     }
@@ -293,10 +298,9 @@ static p2G4_modulation_t nhra_modulation_from_mode(uint32_t MODE) {
     modulation = P2G4_MOD_BLE;
   } else if (MODE == RADIO_MODE_MODE_Ble_2Mbit) {
     modulation = P2G4_MOD_BLE2M;
-  } else if (MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     modulation = P2G4_MOD_154_250K_DSS;
-  } else if ((MODE == RADIO_MODE_MODE_Ble_LR125Kbit)
-             || (MODE == RADIO_MODE_MODE_Ble_LR500Kbit)) {
+  } else if (nhwra_mode_is_blecoded()) {
     modulation = P2G4_MOD_BLE_CODED;
   } else {
     bs_trace_error_time_line("programming error: Unsupported MODE %u\n", MODE);
@@ -304,11 +308,14 @@ static p2G4_modulation_t nhra_modulation_from_mode(uint32_t MODE) {
   return modulation;
 }
 
-bool nhwra_is_ble_mode(uint32_t MODE) {
-  if ((MODE == RADIO_MODE_MODE_Ble_1Mbit)
-      || (MODE == RADIO_MODE_MODE_Ble_2Mbit)
-      || (MODE == RADIO_MODE_MODE_Ble_LR125Kbit)
-      || (MODE == RADIO_MODE_MODE_Ble_LR500Kbit)) {
+bool nhwra_mode_is_ble(void) {
+  if ((NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_1Mbit)
+      || (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_2Mbit)
+#if NHW_RADIO_HAS_BLECODED
+      || (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit)
+      || (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR500Kbit)
+#endif
+     ) {
     return true;
   } else {
     return false;
@@ -353,8 +360,7 @@ void nhwra_prep_rx_request(p2G4_rxv2_t *rx_req, p2G4_address_t *rx_addresses) {
     bits_per_us = 2;
     pre_trunc = 0; //The modem can lose a lot of preamble and sync (~7us), we leave it as 0 by now to avoid a behavior change
     sync_threshold = 2;
-  } else if ((NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit)
-      || (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR500Kbit)) {
+  } else if (nhwra_mode_is_blecoded()) {
     /* For the FEC2 part */
     preamble_length = 0;
     address_length  = 0;
@@ -362,7 +368,7 @@ void nhwra_prep_rx_request(p2G4_rxv2_t *rx_req, p2G4_address_t *rx_addresses) {
     bits_per_us = 0.125; /* Provisional value assuming S=8 */
     pre_trunc = 0;
     sync_threshold = 0xFFFF;
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     preamble_length = 4;
     address_length  = 1;
     header_length   = 0;
@@ -546,7 +552,7 @@ void nhwra_prep_tx_request(p2G4_txv2_t *tx_req, uint packet_size, bs_time_t pack
  * Note: The abort substructure is NOT filled.
  */
 void nhwra_prep_cca_request(p2G4_cca_t *cca_req, bool CCA_not_ED, double rx_pow_offset) {
-
+#if NHW_RADIO_HAS_15_4
   cca_req->start_time  = hwll_phy_time_from_dev(nsi_hws_get_time()); //We start right now
   cca_req->antenna_gain = 0;
 
@@ -607,6 +613,9 @@ void nhwra_prep_cca_request(p2G4_cca_t *cca_req, bool CCA_not_ED, double rx_pow_
     cca_req->mod_threshold  = p2G4_RSSI_value_from_dBm(100/*dBm*/); //not used
     cca_req->stop_when_found = 0;
   }
+#else
+  (void)cca_req; (void)CCA_not_ED; (void)rx_pow_offset;
+#endif /* NHW_RADIO_HAS_15_4 */
 }
 
 
@@ -670,12 +679,14 @@ uint32_t nhwra_get_rx_crc_value(uint8_t *rx_buf, size_t rx_packet_size) {
   uint payload_len = nrfra_get_capped_payload_length(rx_buf);
 
   //Eventually this should be generalized with the packet configuration
-  if (nhwra_is_ble_mode(NRF_RADIO_regs.MODE)
+  if (nhwra_mode_is_ble()
       && ( rx_packet_size >= 5 ) ){
     memcpy((void*)&crc, &rx_buf[2 + payload_len], crc_len);
-  } else if ((NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit)
+#if NHW_RADIO_HAS_15_4
+  } else if (nhwra_mode_is_154()
       && ( rx_packet_size >= 3 ) ){
     memcpy((void*)&crc, &rx_buf[1 + payload_len], crc_len);
+#endif
   }
   return crc;
 }

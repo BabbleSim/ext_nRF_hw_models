@@ -127,11 +127,10 @@ bs_time_t nhwra_timings_get_Rx_chain_delay(void) {
   int mod_idx = 0;
   if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_2Mbit) {
     mod_idx = 1;
-  } else if ((NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR500Kbit)
-       || (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit)) {
+  } else if (nhwra_mode_is_blecoded()) {
     /* To differentiate we'd need to check if we are in the FEC1 or FEC2 and the CI value */
     mod_idx = 2;
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     mod_idx = 4;
   }
   return radio_timings.RX_chain_delay[mod_idx];
@@ -141,11 +140,11 @@ static int get_modidx(void) {
   int mod_idx = 0;
   if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_2Mbit) {
     mod_idx = 1;
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR500Kbit) {
+  } else if (nhwra_mode_is_blecoded500()) {
     mod_idx = 2;
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ble_LR125Kbit) {
+  } else if (nhwra_mode_is_blecoded125()) {
     mod_idx = 3;
-  } else if (NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit) {
+  } else if (nhwra_mode_is_154()) {
     mod_idx = 4;
   }
   return mod_idx;

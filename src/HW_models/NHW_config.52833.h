@@ -143,6 +143,10 @@
 #define NHW_RADIO_INT_MAP {{0 , 1}} /*Only core,RADIO_IRQn*/
 #define NHW_RADIO_ED_RSSIOFFS (-93)
 #define NHW_RADIO_IS_54 0
+#define NHW_RADIO_HAS_15_4 1
+#define NHW_RADIO_HAS_BLECODED 1
+#define NHW_RADIO_HAS_DF 1
+#define NHW_RADIO_HAS_CS 0
 
 #define NHW_RNG_TOTAL_INST 1
 #define NHW_RNG_0 0
