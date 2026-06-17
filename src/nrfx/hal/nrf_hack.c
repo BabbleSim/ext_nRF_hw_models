@@ -100,6 +100,13 @@ void nrf_hack_trigger_task_address(void *task_reg)
   nrf_hack_get_task_from_ptr(task_reg, &p_reg, &set_f, &clear_f, &trigger_f, &task);
 
   if (nrf_hack_is_task(task)) {
-     trigger_f(p_reg, task);
+    if (trigger_f != NULL) {
+      trigger_f(p_reg, task);
+    } else {
+      /* This peripheral's tasks can only be triggered thru a DPPI subscription (e.g. PPIB) */
+      bs_trace_error_time_line(
+        "%s: peripheral has no software-trigger HAL function (subscribe-only)\n",
+        __func__);
+    }
   }
 }
