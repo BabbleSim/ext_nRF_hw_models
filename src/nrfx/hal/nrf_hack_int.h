@@ -23,6 +23,19 @@
     *clear_f = (subscribe_clear_f)nrf_##lname##_subscribe_clear; \
     *trigger_f = (task_trigger_f)nrf_##lname##_task_trigger;\
     return;
+
+/* Variant for peripherals whose tasks fire only via DPPI subscription (e.g.
+ * PPIB, whose TASKS_SEND[n] has no corresponding software-trigger HAL function
+ * in nrfx).
+ */
+#define IF_PER_SUBSCRIBE_ONLY(per, nbr, post, lname)             \
+  if (IS_PERIPHERAL_REG(task_reg, per, nbr, post)) {             \
+    *p_reg = PERIPHERAL_REG_BASE(per, nbr, post);                \
+    *task = (intptr_t)task_reg - (intptr_t)*p_reg;               \
+    *set_f = (subscribe_set_f)nrf_##lname##_subscribe_set;       \
+    *clear_f = (subscribe_clear_f)nrf_##lname##_subscribe_clear; \
+    *trigger_f = NULL;                                           \
+    return;
 #else
 #define IF_PER(per, nbr, post, lname)                            \
   if (IS_PERIPHERAL_REG(task_reg, per, nbr, post)) {             \
