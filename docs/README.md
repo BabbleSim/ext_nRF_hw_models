@@ -8,7 +8,11 @@ This includes Zephyr SW.
 These models include models of peripherals for an
 [nRF52833](https://docs.nordicsemi.com/category/nrf52833-category),
 an [nRF5340](https://docs.nordicsemi.com/category/nrf5340-category),
-and [nRF54L15](https://docs.nordicsemi.com/category/nRF54L15-category)
+and several
+[nRF54 devices](https://docs.nordicsemi.com/r/bundle/additionalresources/page/additionalresources/nrf54l-series),
+like the [nRF54L15](https://docs.nordicsemi.com/category/nRF54L15-category),
+[nRF54LM20](https://docs.nordicsemi.com/category/nRF54LM20A-category),
+and [nRF54LS05](https://docs.nordicsemi.com/category/nRF54LS05B-category).
 <br> Note that for these models use case, an nRF52833 is very similar to other
 [nRF52 series devices](https://docs.nordicsemi.com/category/nrf-52-series)
 , so even if you are developing for another variant in that series these models may be enough for

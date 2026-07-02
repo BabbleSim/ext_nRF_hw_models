@@ -1,6 +1,6 @@
 # Current implementation status
 
-Currently peripherals of nRF52833, nrf5340, nrf54L15 and nrf54LM20 SOCs
+Currently peripherals of nRF52833, nrf5340, nrf54L15, nrf54LM20 and nRF54LS05 SOCs
 are modeled at varying degrees:
 
 Notation:
