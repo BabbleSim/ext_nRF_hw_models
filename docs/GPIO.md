@@ -33,6 +33,19 @@ For this just call the excutable with `-gpio_out_file=<path>`.
 Any toggle in any pin configured as an output will be dumped to that file, following the
 stimuli file format described below.
 
+### FIFO backend:
+
+It is also possible to connect two simulated devices through GPIO FIFOs.
+This backend exchanges pin changes between devices and uses timed NOP messages to keep both
+sides advancing in simulation time.
+
+To enable a single FIFO connection, provide both `-gpio_fifob_txfile=<path>` and
+`-gpio_fifob_rxfile=<path>`. The FIFOs are created automatically. Optional
+`-gpio_fifob_mdt=<usec>` controls the maximum idle time between keepalive NOP messages.
+
+Multiple FIFO instances (up to 4) can be configured via the configuration file
+(`fifo <tx_path> <rx_path> [mdt=<usec>]`, see below).
+
 ### Monitor inputs/outputs from test code:
 
 Embedded test code specific for simulation can monitor the inputs and outputs changes
@@ -86,7 +99,8 @@ Where pin 0 in port 0, is toggled at boot, 200microseconds, 600microseconds, 800
 
 ### Configuration file format
 
-The configuration file can configure short-circuits and additional input file instances.
+The configuration file can configure short-circuits, additional input file instances,
+and additional FIFO instances.
 
 **Short-circuits** (`short` / `s`):
 
@@ -110,6 +124,14 @@ the input pin that will be shorted to.
 
 Adds a file-input backend instance reading from `<path>`. Up to 4 total instances
 (including the one from `-gpio_in_file`) are supported.
+
+**FIFO instances** (`fifo`):
+
+`fifo <tx_path> <rx_path> [mdt=<usec>]`
+
+Adds a FIFO backend instance. Up to 4 total instances (including the one from
+`-gpio_fifob_txfile`/`-gpio_fifob_rxfile`) are supported. The optional `mdt=<usec>`
+overrides the default maximum idle time for this instance.
 
 For example:
 

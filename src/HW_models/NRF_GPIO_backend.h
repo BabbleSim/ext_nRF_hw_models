@@ -28,6 +28,7 @@ void nrf_gpio_backend_change_output(unsigned int port, unsigned int n, bool valu
 void nrf_gpio_backend_register_short(uint8_t X, uint8_t x, uint8_t Y, uint8_t y);
 
 void nrf_gpio_backend_file_add_instance(const char *path);
+void nrf_gpio_backend_fifo_add_instance(const char *tx_path, const char *rx_path, double mdt);
 
 #ifdef __cplusplus
 }

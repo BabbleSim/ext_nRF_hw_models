@@ -6,6 +6,7 @@
  */
 
 #include <ctype.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include "bs_tracing.h"
@@ -185,6 +186,28 @@ static int process_config_line(char *s)
 		buf += 1;
 	} else if (strncmp(s, "input_file ", 11) == 0) {
 		nrf_gpio_backend_file_add_instance(s + 11);
+		return 0;
+	} else if (strncmp(s, "fifo ", 5) == 0) {
+		char *tx, *rx, *rest;
+		double mdt = NAN;
+
+		tx = s + 5;
+		rest = strchr(tx, ' ');
+		if (rest == NULL) {
+			bs_trace_error_line("%s: fifo requires tx and rx paths. Line: %s\n",
+					    __func__, s);
+		}
+		*rest = '\0';
+		rx = rest + 1;
+		rest = strchr(rx, ' ');
+		if (rest != NULL) {
+			*rest = '\0';
+			rest++;
+			if (strncmp(rest, "mdt=", 4) == 0) {
+				mdt = strtod(rest + 4, NULL);
+			}
+		}
+		nrf_gpio_backend_fifo_add_instance(tx, rx, mdt);
 		return 0;
 	} else {
 		bs_trace_error_line("%s: Unknown command in GPIO config file: \"%s\"\n",
