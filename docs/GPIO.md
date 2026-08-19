@@ -19,7 +19,8 @@ That is, inputs just sample the input pin, and outputs just deliver a logical le
 Inputs can be driven in 3 different ways:
 
 * From an input stimuli file (`-gpio_in_file=<path>`). Which follows the stimuli format
-  described below
+  described below. Multiple input file instances can be configured via the configuration
+  file (`input_file <path>`, see below).
 * From test code, calling `nrf_gpio_test_change_pin_level()`
 * By shortcuiting the input and output, either set from a configuration file
   (`-gpio_conf_file=<path>`, see below), or
@@ -85,13 +86,13 @@ Where pin 0 in port 0, is toggled at boot, 200microseconds, 600microseconds, 800
 
 ### Configuration file format
 
-The configuration file can define output->input short-circuits.
+The configuration file can configure short-circuits and additional input file instances.
+
+**Short-circuits** (`short` / `s`):
 
 Note that these shorts only work one way: output to input.
 It is not possible to short 2 outputs together.
 It is possible to short one output to several (up to 8) inputs.
-
-The configuration file is made of lines, each with the following format, either:
 
 `short out_port.out_pin in_port.in_pin`<br>
 `s out_port.out_pin in_port.in_pin`
@@ -102,6 +103,13 @@ Each pair separated by a dot. The first value of each pair being the port number
 the second value the pin in that port.
 The first pair indicating the output pin that will be shorted from, and the 2nd pair
 the input pin that will be shorted to.
+
+**Input file instances** (`input_file`):
+
+`input_file <path>`
+
+Adds a file-input backend instance reading from `<path>`. Up to 4 total instances
+(including the one from `-gpio_in_file`) are supported.
 
 For example:
 
