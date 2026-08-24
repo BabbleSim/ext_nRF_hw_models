@@ -1,134 +1,57 @@
 /*
  * Copyright (c) 2023 Nordic Semiconductor ASA
+ * Copyright (c) 2026 Demant A/S
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*
- * "Backends" for the GPIO pins.
- * Currently there is 3 parts to this:
- *   * Outputs changes can be recorded in a file
- *   * Inputs can be driver from a file
- *   * Outputs can be short-circuited to inputs thru a configuration file
- *
- * Check docs/GPIO.md for more info.
- */
-
-#include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
-#include "NHW_common_types.h"
-#include "NHW_config.h"
-#include "NRF_GPIO.h"
-#include "bs_types.h"
-#include "nsi_hw_scheduler.h"
 #include "bs_tracing.h"
+#include "bs_types.h"
 #include "bs_oswrap.h"
 #include "bs_cmd_line.h"
 #include "bs_dynargs.h"
-#include "nsi_hws_models_if.h"
+#include "NHW_common_types.h"
+#include "NHW_config.h"
+#include "NRF_GPIO.h"
+#include "NRF_GPIO_backend.h"
+#include "nsi_hw_scheduler.h"
 #include "nsi_tasks.h"
-
-static bs_time_t Timer_GPIO_input = TIME_NEVER;
-
-static char *gpio_in_file_path = NULL; /* Possible file for input stimuli */
-static char *gpio_out_file_path = NULL; /* Possible file for dumping output toggles */
-static char *gpio_conf_file_path = NULL; /* Possible file for configuration (short-circuits) */
 
 #define MAXLINESIZE 2048
 #define MAX_SHORTS 8
+#define NRF_GPIO_MAX_OUTPUT_BACKENDS 8
 
-/* Table keeping all configured short-circuits */
+static char *gpio_out_file_path;
+static char *gpio_conf_file_path;
+
+static FILE *output_file_ptr;
+
 static struct {
 	uint8_t port;
 	uint8_t pin;
 } shorts[NHW_GPIO_TOTAL_INST][NHW_GPIO_MAX_PINS_PER_PORT][MAX_SHORTS];
 
-static FILE *output_file_ptr; /* File pointer for gpio_out_file_path */
+static const struct nrf_gpio_backend_if *backends[NRF_GPIO_MAX_OUTPUT_BACKENDS];
+static int n_backends;
 
-/* GPIO input status */
-static struct {
-	FILE *input_file_ptr; /* File pointer for gpio_out_file_path */
-	/* Next event port.pin & level: */
-	unsigned int port;
-	unsigned int pin;
-	bool level;           /* true: high; false: low*/
-} gpio_input_file_st;
-
-static void nrf_gpio_load_config(void);
-static void nrf_gpio_init_output_file(void);
-static void nrf_gpio_init_input_file(void);
-
-/*
- * Initialize the GPIO backends
- */
-void nrf_gpio_backend_init(void)
+void nrf_gpio_backend_register(const struct nrf_gpio_backend_if *backend)
 {
-	memset(shorts, UINT8_MAX, sizeof(shorts));
-
-	nrf_gpio_load_config();
-	nrf_gpio_init_output_file();
-	nrf_gpio_init_input_file();
-}
-
-/*
- * Cleanup before exit
- */
-static void nrf_gpio_backend_cleaup(void)
-{
-	if (output_file_ptr != NULL) {
-		fclose(output_file_ptr);
-		output_file_ptr = NULL;
+	if (backend == NULL) {
+		bs_trace_error_line("Programming error\n");
 	}
-
-	if (gpio_input_file_st.input_file_ptr != NULL) {
-		fclose(gpio_input_file_st.input_file_ptr);
-		gpio_input_file_st.input_file_ptr = NULL;
+	if (n_backends >= NRF_GPIO_MAX_OUTPUT_BACKENDS) {
+		bs_trace_error_line("Too many GPIO output backends\n");
 	}
+	backends[n_backends++] = backend;
 }
 
-NSI_TASK(nrf_gpio_backend_cleaup, ON_EXIT_PRE, 100);
-
-
-static void nrf_gpio_register_cmd_args(void){
-
-  static bs_args_struct_t args_struct_toadd[] = {
-    {
-      .option="gpio_in_file",
-      .name="path",
-      .type='s',
-      .dest=(void *)&gpio_in_file_path,
-      .descript="Optional path to a file containing GPIOs inputs activity",
-    },
-    {
-      .option="gpio_out_file",
-      .name="path",
-      .type='s',
-      .dest=(void *)&gpio_out_file_path,
-      .descript="Optional path to a file where GPIOs output activity will be saved",
-    },
-    {
-      .option="gpio_conf_file",
-      .name="path",
-      .type='s',
-      .dest=(void *)&gpio_conf_file_path,
-      .descript="Optional path to a file where the GPIOs configuration will be found.",
-    },
-    ARG_TABLE_ENDMARKER
-  };
-
-  bs_add_extra_dynargs(args_struct_toadd);
-}
-
-NSI_TASK(nrf_gpio_register_cmd_args, PRE_BOOT_1, 100);
-
-/*
- * Propagate an output change thru its external short-circuits
- */
 void nrf_gpio_backend_short_propagate(unsigned int port, unsigned int n, bool value)
 {
-	int i;
-	for (i = 0 ; i < MAX_SHORTS; i++){
+	for (int i = 0; i < MAX_SHORTS; i++) {
 		if (shorts[port][n][i].port == UINT8_MAX) {
 			break;
 		}
@@ -136,87 +59,47 @@ void nrf_gpio_backend_short_propagate(unsigned int port, unsigned int n, bool va
 	}
 }
 
-/*
- * Initialize the GPIO output activity file
- * (open and write csv header)
- */
+void nrf_gpio_backend_change_output(unsigned int port, unsigned int n, bool value)
+{
+	if (output_file_ptr != NULL) {
+		fprintf(output_file_ptr, "%"PRItime",%u,%u,%u\n",
+			nsi_hws_get_time(), port, n, value);
+	}
+
+	for (int i = 0; i < n_backends; i++) {
+		if (backends[i]->change_output != NULL) {
+			backends[i]->change_output(port, n, value);
+		}
+	}
+}
+
 static void nrf_gpio_init_output_file(void)
 {
 	if (gpio_out_file_path == NULL) {
 		return;
 	}
-
 	bs_create_folders_in_path(gpio_out_file_path);
 	output_file_ptr = bs_fopen(gpio_out_file_path, "w");
 	fprintf(output_file_ptr, "time(microsecond),port,pin,level\n");
 }
 
-/*
- * Register an output pin change in the gpio output file
- */
-void nrf_gpio_backend_write_output_change(unsigned int port, unsigned int n, bool value)
+static void nrf_gpio_backend_cleanup(void)
 {
-	if (output_file_ptr != NULL){
-		fprintf(output_file_ptr, "%"PRItime",%u,%u,%u\n",
-			nsi_hws_get_time(), port, n, value);
+	if (output_file_ptr != NULL) {
+		fclose(output_file_ptr);
+		output_file_ptr = NULL;
 	}
 }
 
-/*
- * Read a line from a file into a buffer (s), while
- * skipping duplicate spaces (unless they are quoted), comments (#...),
- * and empty lines
- * The string will be null terminated (even if nothing is copied in)
- *
- * Return: The number of characters copied into s (apart from the termination 0 byte)
- */
-static int readline(char *s, int size, FILE *stream)
-{
-	int c = 0, i=0;
-	bool was_a_space = true;
-	bool in_a_string = false;
+NSI_TASK(nrf_gpio_backend_cleanup, ON_EXIT_PRE, 100);
 
-	while ((i == 0) && (c != EOF)) {
-		while ((i < size - 1) && ((c=getc(stream)) != EOF) && c!='\n') {
-			if (isspace(c) && (!in_a_string)) {
-				if (was_a_space) {
-					continue;
-				}
-				was_a_space = true;
-			} else {
-				was_a_space = false;
-			}
-			if (c=='"') {
-				in_a_string = !in_a_string;
-			}
-			if (c == '#') {
-				bs_skipline(stream);
-				break;
-			}
-			s[i++] =c;
-		}
-	}
-	s[i] = 0;
-
-	if (i >= size - 1) {
-		bs_trace_warning_line("Truncated line while reading from file after %i chars\n",
-				      size-1);
-	}
-	return i;
-}
-
-/*
- * Register an external GPIO output -> input short-circuit
- * Normally this is automatically called when a gpio configuration file
- * defines a short-circuit, but it can also be called from test code.
- */
 void nrf_gpio_backend_register_short(uint8_t Port_out, uint8_t Pin_out,
 				     uint8_t Port_in, uint8_t Pin_in)
 {
 	int i;
 	unsigned int max_pins;
 
-	for (i = 0 ; i < MAX_SHORTS; i++) {
+	for (i = 0; i < MAX_SHORTS; i++) {
 		if (shorts[Port_out][Pin_out][i].port == UINT8_MAX)
 			break;
 	}
@@ -250,50 +133,120 @@ void nrf_gpio_backend_register_short(uint8_t Port_out, uint8_t Pin_out,
 	shorts[Port_out][Pin_out][i].pin  = Pin_in;
 }
 
+/*
+ * Read a line from a file into a buffer (s), while
+ * skipping duplicate spaces (unless they are quoted), comments (#...),
+ * and empty lines.
+ * The string will be null terminated (even if nothing is copied in).
+ *
+ * Return: The number of characters copied into s (apart from the termination 0 byte)
+ */
+static int readline(char *s, int size, FILE *stream)
+{
+	int c = 0, i = 0;
+	bool was_a_space = true;
+	bool in_a_string = false;
+
+	while ((i == 0) && (c != EOF)) {
+		while ((i < size - 1) && ((c = getc(stream)) != EOF) && c != '\n') {
+			if (isspace(c) && (!in_a_string)) {
+				if (was_a_space) {
+					continue;
+				}
+				was_a_space = true;
+			} else {
+				was_a_space = false;
+			}
+			if (c == '"') {
+				in_a_string = !in_a_string;
+			}
+			if (c == '#') {
+				bs_skipline(stream);
+				break;
+			}
+			s[i++] = c;
+		}
+	}
+	s[i] = 0;
+
+	if (i >= size - 1) {
+		bs_trace_warning_line("Truncated line while reading from file after %i chars\n",
+				      size - 1);
+	}
+	return i;
+}
+
 static int process_config_line(char *s)
 {
-	unsigned long X,x,Y,y;
-	char *endp;
 	char *buf = s;
-	const char error_msg[] = "%s: Corrupted GPIO configuration file, the valid format is "
-			"\"shortcut X.x Y.y\"\nLine was:%s\n";
 
-	if (strncmp(s, "short", 5) == 0){
+	if (strncmp(s, "short", 5) == 0) {
 		buf += 5;
-	} else if (strncmp(s, "s", 1) == 0){
+	} else if (strncmp(s, "s", 1) == 0) {
 		buf += 1;
+	} else if (strncmp(s, "input_file ", 11) == 0) {
+		nrf_gpio_backend_file_add_instance(s + 11);
+		return 0;
+	} else if (strncmp(s, "fifo ", 5) == 0) {
+		char *tx, *rx, *rest;
+		double mdt = NAN;
+
+		tx = s + 5;
+		rest = strchr(tx, ' ');
+		if (rest == NULL) {
+			bs_trace_error_line("%s: fifo requires tx and rx paths. Line: %s\n",
+					    __func__, s);
+		}
+		*rest = '\0';
+		rx = rest + 1;
+		rest = strchr(rx, ' ');
+		if (rest != NULL) {
+			*rest = '\0';
+			rest++;
+			if (strncmp(rest, "mdt=", 4) == 0) {
+				mdt = strtod(rest + 4, NULL);
+			}
+		}
+		nrf_gpio_backend_fifo_add_instance(tx, rx, mdt);
+		return 0;
 	} else {
-		bs_trace_error_line("%s: Only the command short (or \"s\") is understood at this "
-				    "point, Line read \"%s\" instead\n", __func__, s);
+		bs_trace_error_line("%s: Unknown command in GPIO config file: \"%s\"\n",
+				    __func__, s);
 	}
-	X = strtoul(buf, &endp, 0);
-	if ((endp == buf) || (*endp!='.')) {
-		bs_trace_error_line(error_msg, __func__, s);
+
+	/* Parse X.x Y.y for short/s commands */
+	{
+		unsigned long X, x, Y, y;
+		char *endp;
+		const char error_msg[] = "%s: Corrupted GPIO configuration file, the valid format is "
+				"\"short X.x Y.y\"\nLine was:%s\n";
+
+		X = strtoul(buf, &endp, 0);
+		if ((endp == buf) || (*endp != '.')) {
+			bs_trace_error_line(error_msg, __func__, s);
+		}
+		buf = endp + 1;
+		x = strtoul(buf, &endp, 0);
+		if ((endp == buf) || (*endp != ' ')) {
+			bs_trace_error_line(error_msg, __func__, s);
+		}
+		buf = endp + 1;
+		Y = strtoul(buf, &endp, 0);
+		if ((endp == buf) || (*endp != '.')) {
+			bs_trace_error_line(error_msg, __func__, s);
+		}
+		buf = endp + 1;
+		y = strtoul(buf, &endp, 0);
+		if (endp == buf) {
+			bs_trace_error_line(error_msg, __func__, s);
+		}
+		bs_trace_info_time(4, "Short-circuiting GPIO port %lu pin %lu to GPIO port %lu pin %lu\n",
+				X, x, Y, y);
+		nrf_gpio_backend_register_short(X, x, Y, y);
 	}
-	buf = endp + 1;
-	x = strtoul(buf, &endp, 0);
-	if ((endp == buf) || (*endp!=' ')){
-		bs_trace_error_line(error_msg, __func__, s);
-	}
-	buf = endp + 1;
-	Y = strtoul(buf, &endp, 0);
-	if ((endp == buf) || (*endp!='.')) {
-		bs_trace_error_line(error_msg, __func__, s);
-	}
-	buf = endp + 1;
-	y = strtoul(buf, &endp, 0);
-	if (endp == buf) {
-		bs_trace_error_line(error_msg, __func__, s);
-	}
-	bs_trace_info_time(4, "Short-circuiting GPIO port %li pin %li to GPIO port %li pin %li\n",
-			X,x,Y,y);
-	nrf_gpio_backend_register_short(X, x, Y, y);
 	return 0;
 }
 
-/*
- * Load GPIO configuration file (short-circuits)
- */
 static void nrf_gpio_load_config(void)
 {
 	if (gpio_conf_file_path == NULL) {
@@ -317,102 +270,40 @@ static void nrf_gpio_load_config(void)
 	fclose(fileptr);
 }
 
-/*
- * Process next (valid) line in the input stimuly file, and program
- * the next input update event
- * (or close down the file if it ended or is corrupted)
- */
-static void nrf_gpio_input_process_next_time(char *buf)
+void nrf_gpio_backend_init(void)
 {
-	bs_time_t time;
-	unsigned int port;
-	unsigned int pin;
-	unsigned int level;
-	int n;
+	memset(shorts, UINT8_MAX, sizeof(shorts));
+	nrf_gpio_load_config();
+	nrf_gpio_init_output_file();
 
-	n = sscanf(buf, "%"SCNtime",%u,%u,%u", &time, &port, &pin, &level);
-	if (n > 0 && n < 4) {
-		bs_trace_warning_time_line("File %s seems corrupted. Ignoring rest of file. "
-					   "Expected \""
-					   "<uin64_t time>,<uint port>,<uint pin>,<uint level>\". "
-					   "Line was:%s\n",
-					   gpio_in_file_path, buf);
+	for (int i = 0; i < n_backends; i++) {
+		if (backends[i]->init != NULL) {
+			backends[i]->init();
+		}
 	}
-	if (n < 4) { /* End of file, or corrupted => we are done */
-		fclose(gpio_input_file_st.input_file_ptr);
-		gpio_input_file_st.input_file_ptr = NULL;
-		Timer_GPIO_input = TIME_NEVER;
-	} else {
-		if (time < nsi_hws_get_time()) {
-			bs_trace_error_time_line("%s: GPIO input file went back in time(%s)\n",
-						__func__, buf);
-		}
-		if (port >= NHW_GPIO_TOTAL_INST) {
-			bs_trace_error_time_line("%s: GPIO input file attempted to access not "
-						"existing GPIO port (%u>=%u) (%s)\n",
-						__func__, port, NHW_GPIO_TOTAL_INST, buf);
-		}
-		unsigned int max_pins = nrf_gpio_get_number_pins_in_port(port);
-		if (pin >= max_pins) {
-			bs_trace_error_time_line("%s: GPIO input file attempted to access not "
-						"existing GPIO pin in port %i (%u>=%u) (%s)\n",
-						__func__, port, pin, max_pins, buf);
-		}
-		if (level != 0 && level != 1) {
-			bs_trace_error_time_line("%s: level can only be 0 (for low) or 1 (for high)"
-						"(%u) (%s)\n",
-						__func__, level, buf);
-		}
-		gpio_input_file_st.level = level;
-		gpio_input_file_st.pin = pin;
-		gpio_input_file_st.port = port;
-		Timer_GPIO_input = time;
-	}
-
-	nsi_hws_find_next_event();
 }
 
-/*
- * Initialize GPIO input from file, and queue next input event change
- */
-static void nrf_gpio_init_input_file(void)
+static void nrf_gpio_backend_register_cmd_args(void)
 {
-	gpio_input_file_st.input_file_ptr = NULL;
+	static bs_args_struct_t args[] = {
+		{
+			.option = "gpio_out_file",
+			.name = "path",
+			.type = 's',
+			.dest = (void *)&gpio_out_file_path,
+			.descript = "Optional path to a file where GPIOs output activity will be saved",
+		},
+		{
+			.option = "gpio_conf_file",
+			.name = "path",
+			.type = 's',
+			.dest = (void *)&gpio_conf_file_path,
+			.descript = "Optional path to a file where the GPIOs configuration will be found.",
+		},
+		ARG_TABLE_ENDMARKER
+	};
 
-	if (gpio_in_file_path == NULL) {
-		return;
-	}
-
-	char line_buf[MAXLINESIZE];
-	int read;
-
-	gpio_input_file_st.input_file_ptr = bs_fopen(gpio_in_file_path, "r");
-
-	read = readline(line_buf, MAXLINESIZE, gpio_input_file_st.input_file_ptr);
-	if (strncmp(line_buf,"time",4) == 0) { /* Let's skip a possible csv header line */
-		read = readline(line_buf, MAXLINESIZE, gpio_input_file_st.input_file_ptr);
-	}
-	if (read == 0) {
-		bs_trace_warning_line("%s: Input file %s seems empty\n",
-				      __func__, gpio_in_file_path);
-	}
-
-	nrf_gpio_input_process_next_time(line_buf);
+	bs_add_extra_dynargs(args);
 }
 
-/*
- * Event timer handler for the GPIO input
- */
-static void nrf_gpio_input_event_triggered(void)
-{
-	char line_buf[MAXLINESIZE];
-
-	nrf_gpio_eval_input(gpio_input_file_st.port, gpio_input_file_st.pin,
-			    gpio_input_file_st.level);
-
-	(void)readline(line_buf, MAXLINESIZE, gpio_input_file_st.input_file_ptr);
-
-	nrf_gpio_input_process_next_time(line_buf);
-}
-
-NSI_HW_EVENT(Timer_GPIO_input, nrf_gpio_input_event_triggered, 50);
+NSI_TASK(nrf_gpio_backend_register_cmd_args, PRE_BOOT_1, 100);

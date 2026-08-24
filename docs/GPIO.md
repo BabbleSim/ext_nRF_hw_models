@@ -19,7 +19,8 @@ That is, inputs just sample the input pin, and outputs just deliver a logical le
 Inputs can be driven in 3 different ways:
 
 * From an input stimuli file (`-gpio_in_file=<path>`). Which follows the stimuli format
-  described below
+  described below. Multiple input file instances can be configured via the configuration
+  file (`input_file <path>`, see below).
 * From test code, calling `nrf_gpio_test_change_pin_level()`
 * By shortcuiting the input and output, either set from a configuration file
   (`-gpio_conf_file=<path>`, see below), or
@@ -31,6 +32,19 @@ It is possible to have the GPIOs output activity dumped into a file.
 For this just call the excutable with `-gpio_out_file=<path>`.
 Any toggle in any pin configured as an output will be dumped to that file, following the
 stimuli file format described below.
+
+### FIFO backend:
+
+It is also possible to connect two simulated devices through GPIO FIFOs.
+This backend exchanges pin changes between devices and uses timed NOP messages to keep both
+sides advancing in simulation time.
+
+To enable a single FIFO connection, provide both `-gpio_fifob_txfile=<path>` and
+`-gpio_fifob_rxfile=<path>`. The FIFOs are created automatically. Optional
+`-gpio_fifob_mdt=<usec>` controls the maximum idle time between keepalive NOP messages.
+
+Multiple FIFO instances (up to 4) can be configured via the configuration file
+(`fifo <tx_path> <rx_path> [mdt=<usec>]`, see below).
 
 ### Monitor inputs/outputs from test code:
 
@@ -85,13 +99,14 @@ Where pin 0 in port 0, is toggled at boot, 200microseconds, 600microseconds, 800
 
 ### Configuration file format
 
-The configuration file can define output->input short-circuits.
+The configuration file can configure short-circuits, additional input file instances,
+and additional FIFO instances.
+
+**Short-circuits** (`short` / `s`):
 
 Note that these shorts only work one way: output to input.
 It is not possible to short 2 outputs together.
 It is possible to short one output to several (up to 8) inputs.
-
-The configuration file is made of lines, each with the following format, either:
 
 `short out_port.out_pin in_port.in_pin`<br>
 `s out_port.out_pin in_port.in_pin`
@@ -102,6 +117,21 @@ Each pair separated by a dot. The first value of each pair being the port number
 the second value the pin in that port.
 The first pair indicating the output pin that will be shorted from, and the 2nd pair
 the input pin that will be shorted to.
+
+**Input file instances** (`input_file`):
+
+`input_file <path>`
+
+Adds a file-input backend instance reading from `<path>`. Up to 4 total instances
+(including the one from `-gpio_in_file`) are supported.
+
+**FIFO instances** (`fifo`):
+
+`fifo <tx_path> <rx_path> [mdt=<usec>]`
+
+Adds a FIFO backend instance. Up to 4 total instances (including the one from
+`-gpio_fifob_txfile`/`-gpio_fifob_rxfile`) are supported. The optional `mdt=<usec>`
+overrides the default maximum idle time for this instance.
 
 For example:
 

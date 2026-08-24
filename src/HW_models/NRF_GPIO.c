@@ -481,7 +481,7 @@ void nrf_gpio_eval_input(unsigned int port, unsigned int n, bool value)
  */
 static void nrf_gpio_output_change_sideeffects(unsigned int port,unsigned  int n, bool value)
 {
-  nrf_gpio_backend_write_output_change(port, n, value);
+  nrf_gpio_backend_change_output(port, n, value);
   if (test_outtoggle_callback != NULL) {
     test_outtoggle_callback(port, n, value);
   }
