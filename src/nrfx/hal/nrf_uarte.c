@@ -95,15 +95,20 @@ void nrf_uarte_configure(NRF_UARTE_Type           * p_reg,
   int i = uarte_number_from_ptr(p_reg);
   p_reg->CONFIG = (uint32_t)p_cfg->parity
 #if defined(UARTE_CONFIG_STOP_Msk)
-                  | (uint32_t)p_cfg->stop
+                    | (uint32_t)p_cfg->stop
 #endif
 #if defined(UARTE_CONFIG_PARITYTYPE_Msk)
-                  | (uint32_t)p_cfg->paritytype
+                    | (uint32_t)p_cfg->paritytype
 #endif
 #if NRF_UARTE_HAS_FRAME_TIMEOUT
-                  | (uint32_t)p_cfg->frame_timeout
+                    | (uint32_t)p_cfg->frame_timeout
 #endif
-                  | (uint32_t)p_cfg->hwfc;
+#if NRF_UARTE_HAS_FRAME_SIZE
+                    | (uint32_t)p_cfg->frame_size
+                    | (uint32_t)p_cfg->endian
+#endif
+                    | (uint32_t)p_cfg->hwfc;
+
   nhw_UARTE_regw_sideeffects_CONFIG(i);
 }
 
