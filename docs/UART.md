@@ -76,8 +76,8 @@ peripheral won't be set due to frame, or parity errors, or break conditions.
 
 ##### Loopback (through the FIFO backend)
 
-With the FIFO backend, it is possible to connect a UART instance Tx directly to its Rx (or to
-another instance Rx), and have the RTR propagated to the CTS.
+With the FIFO backend, it is possible to connect a UART instance Tx directly to its Rx, and have the
+RTR propagated to the CTS.
 To do this, just configure the same FIFO file name for both the Rx and Tx, for example like:
 `-uart0_fifob_rxfile=looped_back -uart0_fifob_txfile=looped_back`
 Note that you can also use the loopback backend when connecting a single instance in loopback,
