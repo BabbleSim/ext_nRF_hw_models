@@ -23,10 +23,10 @@ static uint8_t rev_byte(uint8_t input){
  */
 static uint32_t rev_32(uint32_t input){
   uint32_t ret;
-  ret = rev_byte((input >> 0) & 0xff) << 24
-      | rev_byte((input >> 8) & 0xff) << 16
-      | rev_byte((input >> 16) & 0xff) << 8
-      | rev_byte((input >> 24) & 0xff);
+  ret = (uint32_t)rev_byte((input >> 0) & 0xff) << 24
+      | (uint32_t)rev_byte((input >> 8) & 0xff) << 16
+      | (uint32_t)rev_byte((input >> 16) & 0xff) << 8
+      | (uint32_t)rev_byte((input >> 24) & 0xff);
   return ret;
 }
 
@@ -35,9 +35,9 @@ static uint32_t rev_32(uint32_t input){
  */
 static uint32_t rev_24(uint32_t input){
   uint32_t ret;
-  ret = rev_byte((input >> 0) & 0xff) << 16
-      | rev_byte((input >> 8) & 0xff) << 8
-      | rev_byte((input >> 16) & 0xff);
+  ret = (uint32_t)rev_byte((input >> 0) & 0xff) << 16
+      | (uint32_t)rev_byte((input >> 8) & 0xff) << 8
+      | (uint32_t)rev_byte((input >> 16) & 0xff);
   return ret;
 }
 
@@ -46,8 +46,8 @@ static uint32_t rev_24(uint32_t input){
  */
 static uint32_t rev_16(uint16_t input){
   uint16_t ret;
-  ret = rev_byte((input >> 0) & 0xff) << 8
-      | rev_byte((input >> 8) & 0xff) << 0;
+  ret = (uint16_t)rev_byte((input >> 0) & 0xff) << 8
+      | (uint16_t)rev_byte((input >> 8) & 0xff) << 0;
   return ret;
 }
 
