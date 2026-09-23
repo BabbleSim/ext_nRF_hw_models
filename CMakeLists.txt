@@ -73,6 +73,8 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
         -DNRF54LM20
     )
     set(VARIANT_HAL_FLAGS ${VARIANT_HW_FLAGS})
+  else()
+    include(${CONFIG_BOARD}.pre.cmake OPTIONAL)
   endif()
 
   # These include directories must be added before those from the hal_nordic
@@ -124,4 +126,5 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
     -std=gnu11 #The nrfx hal uses non standard features which will cause warnings otherwise
   )
 
+  include(${CONFIG_BOARD}.post.cmake OPTIONAL)
 endif()
