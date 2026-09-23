@@ -36,7 +36,14 @@ void *nhw_convert_periph_base_addr(void *hw_addr);
 #include "nrf_bsim_redef.54LM20.h"
 
 #else
+
+#if defined(__has_include) && __has_include("nrf_bsim_redef_ext.h")
+#include "nrf_bsim_redef_ext.h"
+#endif
+
+#ifndef NRF_BSIM_REDEF_EXT_H
 #error "Platform not supported"
+#endif /* NRF_BSIM_REDEF_EXT_H */
 #endif
 
 #ifdef __cplusplus

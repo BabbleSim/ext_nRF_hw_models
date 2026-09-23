@@ -18,19 +18,6 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
  https://babblesim.github.io/folder_structure_and_env.html")
   endif()
 
-  # These include directories must be added before those from the hal_nordic
-  # module, so that the local modified versions of nrfx files are used instead
-  # of those from the original nrfx.
-  target_include_directories(zephyr_interface BEFORE INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/mdk_replacements
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/hal_replacements
-  )
-
-  zephyr_include_directories(
-    src/HW_models/
-    src/nrfx/nrfx_replacements
-  )
-
   if(CONFIG_SOC_SERIES_BSIM_NRF52X)
     file(STRINGS make_inc/52833_hw_files HW_MODEL_SRCS)
     file(STRINGS make_inc/52833_hal_files HAL_SRCS)
@@ -88,6 +75,21 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
     set(VARIANT_HAL_FLAGS ${VARIANT_HW_FLAGS})
   endif()
 
+  # These include directories must be added before those from the hal_nordic
+  # module, so that the local modified versions of nrfx files are used instead
+  # of those from the original nrfx.
+  target_include_directories(zephyr_interface BEFORE INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/mdk_replacements
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/mdk_replacements/${EXTRA_HWMODELS_INCL_PATH}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/hal_replacements
+  )
+
+  zephyr_include_directories(
+    src/HW_models/
+    src/HW_models/${EXTRA_HWMODELS_INCL_PATH}
+    src/nrfx/nrfx_replacements
+  )
+
   # The nrfx HAL is built in the context of the embedded software
   zephyr_library()
   zephyr_library_sources(${HAL_SRCS})
@@ -96,6 +98,7 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
   zephyr_library_include_directories(
     $ENV{BSIM_COMPONENTS_PATH}/libUtilv1/src/
     src/HW_models/
+    src/HW_models/${EXTRA_HWMODELS_INCL_PATH}
   )
 
   # The HW models are built in the runner context, so they have access to the host OS
@@ -109,8 +112,10 @@ if(CONFIG_SOC_SERIES_BSIM_NRFXX)
     -I$ENV{BSIM_COMPONENTS_PATH}/ext_2G4_libPhyComv1/src/
     -I$ENV{BSIM_COMPONENTS_PATH}/libRandv2/src/
     -I${CMAKE_CURRENT_SOURCE_DIR}/src/HW_models/
+    -I${CMAKE_CURRENT_SOURCE_DIR}/src/HW_models/${EXTRA_HWMODELS_INCL_PATH}
     -I${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx_config
     -I${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/mdk_replacements
+    -I${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/mdk_replacements/${EXTRA_HWMODELS_INCL_PATH}
     -I${CMAKE_CURRENT_SOURCE_DIR}/src/nrfx/nrfx_replacements
     -I${NRFX_DIR}
     -I${NRFX_DIR}/bsp/stable/

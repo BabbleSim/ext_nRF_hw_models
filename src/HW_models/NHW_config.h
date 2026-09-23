@@ -32,7 +32,15 @@
 #include "NHW_config.54LM20.h"
 
 #else
+
+#if defined(__has_include) && __has_include("NHW_config_ext.h")
+#include "NHW_config_ext.h"
+#endif
+
+#ifndef _NRF_HW_CONFIG_EXT_H
 #error "No valid platform was selected"
+#endif /* _NRF_HW_CONFIG_EXT_H */
+
 #endif
 
 #endif /* _NRF_HW_CONFIG_H */
