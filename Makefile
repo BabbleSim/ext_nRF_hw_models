@@ -61,3 +61,6 @@ NRF54LM20:
 
 # No need to check implicit rules for this file itself
 Makefile: ;
+
+#Include extensions Makefiles
+-include $(wildcard Makefile.*.mk)
