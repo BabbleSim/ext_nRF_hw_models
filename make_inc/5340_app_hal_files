@@ -1,3 +1,4 @@
+src/nrfx/drivers/nrfx_common.c
 src/nrfx/drivers/nrfx_common.5340.c
 src/nrfx/hal/nrf_clock.c
 src/nrfx/hal/nrf_common.c

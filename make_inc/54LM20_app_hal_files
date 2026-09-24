@@ -1,3 +1,4 @@
+src/nrfx/drivers/nrfx_common.c
 src/nrfx/drivers/nrfx_common.54LM20.c
 src/nrfx/hal/nrf_54_aar.c
 src/nrfx/hal/nrf_54_ccm.c
