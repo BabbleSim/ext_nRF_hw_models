@@ -301,6 +301,11 @@ uint16_t crc_update_154(uint16_t crc, const void *data, size_t data_len)
     return crc & 0xffff;
 }
 
+uint32_t calc_crc_154(uint8_t* buf, unsigned int len, uint16_t crc_init)
+{
+  return (uint32_t)crc_update_154( rev_16(crc_init), buf, len );
+}
+
 /**
  * Append the 154 CRC to a buffer buf of len bytes at the end of the buffer
  * itself

@@ -15,6 +15,7 @@
 #include "bs_utils.h"
 #include "bs_pc_2G4.h"
 #include "bs_pc_2G4_utils.h"
+#include "crc.h"
 #include "NHW_common_types.h"
 #include "NHW_config.h"
 #include "NHW_peri_types.h"
@@ -722,6 +723,32 @@ uint32_t nhwra_get_rx_crc_value(uint8_t *rx_buf, size_t rx_packet_size) {
       && ( rx_packet_size >= 3 ) ){
     memcpy((void*)&crc, &rx_buf[1 + payload_len], crc_len);
 #endif
+  }
+  return crc;
+}
+
+/**
+ * Calculate the CRC value for a given buffer and packet size
+ * Parameters:
+ *    buf: Pointer to the buffer containing the packet
+ *    packet_size: Number of bytes in the packet
+ *    crc_init: Initial CRC value to start the calculation with
+ * Returns:
+ *    The calculated CRC value
+ */
+uint32_t nhwra_calc_crc_value(uint8_t *buf, size_t packet_size, uint32_t crc_init)
+{
+  uint32_t crc = 0;
+
+  uint crc_len = nhwra_get_crc_length();
+
+  //Eventually this should be generalized with the packet configuration
+  if (nhwra_is_ble_mode(NRF_RADIO_regs.MODE)
+      && ( packet_size >= crc_len ) ){
+    crc = calc_crc_ble24_b(buf, packet_size - crc_len, crc_init);
+  } else if ((NRF_RADIO_regs.MODE == RADIO_MODE_MODE_Ieee802154_250Kbit)
+      && ( packet_size >= crc_len ) ){
+    crc = calc_crc_154(buf, packet_size - crc_len, crc_init);
   }
   return crc;
 }

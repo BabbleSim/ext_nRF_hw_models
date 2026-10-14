@@ -31,6 +31,7 @@ void nhwra_prep_cca_request(p2G4_cca_t *cca_req, bool CCA_not_ED, double rx_pow_
 uint nhwra_tx_copy_payload(uint8_t *tx_buf);
 uint nhwra_get_payload_length(uint8_t *buf);
 uint32_t nhwra_get_rx_crc_value(uint8_t *rx_buf, size_t rx_packet_size);
+uint32_t nhwra_calc_crc_value(uint8_t *buf, size_t packet_size, uint32_t crc_init);
 uint nhwra_get_crc_length(void);
 uint nhwra_get_MAXLEN(void);
 bool nhwra_mode_is_ble(void);
