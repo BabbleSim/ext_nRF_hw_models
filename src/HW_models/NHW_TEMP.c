@@ -50,6 +50,18 @@ static uint32_t TEMP_INTEN; //interrupt enable
 
 static double temperature = 25.0; /* Actual temperature the device is at */
 
+/*
+ * Cheat interface to set the temperature the device is at.
+ */
+void hw_temp_cheat_set_temperature(double t_degc) {
+  temperature = t_degc;
+}
+
+/* Cheat interface to read back the temperature the device is at */
+double hw_temp_cheat_get_temperature(void) {
+  return temperature;
+}
+
 /**
  * Initialize the TEMP model
  */
