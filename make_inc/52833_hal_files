@@ -8,6 +8,7 @@ src/nrfx/hal/nrf_temp.c
 src/nrfx/hal/nrf_radio.c
 src/nrfx/hal/nrf_egu.c
 src/nrfx/hal/nrf_timer.c
+src/nrfx/hal/nrf_pwm.c
 src/nrfx/hal/nrf_hal_originals.c
 src/nrfx/hal/nrf_nvmc.c
 src/nrfx/hal/nrf_clock.c

@@ -412,6 +412,13 @@
 #define NHW_TIMER_FREQ {128, 32, 16, 16, 16, 16, 16}
 #define NHW_TIMER_DPPI_MAP {0, 1, 2, 2, 2, 2, 2}
 
+#define NHW_PWM_TOTAL_INST 3
+#define NHW_PWM_20 0
+#define NHW_PWM_21 1
+#define NHW_PWM_22 2
+#define NHW_PWM_INT_MAP {{0, 210}, {0, 211}, {0, 212}} /* PWM20..22_IRQn */
+#define NHW_PWM_DPPI_MAP {2, 2, 2} /* All in the Peripheral domain => DPPIC20 */
+#define NHW_PWM_GPIO_PORT {NHW_GPIO_P1, NHW_GPIO_P1, NHW_GPIO_P1} /* The PWM pins must be in the same domain: P1 */
 
 #define NHW_UARTE_TOTAL_INST 5
 #define NHW_UARTE00 0

@@ -125,6 +125,15 @@ extern NRF_TIMER_Type NRF_TIMER_regs[];
 #define NRF_TIMER3_BASE                   (&NRF_TIMER_regs[3])
 #undef NRF_TIMER4_BASE
 #define NRF_TIMER4_BASE                   (&NRF_TIMER_regs[4])
+extern NRF_PWM_Type NRF_PWM_regs[];
+#undef NRF_PWM0_BASE
+#define NRF_PWM0_BASE                     (&NRF_PWM_regs[0])
+#undef NRF_PWM1_BASE
+#define NRF_PWM1_BASE                     (&NRF_PWM_regs[1])
+#undef NRF_PWM2_BASE
+#define NRF_PWM2_BASE                     (&NRF_PWM_regs[2])
+#undef NRF_PWM3_BASE
+#define NRF_PWM3_BASE                     (&NRF_PWM_regs[3])
 #undef NRF_POWER_BASE
 extern NRF_POWER_Type *NRF_POWER_regs[];
 #define NRF_POWER_BASE                    (NRF_POWER_regs[NHW_CLKPWR_0])
