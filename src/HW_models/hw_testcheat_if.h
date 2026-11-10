@@ -72,6 +72,13 @@ void nhw_aes_ecb_cheat_set_t_ecb(unsigned int new_t);
  */
 void nhw_aes_ecb_cheat_reset_t_ecb(void);
 
+/*
+ * Cheat interface to set / get the temperature (in degC)
+ * the TEMP peripheral measures
+ */
+void nhw_temp_cheat_set_temperature(double t_degc);
+double nhw_temp_cheat_get_temperature(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -20,6 +20,9 @@ void nhw_TEMP_regw_sideeffects_SUBSCRIBE_START(unsigned int inst);
 void nhw_TEMP_regw_sideeffects_SUBSCRIBE_STOP(unsigned int inst);
 void nhw_TEMP_regw_sideeffects_EVENTS_all(unsigned int inst);
 
+void nhw_temp_cheat_set_temperature(double t_degc);
+double nhw_temp_cheat_get_temperature(void);
+
 #ifdef __cplusplus
 }
 #endif
