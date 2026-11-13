@@ -56,6 +56,11 @@ void nrf_gpio_backend_register(const struct nrf_gpio_backend_if *backend_callbac
 
 int nhw_gpio_filebackend_process_config(char *path);
 
+/*
+ * Interface between the GPIO fifo backend and the GPIO_backend component
+ */
+int nhw_gpio_fifobackend_process_config(char *buf, char *line);
+
 #ifdef __cplusplus
 }
 #endif

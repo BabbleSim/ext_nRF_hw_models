@@ -253,6 +253,8 @@ static int process_config_line(char *line)
 {
   if (strncmp(line, "input_file ", 11) == 0) {
     return nhw_gpio_filebackend_process_config(line + 11);
+  } else if (strncmp(line, "fifo ", 5) == 0) {
+    return nhw_gpio_fifobackend_process_config(line + 5, line);
   } else if (strncmp(line, "short", 5) == 0) {
     return process_config_short(line + 5, line);
   } else if (strncmp(line, "s", 1) == 0) {
