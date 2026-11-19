@@ -425,7 +425,7 @@ int BLECrypt_if_decrypt_packet_v3(uint8_t *adata, //Additional Authentication Da
               decrypted_packet_payload);
     }
   } else {
-    memcpy(decrypted_packet_payload, mdata_and_mac, BS_MAX(mlen - maclen,0));
+    memcpy(decrypted_packet_payload, mdata_and_mac, BS_MAX(mlen,0));
     return 1;
   }
 }
