@@ -21,6 +21,7 @@ src/HW_models/NHW_EVDMA.c
 src/HW_models/NHW_54L_FICR.c
 src/HW_models/NRF_GPIO.c
 src/HW_models/NRF_GPIO_backend.c
+src/HW_models/NRF_GPIO_backend_fifo.c
 src/HW_models/NRF_GPIO_backend_file.c
 src/HW_models/NRF_GPIOTE.c
 src/HW_models/NHW_GRTC.c

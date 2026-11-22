@@ -19,6 +19,7 @@ That is, inputs just sample the input pin, and outputs just deliver a logical le
 Inputs can be driven in 3 different ways:
 
 * From the input file backend (see below).
+* From the FIFO backend (see below)
 * From test code, calling `nrf_gpio_test_change_pin_level()`
 * By shortcuiting the input and output, either set from a configuration file
   (`-gpio_conf_file=<path>`, see below), or
@@ -35,6 +36,20 @@ to the executable from the command line, or by adding in the configuration file 
 Each time this parameter is passed another backend will be instantiated with that new file.
 
 You can configure as many input files to be used as necessary.
+
+#### FIFO backend
+
+It is also possible to connect two simulated devices through GPIO FIFOs.
+This backend exchanges pin changes between devices and uses timed NOP messages to keep both
+sides advancing in simulation time.
+
+A single FIFO connection can be enabled, providing **both** command line options 
+`-gpio_fifob_txfile=<path>` and `-gpio_fifob_rxfile=<path>`.
+The FIFOs are created automatically.
+Optionally, `-gpio_fifob_mdt=<usec>` controls the maximum idle time between NOP messages.
+
+An arbitrary number of extra FIFO instances can be configured via the configuration file, adding
+a line like `fifo <tx_path> <rx_path> [mdt=<usec>]` (see below).
 
 ### Output log file:
 
@@ -97,7 +112,7 @@ Where pin 0 in port 0, is toggled at boot, 200microseconds, 600microseconds, 800
 ### Configuration file format
 
 The configuration file can configure short-circuits, as well as instantiate
-input file backend instances.
+FIFO & input file backend instances.
 
 **Short-circuits** (`short` / `s`):
 
@@ -140,6 +155,13 @@ Adding a line containing:
 
 Adds a new file-input backend instance reading from `<path>`.
 You can add as many of these as desired.
+
+**FIFO instances** (`fifo`):
+
+`fifo <tx_path> <rx_path> [mdt=<usec>]`
+
+Adds a FIFO backend instance.
+The optional `mdt=<usec>` overrides the default maximum idle time for this instance.
 
 ### Comments in input files
 
