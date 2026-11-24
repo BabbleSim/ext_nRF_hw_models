@@ -14,7 +14,9 @@
  * TOLOW: we start with most registers cleared, and a few evident ones set to some values.
  * It could be interesting to let people load them from command line
  * for example by specifying a file with their values. and/or by specifying particular ones
- * with command line options; something like -deviceaddr=<bt_address>
+ * with command line options; just like DEVICEADDR can be set with
+ * -ficr_deviceaddr=<bt_address>
+ * (see NHW_FICR_common.c)
  */
 
 #include "NHW_common_types.h"
@@ -24,6 +26,7 @@
 #include "bs_rand_main.h"
 #include "nsi_tasks.h"
 #include "weak_stubs.h"
+#include "NHW_FICR_common.h"
 
 NRF_FICR_Type NRF_FICR_regs;
 
@@ -53,6 +56,8 @@ static void nhw_52_ficr_init(void) {
   NRF_FICR_regs.PRODTEST[0] = 0xBB42319F;
   NRF_FICR_regs.PRODTEST[1] = 0xBB42319F;
   NRF_FICR_regs.PRODTEST[2] = 0xBB42319F;
+
+  nhw_ficr_apply_addr_args(NRF_FICR_regs.DEVICEADDR, &NRF_FICR_regs.DEVICEADDRTYPE);
 }
 
 NSI_TASK(nhw_52_ficr_init, HW_INIT, 100);

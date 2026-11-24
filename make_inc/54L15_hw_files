@@ -20,6 +20,7 @@ src/HW_models/NHW_DPPI.c
 src/HW_models/NHW_EGU.c
 src/HW_models/NHW_EVDMA.c
 src/HW_models/NHW_54L_FICR.c
+src/HW_models/NHW_FICR_common.c
 src/HW_models/NRF_GPIO.c
 src/HW_models/NRF_GPIO_backend.c
 src/HW_models/NRF_GPIO_backend_file.c
