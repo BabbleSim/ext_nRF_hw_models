@@ -28,6 +28,7 @@ src/HW_models/bstest_ticker.c
 src/HW_models/NRF_GPIO.c
 src/HW_models/NHW_TEMP.c
 src/HW_models/NHW_TIMER.c
+src/HW_models/NHW_PWM.c
 src/HW_models/NHW_UART.c
 src/HW_models/NHW_UART_backend_fifo.c
 src/HW_models/NHW_UART_backend_pty.c

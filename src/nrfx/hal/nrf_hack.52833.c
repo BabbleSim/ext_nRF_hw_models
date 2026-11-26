@@ -14,6 +14,7 @@
 #include "hal/nrf_egu.h"
 #include "hal/nrf_timer.h"
 #include "hal/nrf_clock.h"
+#include "hal/nrf_pwm.h"
 #include "hal/nrf_rng.h"
 #include "hal/nrf_aar.h"
 #include "hal/nrf_ppi.h"
@@ -42,6 +43,10 @@ void nrf_hack_get_task_from_ptr(void *task_reg,
   } else IF_PER(TIMER, 2, , timer)
   } else IF_PER(TIMER, 3, , timer)
   } else IF_PER(TIMER, 4, , timer)
+  } else IF_PER(PWM, 0, , pwm)
+  } else IF_PER(PWM, 1, , pwm)
+  } else IF_PER(PWM, 2, , pwm)
+  } else IF_PER(PWM, 3, , pwm)
   } else IF_PER(ECB, , , ecb)
   } else IF_PER(AAR, , , aar)
   } else IF_PER(CCM, , , ccm)

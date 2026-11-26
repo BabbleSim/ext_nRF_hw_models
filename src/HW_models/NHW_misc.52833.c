@@ -43,21 +43,21 @@ uint nhw_get_simu_real_conv_table(struct simu_real_conv_table_t **table) {
     DEF_ENTRY(EGU, 5),
     DEF_ENTRY(TIMER, 3),
     DEF_ENTRY(TIMER, 4),
-    //DEF_ENTRY(PWM, 0),
+    DEF_ENTRY(PWM, 0),
     //DEF_ENTRY(PDM,),
     //DEF_ENTRY(ACL,),
     DEF_ENTRY(NVMC,),
     DEF_ENTRY(PPI,),
     DEF_ENTRY(MWU,),
-    //DEF_ENTRY(PWM, 1),
-    //DEF_ENTRY(PWM, 2),
+    DEF_ENTRY(PWM, 1),
+    DEF_ENTRY(PWM, 2),
     //SPI2
     DEF_ENTRY(RTC, 2),
     //DEF_ENTRY(I2S,),
     //DEF_ENTRY(FPU,),
     //DEF_ENTRY(USBD,),
     DEF_ENTRY(UARTE, 1),
-    //DEF_ENTRY(PWM, 3),
+    DEF_ENTRY(PWM, 3),
     //SPIM3
   };
 

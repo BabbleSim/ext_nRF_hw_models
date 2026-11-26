@@ -64,6 +64,8 @@ IRQn_Type nrfx_get_irq_number(void const * p_reg) {
       return TIMER3_IRQn;
   } else if (IS_PERIPHERAL_REG(p_reg, TIMER, 4,)) {
       return TIMER4_IRQn;
+  } else if (IS_PERIPHERAL_REG(p_reg, PWM, 0,)) {
+      return PWM0_IRQn;
   /*28-29*/
   } else if (IS_PERIPHERAL_REG(p_reg, NVMC,,)) {
       return 30;
@@ -72,6 +74,12 @@ IRQn_Type nrfx_get_irq_number(void const * p_reg) {
   /*32-35*/
   } else if (IS_PERIPHERAL_REG(p_reg, RTC, 2,)) {
     return RTC2_IRQn;
+  } else if (IS_PERIPHERAL_REG(p_reg, PWM, 1,)) {
+    return PWM1_IRQn;
+  } else if (IS_PERIPHERAL_REG(p_reg, PWM, 2,)) {
+    return PWM2_IRQn;
+  } else if (IS_PERIPHERAL_REG(p_reg, PWM, 3,)) {
+    return PWM3_IRQn;
   /*37-39*/
   } else if (IS_PERIPHERAL_REG(p_reg, UARTE, 1,)) {
     return UARTE1_IRQn;

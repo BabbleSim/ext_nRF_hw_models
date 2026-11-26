@@ -28,6 +28,7 @@
 #include "NRF_PPI.h"
 #include "NHW_RTC.h"
 #include "NHW_TIMER.h"
+#include "NHW_PWM.h"
 #include "NHW_CLOCK.h"
 #include "NHW_RADIO.h"
 #include "NHW_EGU.h"
@@ -218,6 +219,26 @@ static const ppi_tasks_table_t ppi_tasks_table[]={ //just the ones we may use
     { (void*)&NRF_TIMER_regs[4].TASKS_COUNT,       nhw_timer4_TASK_COUNT},
     { (void*)&NRF_TIMER_regs[4].TASKS_START,       nhw_timer4_TASK_START},
     { (void*)&NRF_TIMER_regs[4].TASKS_STOP,        nhw_timer4_TASK_STOP},
+
+#if defined(NRF52833) || defined(NRF52833_XXAA)
+    //PWM0-3:
+    { (void*)&NRF_PWM_regs[0].TASKS_STOP,          nhw_pwm0_TASK_STOP},
+    { (void*)&NRF_PWM_regs[0].TASKS_SEQSTART[0],   nhw_pwm0_TASK_SEQSTART_0},
+    { (void*)&NRF_PWM_regs[0].TASKS_SEQSTART[1],   nhw_pwm0_TASK_SEQSTART_1},
+    { (void*)&NRF_PWM_regs[0].TASKS_NEXTSTEP,      nhw_pwm0_TASK_NEXTSTEP},
+    { (void*)&NRF_PWM_regs[1].TASKS_STOP,          nhw_pwm1_TASK_STOP},
+    { (void*)&NRF_PWM_regs[1].TASKS_SEQSTART[0],   nhw_pwm1_TASK_SEQSTART_0},
+    { (void*)&NRF_PWM_regs[1].TASKS_SEQSTART[1],   nhw_pwm1_TASK_SEQSTART_1},
+    { (void*)&NRF_PWM_regs[1].TASKS_NEXTSTEP,      nhw_pwm1_TASK_NEXTSTEP},
+    { (void*)&NRF_PWM_regs[2].TASKS_STOP,          nhw_pwm2_TASK_STOP},
+    { (void*)&NRF_PWM_regs[2].TASKS_SEQSTART[0],   nhw_pwm2_TASK_SEQSTART_0},
+    { (void*)&NRF_PWM_regs[2].TASKS_SEQSTART[1],   nhw_pwm2_TASK_SEQSTART_1},
+    { (void*)&NRF_PWM_regs[2].TASKS_NEXTSTEP,      nhw_pwm2_TASK_NEXTSTEP},
+    { (void*)&NRF_PWM_regs[3].TASKS_STOP,          nhw_pwm3_TASK_STOP},
+    { (void*)&NRF_PWM_regs[3].TASKS_SEQSTART[0],   nhw_pwm3_TASK_SEQSTART_0},
+    { (void*)&NRF_PWM_regs[3].TASKS_SEQSTART[1],   nhw_pwm3_TASK_SEQSTART_1},
+    { (void*)&NRF_PWM_regs[3].TASKS_NEXTSTEP,      nhw_pwm3_TASK_NEXTSTEP},
+#endif
 
     //RTC:
     { (void*)&(NRF_RTC_regs[0]).TASKS_CLEAR, nhw_rtc0_TASKS_CLEAR},
@@ -578,6 +599,16 @@ static const ppi_event_table_t ppi_events_table[] = { //better keep same order a
     {TIMER4_EVENTS_COMPARE_4, &NRF_TIMER_regs[4].EVENTS_COMPARE[4]},
     {TIMER4_EVENTS_COMPARE_5, &NRF_TIMER_regs[4].EVENTS_COMPARE[5]},
 
+#if defined(NRF52833) || defined(NRF52833_XXAA)
+    {PWM0_EVENTS_STOPPED, &NRF_PWM_regs[0].EVENTS_STOPPED},
+    {PWM0_EVENTS_SEQSTARTED_0, &NRF_PWM_regs[0].EVENTS_SEQSTARTED[0]},
+    {PWM0_EVENTS_SEQSTARTED_1, &NRF_PWM_regs[0].EVENTS_SEQSTARTED[1]},
+    {PWM0_EVENTS_SEQEND_0, &NRF_PWM_regs[0].EVENTS_SEQEND[0]},
+    {PWM0_EVENTS_SEQEND_1, &NRF_PWM_regs[0].EVENTS_SEQEND[1]},
+    {PWM0_EVENTS_PWMPERIODEND, &NRF_PWM_regs[0].EVENTS_PWMPERIODEND},
+    {PWM0_EVENTS_LOOPSDONE, &NRF_PWM_regs[0].EVENTS_LOOPSDONE},
+#endif
+
     {RTC2_EVENTS_OVRFLW, &NRF_RTC_regs[2].EVENTS_OVRFLW},
     {RTC2_EVENTS_COMPARE_0, &NRF_RTC_regs[2].EVENTS_COMPARE[0]},
     {RTC2_EVENTS_COMPARE_1, &NRF_RTC_regs[2].EVENTS_COMPARE[1]},
@@ -595,6 +626,30 @@ static const ppi_event_table_t ppi_events_table[] = { //better keep same order a
     {UARTE1_EVENTS_RXSTARTED, &NRF_UARTE_regs[1].EVENTS_RXSTARTED},
     {UARTE1_EVENTS_TXSTARTED, &NRF_UARTE_regs[1].EVENTS_TXSTARTED},
     {UARTE1_EVENTS_TXSTOPPED, &NRF_UARTE_regs[1].EVENTS_TXSTOPPED},
+
+#if defined(NRF52833) || defined(NRF52833_XXAA)
+    {PWM1_EVENTS_STOPPED, &NRF_PWM_regs[1].EVENTS_STOPPED},
+    {PWM1_EVENTS_SEQSTARTED_0, &NRF_PWM_regs[1].EVENTS_SEQSTARTED[0]},
+    {PWM1_EVENTS_SEQSTARTED_1, &NRF_PWM_regs[1].EVENTS_SEQSTARTED[1]},
+    {PWM1_EVENTS_SEQEND_0, &NRF_PWM_regs[1].EVENTS_SEQEND[0]},
+    {PWM1_EVENTS_SEQEND_1, &NRF_PWM_regs[1].EVENTS_SEQEND[1]},
+    {PWM1_EVENTS_PWMPERIODEND, &NRF_PWM_regs[1].EVENTS_PWMPERIODEND},
+    {PWM1_EVENTS_LOOPSDONE, &NRF_PWM_regs[1].EVENTS_LOOPSDONE},
+    {PWM2_EVENTS_STOPPED, &NRF_PWM_regs[2].EVENTS_STOPPED},
+    {PWM2_EVENTS_SEQSTARTED_0, &NRF_PWM_regs[2].EVENTS_SEQSTARTED[0]},
+    {PWM2_EVENTS_SEQSTARTED_1, &NRF_PWM_regs[2].EVENTS_SEQSTARTED[1]},
+    {PWM2_EVENTS_SEQEND_0, &NRF_PWM_regs[2].EVENTS_SEQEND[0]},
+    {PWM2_EVENTS_SEQEND_1, &NRF_PWM_regs[2].EVENTS_SEQEND[1]},
+    {PWM2_EVENTS_PWMPERIODEND, &NRF_PWM_regs[2].EVENTS_PWMPERIODEND},
+    {PWM2_EVENTS_LOOPSDONE, &NRF_PWM_regs[2].EVENTS_LOOPSDONE},
+    {PWM3_EVENTS_STOPPED, &NRF_PWM_regs[3].EVENTS_STOPPED},
+    {PWM3_EVENTS_SEQSTARTED_0, &NRF_PWM_regs[3].EVENTS_SEQSTARTED[0]},
+    {PWM3_EVENTS_SEQSTARTED_1, &NRF_PWM_regs[3].EVENTS_SEQSTARTED[1]},
+    {PWM3_EVENTS_SEQEND_0, &NRF_PWM_regs[3].EVENTS_SEQEND[0]},
+    {PWM3_EVENTS_SEQEND_1, &NRF_PWM_regs[3].EVENTS_SEQEND[1]},
+    {PWM3_EVENTS_PWMPERIODEND, &NRF_PWM_regs[3].EVENTS_PWMPERIODEND},
+    {PWM3_EVENTS_LOOPSDONE, &NRF_PWM_regs[3].EVENTS_LOOPSDONE},
+#endif
 
     {NUMBER_PPI_EVENTS, NULL} //End marker
 };

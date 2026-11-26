@@ -190,6 +190,13 @@
 #define NHW_TIMER_MAX_N_CC 6
 #define NHW_TIMER_FREQ {16, 16, 16, 16, 16}
 
+#define NHW_PWM_TOTAL_INST 4
+#define NHW_PWM_0 0
+#define NHW_PWM_1 1
+#define NHW_PWM_2 2
+#define NHW_PWM_3 3
+#define NHW_PWM_INT_MAP {{0, 28}, {0, 33}, {0, 34}, {0, 45}}
+
 #define NHW_UARTE_TOTAL_INST 2
 #define NHW_UART_0 0
 #define NHW_UART_1 1

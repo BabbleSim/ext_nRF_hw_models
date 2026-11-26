@@ -16,6 +16,7 @@ src/nrfx/hal/nrf_grtc.c
 src/nrfx/hal/nrf_hack.c
 src/nrfx/hal/nrf_hack.54L15.c
 src/nrfx/hal/nrf_ppib.c
+src/nrfx/hal/nrf_pwm.c
 src/nrfx/hal/nrf_radio.c
 src/nrfx/hal/nrf_rramc.c
 src/nrfx/hal/nrf_temp.c
